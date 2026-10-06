@@ -2508,7 +2508,7 @@
     <div class="notion-topbar">
         <div class="notion-breadcrumbs">
             <span style="font-weight: 700; color: var(--notion-text); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.3</span>
+                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.4</span>
             </span>
         </div>
         <div class="topbar-actions">
@@ -2677,7 +2677,7 @@
                     </div>
                     <div class="currency-input-row">
                         <span id="sideCurrLabel">1 人民幣 (CNY) = </span>
-                        <input type="number" id="calcRateInput" class="currency-input" value="4.65" step="0.01" oninput="calculateExchange(true)">
+                        <input type="number" id="calcRateInput" class="currency-input" value="4.65" step="any" oninput="calculateExchange(true)">
                         <span>台幣 (NTD)</span>
                     </div>
                     <div class="currency-input-row" style="margin-top: 8px;">
@@ -2686,7 +2686,10 @@
                         <span id="sideCalcUnitLabel">CNY ➔ </span>
                         <strong id="calcResultDisplay" style="color: #ea580c; font-size: 0.92rem;">NT$ 465</strong>
                     </div>
-                    <div style="margin-top: 8px; display:flex; justify-content:flex-end;">
+                    <div style="margin-top: 8px; display:flex; justify-content:space-between; gap:6px;">
+                        <button type="button" class="n-btn" style="font-size: 0.72rem; padding: 2px 7px; color:#0284c7; border-color:#38bdf8; background:#f0f9ff;" onclick="syncOnlineRateToSidebar()" title="從網路同步此幣別最新即時匯率">
+                            <i class="fa-solid fa-rotate" id="sideSyncRateSpinner"></i> 網路即時匯率
+                        </button>
                         <button type="button" class="n-btn" style="font-size: 0.72rem; padding: 2px 7px;" onclick="syncRateToCurrentPlan()" title="將調整後的匯率直接套用儲存至當前旅遊計畫">
                             <i class="fa-solid fa-check"></i> 套用匯率至本計畫
                         </button>
@@ -2924,7 +2927,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">兌台幣匯率 (1 當地幣 = ? NT$)</label>
-                            <input type="number" id="newPlanExchangeRate" class="form-input" value="4.65" step="0.001" min="0.0001" style="font-weight:700; color:#0284c7;">
+                            <input type="number" id="newPlanExchangeRate" class="form-input" value="4.65" step="any" min="0" style="font-weight:700; color:#0284c7;">
                         </div>
                     </div>
                     <div class="form-row">
@@ -2979,24 +2982,32 @@
                     </div>
                     <div style="font-size:0.75rem; color:#64748b; margin:6px 0 12px 0;">💡 設定出遊人數後，系統在預算統計時會自動計算「全團總費用」與「每人均攤」，方便團體管控！</div>
 
-                    <!-- 旅遊當地幣別與兌台幣匯率設定 -->
-                    <div class="form-row" style="display:grid; grid-template-columns: 1fr 140px; gap:10px;">
+                    <!-- 旅遊當地幣別與兌台幣匯率設定 (支援網路即時同步) -->
+                    <div class="form-row" style="display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:end;">
                         <div class="form-group" style="margin-bottom:0;">
                             <label class="form-label"><i class="fa-solid fa-coins" style="color:#0284c7;"></i> 旅遊當地幣別</label>
                             <select id="basePlanCurrencySelect" class="form-input" onchange="handlePlanCurrencyChange(this.value)">
-                                <option value="CNY|人民幣|¥|4.65">🇨🇳 人民幣 CNY (¥) ‧ 匯率 1 ≈ NT$ 4.65</option>
-                                <option value="JPY|日圓|¥|0.215">🇯🇵 日圓 JPY (¥) ‧ 匯率 1 ≈ NT$ 0.215</option>
-                                <option value="KRW|韓元|₩|0.024">🇰🇷 韓元 KRW (₩) ‧ 匯率 1 ≈ NT$ 0.024</option>
-                                <option value="USD|美元|$|32.5">🇺🇸 美元 USD ($) ‧ 匯率 1 ≈ NT$ 32.5</option>
-                                <option value="EUR|歐元|€|35.2">🇪🇺 歐元 EUR (€) ‧ 匯率 1 ≈ NT$ 35.2</option>
-                                <option value="TWD|新台幣|NT$|1.0">🇹🇼 新台幣 TWD (NT$) ‧ 匯率 1 = NT$ 1.0</option>
+                                <option value="CNY|人民幣|¥|4.65">🇨🇳 人民幣 CNY (¥)</option>
+                                <option value="JPY|日圓|¥|0.215">🇯🇵 日圓 JPY (¥)</option>
+                                <option value="KRW|韓元|₩|0.024">🇰🇷 韓元 KRW (₩)</option>
+                                <option value="USD|美元|$|32.5">🇺🇸 美元 USD ($)</option>
+                                <option value="EUR|歐元|€|35.2">🇪🇺 歐元 EUR (€)</option>
+                                <option value="TWD|新台幣|NT$|1.0">🇹🇼 新台幣 TWD (NT$)</option>
                                 <option value="CUSTOM">⚙️ 自訂幣別與匯率...</option>
                             </select>
                         </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label class="form-label">兌台幣匯率 (1當地幣=?NT$)</label>
-                            <input type="number" id="basePlanExchangeRate" class="form-input" step="0.001" min="0.0001" style="font-weight:700; color:#0284c7;" placeholder="4.65" oninput="updateCurrencyExchangeExample()">
+                        <div class="form-group" style="margin-bottom:0; width: 175px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <label class="form-label" style="margin-bottom:0; font-size:0.75rem;">兌台幣匯率 (1=?NT$)</label>
+                                <button type="button" class="n-btn" id="btnSyncRateBase" onclick="syncOnlineRateForModal()" title="從網路同步最新即時匯率" style="padding: 1px 6px; font-size: 0.7rem; border-color: #38bdf8; color: #0284c7; background: #f0f9ff; height: 20px; line-height: 1;">
+                                    <i class="fa-solid fa-rotate" id="syncRateSpinnerIcon"></i> 線上同步
+                                </button>
+                            </div>
+                            <input type="number" id="basePlanExchangeRate" class="form-input" step="any" min="0" style="font-weight:700; color:#0284c7;" placeholder="4.65" oninput="updateCurrencyExchangeExample()">
                         </div>
+                    </div>
+                    <div id="basePlanRateStatusNote" style="font-size:0.75rem; color:#059669; margin:4px 0 0 0; display:none; align-items:center; gap:5px;">
+                        <i class="fa-solid fa-circle-check"></i> <span id="basePlanRateStatusText">已由網路取得最新市場匯率</span>
                     </div>
                     <div id="basePlanCurrencyCustomRow" style="display:none; margin-top:8px;" class="form-row">
                         <div class="form-group" style="margin-bottom:0;">
@@ -7278,22 +7289,175 @@ const firebaseConfig = {
             showToast('success', `已將匯率 1 ≈ NT$ ${rate} 套用至此計畫！`);
         }
 
+        // ==========================================
+        // ONLINE REALTIME EXCHANGE RATE SYNC (線上即時匯率同步引擎)
+        // ==========================================
+        async function fetchOnlineExchangeRate(currencyCode) {
+            if (!currencyCode || currencyCode === 'TWD') {
+                return { success: true, rate: 1.0, code: 'TWD', source: '基準等值 (1:1)', time: new Date() };
+            }
+            const cleanCode = currencyCode.toUpperCase().trim();
+            // 優先使用 open.er-api.com (無須金鑰、免費支援 CORS、國際牌告即時更新)
+            try {
+                const res = await fetch(`https://open.er-api.com/v6/latest/${cleanCode}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.rates && data.rates.TWD) {
+                        const twdRate = data.rates.TWD;
+                        return {
+                            success: true,
+                            rate: parseFloat(twdRate.toFixed(4)),
+                            rawRate: twdRate,
+                            code: cleanCode,
+                            time: data.time_last_update_utc ? new Date(data.time_last_update_utc) : new Date(),
+                            source: '即時市場匯率 (open.er-api)'
+                        };
+                    }
+                }
+            } catch (e) {
+                console.warn("open.er-api 連線失敗，嘗試備援端點", e);
+            }
+
+            // 備援 API: api.exchangerate-api.com
+            try {
+                const res = await fetch(`https://api.exchangerate-api.com/v4/latest/${cleanCode}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.rates && data.rates.TWD) {
+                        const twdRate = data.rates.TWD;
+                        return {
+                            success: true,
+                            rate: parseFloat(twdRate.toFixed(4)),
+                            rawRate: twdRate,
+                            code: cleanCode,
+                            time: new Date(),
+                            source: '備援即時匯率 (exchangerate-api)'
+                        };
+                    }
+                }
+            } catch (e) {
+                console.error("備援匯率 API 亦連線失敗", e);
+            }
+
+            return { success: false, code: cleanCode };
+        }
+
+        async function syncOnlineRateForModal(isSilent = false) {
+            const select = document.getElementById('basePlanCurrencySelect');
+            const rateInput = document.getElementById('basePlanExchangeRate');
+            const noteEl = document.getElementById('basePlanRateStatusNote');
+            const noteText = document.getElementById('basePlanRateStatusText');
+            const spinner = document.getElementById('syncRateSpinnerIcon');
+            if (!select || !rateInput) return;
+
+            let code = 'CNY';
+            if (select.value === 'CUSTOM') {
+                code = (document.getElementById('basePlanCurrencyName')?.value || '').toUpperCase().trim();
+                if (!code || code.length < 3) {
+                    if (!isSilent) showToast('info', '自訂幣別請直接輸入換算匯率');
+                    return;
+                }
+            } else {
+                code = select.value.split('|')[0] || 'CNY';
+            }
+
+            if (code === 'TWD') {
+                rateInput.value = '1.0';
+                updateCurrencyExchangeExample();
+                if (noteEl) noteEl.style.display = 'none';
+                return;
+            }
+
+            if (spinner) spinner.classList.add('fa-spin');
+            if (noteEl && !isSilent) {
+                noteEl.style.display = 'flex';
+                noteEl.style.color = '#0284c7';
+                noteText.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 正在連線查詢 ${code} 最新即時匯率...`;
+            }
+
+            try {
+                const res = await fetchOnlineExchangeRate(code);
+                if (res && res.success) {
+                    rateInput.value = res.rate;
+                    updateCurrencyExchangeExample();
+                    if (noteEl) {
+                        noteEl.style.display = 'flex';
+                        noteEl.style.color = '#059669';
+                        noteText.innerHTML = `<i class="fa-solid fa-circle-check"></i> 已由網路同步最新匯率：1 ${code} ≈ <strong>NT$ ${res.rate}</strong> (${res.source})`;
+                    }
+                    if (!isSilent) {
+                        showToast('success', `已成功由網路同步最新匯率！1 ${code} ≈ NT$ ${res.rate}`);
+                    }
+                } else {
+                    if (noteEl && !isSilent) {
+                        noteEl.style.display = 'flex';
+                        noteEl.style.color = '#d97706';
+                        noteText.innerHTML = `⚠️ 無法連線網路匯率，已保留當前數值（可手動微調）`;
+                    }
+                    if (!isSilent) showToast('warning', `無法由網路取得 ${code} 匯率，請手動確認數值`);
+                }
+            } catch (err) {
+                console.error("同步匯率出錯", err);
+            } finally {
+                if (spinner) spinner.classList.remove('fa-spin');
+            }
+        }
+
+        async function syncOnlineRateToSidebar() {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const curr = getPlanCurrency(plan);
+            const rateInput = document.getElementById('calcRateInput');
+            const spinner = document.getElementById('sideSyncRateSpinner');
+            if (!rateInput) return;
+
+            if (curr.code === 'TWD') {
+                rateInput.value = '1.0';
+                calculateExchange(true);
+                showToast('info', '新台幣換算匯率為 1.0');
+                return;
+            }
+
+            if (spinner) spinner.classList.add('fa-spin');
+            try {
+                const res = await fetchOnlineExchangeRate(curr.code);
+                if (res && res.success) {
+                    rateInput.value = res.rate;
+                    calculateExchange(true);
+                    showToast('success', `已由網路同步 ${curr.code} 最新市場匯率：1 ≈ NT$ ${res.rate}！點擊「套用」即可儲存。`);
+                } else {
+                    showToast('error', `連線網路匯率失敗，請檢查網路連線`);
+                }
+            } catch(e) {
+                console.error(e);
+            } finally {
+                if (spinner) spinner.classList.remove('fa-spin');
+            }
+        }
+
         // 貨幣選擇變更連動 (編輯基本設定彈窗)
         function handlePlanCurrencyChange(val) {
             const rateInput = document.getElementById('basePlanExchangeRate');
             const customRow = document.getElementById('basePlanCurrencyCustomRow');
+            const noteEl = document.getElementById('basePlanRateStatusNote');
+            if (noteEl) noteEl.style.display = 'none';
+
             if (val === 'CUSTOM') {
                 if (customRow) customRow.style.display = 'grid';
                 updateCurrencyExchangeExample();
                 return;
             }
             if (customRow) customRow.style.display = 'none';
+
             const parts = val.split('|');
             if (parts.length >= 4) {
                 const rate = parseFloat(parts[3]) || 1.0;
                 if (rateInput) rateInput.value = rate;
             }
             updateCurrencyExchangeExample();
+
+            // 自動連線網路取得最新即時匯率
+            syncOnlineRateForModal(true);
         }
 
         function updateCurrencyExchangeExample() {
@@ -7317,11 +7481,18 @@ const firebaseConfig = {
             previewEl.innerHTML = `💡 試算：100 ${name} (${symbol}) ≈ <strong>NT$ ${twd100.toLocaleString()}</strong> 新台幣。費用將以當地幣登記，預算統計自動估算台幣總額！`;
         }
 
-        function handleNewPlanCurrencyChange(val) {
+        async function handleNewPlanCurrencyChange(val) {
             const parts = val.split('|');
             const rateInput = document.getElementById('newPlanExchangeRate');
             if (parts.length >= 4 && rateInput) {
                 rateInput.value = parts[3];
+                const code = parts[0];
+                if (code && code !== 'TWD') {
+                    const res = await fetchOnlineExchangeRate(code);
+                    if (res && res.success) {
+                        rateInput.value = res.rate;
+                    }
+                }
             }
         }
 
@@ -7487,13 +7658,19 @@ const firebaseConfig = {
                 } else {
                     if (customRow) customRow.style.display = 'none';
                 }
-            }
             document.getElementById('basePlanExchangeRate').value = curr.rate;
             updateCurrencyExchangeExample();
+            const noteEl = document.getElementById('basePlanRateStatusNote');
+            if (noteEl) noteEl.style.display = 'none';
 
             document.getElementById('basePlanDateRange').value = plan.dateRange || '';
             document.getElementById('basePlanCoverUrl').value = plan.coverUrl || '';
             openModal('editPlanBaseModal');
+
+            // 打開時若為外幣，自動由網路取得最新即時匯率
+            if (curr.code !== 'TWD' && curr.code !== 'CUSTOM') {
+                syncOnlineRateForModal(true);
+            }
         }
 
         function handleSavePlanBaseSubmit(e) {
