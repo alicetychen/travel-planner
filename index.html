@@ -2201,15 +2201,176 @@
         @media (max-width: 992px) {
             .notion-two-column-layout {
                 grid-template-columns: 1fr;
-                padding: 0 20px;
+                padding: 0 16px;
+                gap: 20px;
             }
             .notion-sidebar-col {
                 position: static;
                 max-height: none;
                 overflow-y: visible;
             }
-            .notion-header-container { padding: 0 20px; }
+            .notion-header-container { padding: 0 16px; }
             .form-row, .form-row-3, .form-row-4 { grid-template-columns: 1fr; }
+        }
+
+        /* 📱 針對行動裝置 (手機、小螢幕) 專屬極致美化與排版修復 */
+        @media (max-width: 768px) {
+            /* 1. 頂部 Sticky 導航列：避免文字擠壓換行，按鈕可平滑橫向滑動 */
+            .notion-topbar {
+                height: 48px;
+                padding: 0 10px;
+                gap: 8px;
+            }
+            .notion-breadcrumbs {
+                flex-shrink: 0;
+                font-size: 0.82rem;
+                white-space: nowrap;
+                letter-spacing: -0.01em;
+            }
+            .topbar-actions {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                flex: 1;
+                justify-content: flex-end;
+                min-width: 0;
+            }
+            .topbar-actions::-webkit-scrollbar {
+                display: none;
+            }
+            .topbar-actions .n-btn {
+                flex-shrink: 0;
+                white-space: nowrap;
+                padding: 4px 8px;
+                font-size: 0.74rem;
+                gap: 4px;
+            }
+            #cloudStatusText {
+                font-size: 0.74rem;
+            }
+
+            /* 2. 封面圖與頁首圖標：適度調整高度，比例更自然 */
+            .notion-cover-wrapper {
+                height: 140px;
+            }
+            .notion-cover-actions {
+                bottom: 8px;
+                right: 10px;
+            }
+            .notion-cover-actions .n-btn {
+                padding: 3px 8px;
+                font-size: 0.72rem;
+            }
+            .notion-header-container {
+                padding: 0 14px;
+                margin-top: -30px;
+            }
+            .notion-page-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 2rem;
+                border-radius: 14px;
+            }
+
+            /* 3. 標題與計畫切換欄：改為垂直堆疊，解除左右寬度擠壓 */
+            .notion-title-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+                margin-top: 8px;
+            }
+            .notion-page-title {
+                font-size: 1.45rem;
+                line-height: 1.28;
+                word-break: break-word;
+            }
+            .notion-page-subtitle {
+                font-size: 0.8rem;
+                line-height: 1.4;
+                margin-top: 4px;
+            }
+            .plan-switcher-pill {
+                width: 100%;
+                box-sizing: border-box;
+                padding: 6px 10px;
+                justify-content: space-between;
+            }
+            .plan-switcher-pill .plan-select-input {
+                flex: 1;
+                min-width: 0;
+                font-size: 0.82rem;
+            }
+
+            /* 4. 屬性卡片 (日期、出遊人數、匯率)：從水平直擠改為卡片式整齊條列 */
+            .notion-properties-bar {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+                padding: 10px 12px;
+                margin-top: 10px;
+                border-radius: 10px;
+            }
+            .prop-item-single {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                width: 100%;
+            }
+            .prop-cell {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 0.8rem;
+                padding: 4px 0;
+                border-bottom: 1px dashed #f1f5f9;
+                width: 100%;
+            }
+            .prop-cell:last-of-type {
+                border-bottom: none;
+            }
+            .prop-divider {
+                display: none !important;
+            }
+            .prop-item-single .prop-edit-badge {
+                align-self: flex-end;
+                margin-top: 2px;
+                padding: 2px 8px;
+                font-size: 0.72rem;
+            }
+
+            /* 5. 雙欄主要行程排版優化 */
+            .notion-two-column-layout {
+                margin: 12px auto 60px;
+                padding: 0 10px;
+                gap: 16px;
+            }
+            .timeline-event-row {
+                padding: 10px 12px;
+                gap: 10px;
+            }
+            .timeline-event-title {
+                font-size: 0.9rem;
+            }
+            .timeline-event-meta {
+                gap: 6px;
+                font-size: 0.76rem;
+            }
+            .timeline-events-list {
+                padding-left: 20px;
+            }
+            .timeline-node-dot {
+                left: -18px;
+            }
+
+            /* 6. 彈窗於手機全螢幕最適應 */
+            .modal-dialog {
+                max-width: 96vw;
+                max-height: 94vh;
+                margin: 8px;
+            }
         }
 
         /* 緊湊優雅之彈窗微調樣式 (避免 Swal 預設元件過大笨重) */
@@ -2254,24 +2415,24 @@
         </div>
         <div class="topbar-actions">
             <!-- 雲端同步狀態按鈕 -->
-            <button class="n-btn" id="cloudSyncStatusBtn" onclick="openCloudSyncModal()" title="點擊設定 Firebase 雲端跨裝置即時同步" style="border-color: #cbd5e1; gap: 7px;">
-                <span id="cloudStatusDot" style="width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; display: inline-block;"></span>
-                <span id="cloudStatusText" style="font-weight: 700;">☁️ 雲端同步 (本機)</span>
+            <button class="n-btn" id="cloudSyncStatusBtn" onclick="openCloudSyncModal()" title="點擊設定 Firebase 雲端跨裝置即時同步" style="border-color: #cbd5e1; gap: 6px;">
+                <span id="cloudStatusDot" style="width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; display: inline-block; flex-shrink: 0;"></span>
+                <span id="cloudStatusText" style="font-weight: 700;">☁️ 雲端同步</span>
             </button>
 
             <button class="n-btn" onclick="exportDataJson()" title="下載行程 JSON 備份">
-                <i class="fa-solid fa-file-export"></i> 匯出備份
+                <i class="fa-solid fa-file-export"></i> <span class="topbar-btn-text">匯出</span>
             </button>
             <button class="n-btn" onclick="triggerImportJson()" title="匯入行程 JSON">
-                <i class="fa-solid fa-file-import"></i> 匯入計畫
+                <i class="fa-solid fa-file-import"></i> <span class="topbar-btn-text">匯入</span>
             </button>
             <input type="file" id="importJsonFileInput" style="display: none;" accept=".json" onchange="handleImportJsonFile(event)">
             
-            <button class="n-btn n-btn-accent" onclick="openBookletModal()">
-                <i class="fa-solid fa-book-open"></i> 📖 產生隨身旅遊小手冊
+            <button class="n-btn n-btn-accent" onclick="openBookletModal()" title="產生隨身旅遊小手冊">
+                <i class="fa-solid fa-book-open"></i> <span class="topbar-btn-text">隨身手冊</span>
             </button>
-            <button class="n-btn n-btn-primary" onclick="openCreatePlanModal()">
-                <i class="fa-solid fa-plus"></i> 新增全新旅行計畫
+            <button class="n-btn n-btn-primary" onclick="openCreatePlanModal()" title="新增全新旅行計畫">
+                <i class="fa-solid fa-plus"></i> <span class="topbar-btn-text">新增計畫</span>
             </button>
         </div>
     </div>
@@ -2319,14 +2480,20 @@
         <!-- Database Properties Panel (保留旅行日期、同行出遊人數、當地幣別與匯率) -->
         <div class="notion-properties-bar" onclick="openEditPlanBaseModal()" title="點擊編輯旅行日期、出遊人數、當地幣別與匯率設定">
             <div class="prop-item-single">
-                <span class="prop-label"><i class="fa-regular fa-calendar"></i> 旅行日期</span>
-                <span class="prop-value" id="propDateRange">2026.10.23 - 10.29 (7天)</span>
-                <span style="color:#cbd5e1; margin:0 4px;">|</span>
-                <span class="prop-label"><i class="fa-solid fa-users" style="color:#ea580c;"></i> 同行人數</span>
-                <span class="prop-value" id="propMemberCountDisplay" style="color:#ea580c; font-weight:700;">4 人</span>
-                <span style="color:#cbd5e1; margin:0 4px;">|</span>
-                <span class="prop-label"><i class="fa-solid fa-coins" style="color:#0284c7;"></i> 當地幣別與匯率</span>
-                <span class="prop-value" id="propCurrencyDisplay" style="color:#0284c7; font-weight:700;">¥ 人民幣 (1 ≈ NT$ 4.65)</span>
+                <div class="prop-cell">
+                    <span class="prop-label"><i class="fa-regular fa-calendar"></i> 旅行日期</span>
+                    <span class="prop-value" id="propDateRange">2026.10.23 - 10.29 (7天)</span>
+                </div>
+                <span class="prop-divider" style="color:#cbd5e1; margin:0 4px;">|</span>
+                <div class="prop-cell">
+                    <span class="prop-label"><i class="fa-solid fa-users" style="color:#ea580c;"></i> 同行人數</span>
+                    <span class="prop-value" id="propMemberCountDisplay" style="color:#ea580c; font-weight:700;">4 人</span>
+                </div>
+                <span class="prop-divider" style="color:#cbd5e1; margin:0 4px;">|</span>
+                <div class="prop-cell">
+                    <span class="prop-label"><i class="fa-solid fa-coins" style="color:#0284c7;"></i> 當地幣別與匯率</span>
+                    <span class="prop-value" id="propCurrencyDisplay" style="color:#0284c7; font-weight:700;">¥ 人民幣 (1 ≈ NT$ 4.65)</span>
+                </div>
                 <span class="prop-edit-badge"><i class="fa-solid fa-pen"></i> 編輯</span>
             </div>
         </div>
