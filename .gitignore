@@ -1,0 +1,12 @@
+# 作業系統暫存檔
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# 編輯器暫存檔
+.vscode/
+.idea/
+*.swp
+*.tmp
