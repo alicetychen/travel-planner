@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>旅遊規劃 ‧ Travel Planner</title>
     
     <!-- Google Fonts -->
@@ -2213,163 +2216,166 @@
             .form-row, .form-row-3, .form-row-4 { grid-template-columns: 1fr; }
         }
 
-        /* 📱 針對行動裝置 (手機、小螢幕) 專屬極致美化與排版修復 */
-        @media (max-width: 768px) {
+        /* 📱 針對行動裝置 (手機、平板直向) 專屬極致美化與排版修復 */
+        @media (max-width: 900px) {
             /* 1. 頂部 Sticky 導航列：避免文字擠壓換行，按鈕可平滑橫向滑動 */
-            .notion-topbar {
-                height: 48px;
-                padding: 0 10px;
-                gap: 8px;
+            body .notion-topbar {
+                height: 48px !important;
+                padding: 0 10px !important;
+                gap: 8px !important;
             }
-            .notion-breadcrumbs {
-                flex-shrink: 0;
-                font-size: 0.82rem;
-                white-space: nowrap;
-                letter-spacing: -0.01em;
+            body .notion-breadcrumbs {
+                flex-shrink: 0 !important;
+                font-size: 0.82rem !important;
+                white-space: nowrap !important;
+                letter-spacing: -0.01em !important;
             }
-            .topbar-actions {
-                display: flex;
-                align-items: center;
-                gap: 5px;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: none;
-                flex: 1;
-                justify-content: flex-end;
-                min-width: 0;
+            body .topbar-actions {
+                display: flex !important;
+                align-items: center !important;
+                gap: 5px !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                scrollbar-width: none !important;
+                flex: 1 !important;
+                justify-content: flex-end !important;
+                min-width: 0 !important;
             }
-            .topbar-actions::-webkit-scrollbar {
-                display: none;
+            body .topbar-actions::-webkit-scrollbar {
+                display: none !important;
             }
-            .topbar-actions .n-btn {
-                flex-shrink: 0;
-                white-space: nowrap;
-                padding: 4px 8px;
-                font-size: 0.74rem;
-                gap: 4px;
+            body .topbar-actions .n-btn {
+                flex-shrink: 0 !important;
+                white-space: nowrap !important;
+                padding: 4px 8px !important;
+                font-size: 0.74rem !important;
+                gap: 4px !important;
             }
-            #cloudStatusText {
-                font-size: 0.74rem;
+            body #cloudStatusText {
+                font-size: 0.74rem !important;
             }
 
             /* 2. 封面圖與頁首圖標：適度調整高度，比例更自然 */
-            .notion-cover-wrapper {
-                height: 140px;
+            body .notion-cover-wrapper {
+                height: 140px !important;
             }
-            .notion-cover-actions {
-                bottom: 8px;
-                right: 10px;
+            body .notion-cover-actions {
+                bottom: 8px !important;
+                right: 10px !important;
             }
-            .notion-cover-actions .n-btn {
-                padding: 3px 8px;
-                font-size: 0.72rem;
+            body .notion-cover-actions .n-btn {
+                padding: 3px 8px !important;
+                font-size: 0.72rem !important;
             }
-            .notion-header-container {
-                padding: 0 14px;
-                margin-top: -30px;
+            body .notion-header-container {
+                padding: 0 14px !important;
+                margin-top: -30px !important;
             }
-            .notion-page-icon {
-                width: 60px;
-                height: 60px;
-                font-size: 2rem;
-                border-radius: 14px;
+            body .notion-page-icon {
+                width: 60px !important;
+                height: 60px !important;
+                font-size: 2rem !important;
+                border-radius: 14px !important;
             }
 
             /* 3. 標題與計畫切換欄：改為垂直堆疊，解除左右寬度擠壓 */
-            .notion-title-row {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 10px;
-                margin-top: 8px;
+            body .notion-title-row {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 10px !important;
+                margin-top: 8px !important;
             }
-            .notion-page-title {
-                font-size: 1.45rem;
-                line-height: 1.28;
-                word-break: break-word;
+            body .notion-title-row > div:first-child {
+                width: 100% !important;
             }
-            .notion-page-subtitle {
-                font-size: 0.8rem;
-                line-height: 1.4;
-                margin-top: 4px;
+            body .notion-page-title {
+                font-size: 1.45rem !important;
+                line-height: 1.28 !important;
+                word-break: break-word !important;
             }
-            .plan-switcher-pill {
-                width: 100%;
-                box-sizing: border-box;
-                padding: 6px 10px;
-                justify-content: space-between;
+            body .notion-page-subtitle {
+                font-size: 0.8rem !important;
+                line-height: 1.4 !important;
+                margin-top: 4px !important;
             }
-            .plan-switcher-pill .plan-select-input {
-                flex: 1;
-                min-width: 0;
-                font-size: 0.82rem;
+            body .plan-switcher-pill {
+                width: 100% !important;
+                box-sizing: border-box !important;
+                padding: 6px 10px !important;
+                justify-content: space-between !important;
+            }
+            body .plan-switcher-pill .plan-select-input {
+                flex: 1 !important;
+                min-width: 0 !important;
+                font-size: 0.82rem !important;
             }
 
             /* 4. 屬性卡片 (日期、出遊人數、匯率)：從水平直擠改為卡片式整齊條列 */
-            .notion-properties-bar {
-                display: block;
-                width: 100%;
-                box-sizing: border-box;
-                padding: 10px 12px;
-                margin-top: 10px;
-                border-radius: 10px;
+            body .notion-properties-bar {
+                display: block !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                padding: 10px 12px !important;
+                margin-top: 10px !important;
+                border-radius: 10px !important;
             }
-            .prop-item-single {
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-                width: 100%;
+            body .prop-item-single {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 6px !important;
+                width: 100% !important;
             }
-            .prop-cell {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                font-size: 0.8rem;
-                padding: 4px 0;
-                border-bottom: 1px dashed #f1f5f9;
-                width: 100%;
+            body .prop-cell {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                font-size: 0.8rem !important;
+                padding: 4px 0 !important;
+                border-bottom: 1px dashed #f1f5f9 !important;
+                width: 100% !important;
             }
-            .prop-cell:last-of-type {
-                border-bottom: none;
+            body .prop-cell:last-of-type {
+                border-bottom: none !important;
             }
-            .prop-divider {
+            body .prop-divider {
                 display: none !important;
             }
-            .prop-item-single .prop-edit-badge {
-                align-self: flex-end;
-                margin-top: 2px;
-                padding: 2px 8px;
-                font-size: 0.72rem;
+            body .prop-item-single .prop-edit-badge {
+                align-self: flex-end !important;
+                margin-top: 2px !important;
+                padding: 2px 8px !important;
+                font-size: 0.72rem !important;
             }
 
             /* 5. 雙欄主要行程排版優化 */
-            .notion-two-column-layout {
-                margin: 12px auto 60px;
-                padding: 0 10px;
-                gap: 16px;
+            body .notion-two-column-layout {
+                margin: 12px auto 60px !important;
+                padding: 0 10px !important;
+                gap: 16px !important;
             }
-            .timeline-event-row {
-                padding: 10px 12px;
-                gap: 10px;
+            body .timeline-event-row {
+                padding: 10px 12px !important;
+                gap: 10px !important;
             }
-            .timeline-event-title {
-                font-size: 0.9rem;
+            body .timeline-event-title {
+                font-size: 0.9rem !important;
             }
-            .timeline-event-meta {
-                gap: 6px;
-                font-size: 0.76rem;
+            body .timeline-event-meta {
+                gap: 6px !important;
+                font-size: 0.76rem !important;
             }
-            .timeline-events-list {
-                padding-left: 20px;
+            body .timeline-events-list {
+                padding-left: 20px !important;
             }
-            .timeline-node-dot {
-                left: -18px;
+            body .timeline-node-dot {
+                left: -18px !important;
             }
 
             /* 6. 彈窗於手機全螢幕最適應 */
-            .modal-dialog {
-                max-width: 96vw;
-                max-height: 94vh;
-                margin: 8px;
+            body .modal-dialog {
+                max-width: 96vw !important;
+                max-height: 94vh !important;
+                margin: 8px !important;
             }
         }
 
@@ -2410,7 +2416,7 @@
     <div class="notion-topbar">
         <div class="notion-breadcrumbs">
             <span style="font-weight: 700; color: var(--notion-text); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                ✈️ 旅遊規劃
+                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.2</span>
             </span>
         </div>
         <div class="topbar-actions">
