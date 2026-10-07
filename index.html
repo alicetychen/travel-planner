@@ -2508,7 +2508,7 @@
     <div class="notion-topbar">
         <div class="notion-breadcrumbs">
             <span style="font-weight: 700; color: var(--notion-text); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.9</span>
+                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.10</span>
             </span>
         </div>
         <div class="topbar-actions">
@@ -3044,15 +3044,16 @@
         </div>
     </div>
 
-    <!-- 3. 新增 / 編輯單日活動項目 -->
+    <!-- 3. 新增 / 編輯單日活動項目 (防閃退與防冒泡增強) -->
     <div class="modal-backdrop" id="addEventModal" onclick="handleBackdropClick(event, 'addEventModal')">
-        <div class="modal-dialog" style="max-width: 580px;">
+        <div class="modal-dialog" style="max-width: 580px;" onclick="event.stopPropagation();">
             <div class="modal-header">
-                <div class="modal-title"><i class="fa-solid fa-calendar-plus"></i> 新增 / 編輯行程項目</div>
-                <button class="modal-close-btn" onclick="closeModal('addEventModal')"><i class="fa-solid fa-xmark"></i></button>
+                <div class="modal-title" id="eventModalTitle"><i class="fa-solid fa-calendar-plus"></i> 新增 / 編輯行程項目</div>
+                <button type="button" class="modal-close-btn" onclick="closeModal('addEventModal')"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <form onsubmit="handleSaveEventSubmit(event)">
+            <form id="eventForm" onsubmit="handleSaveEventSubmit(event); return false;">
                 <input type="hidden" id="eventEditIndex" value="-1">
+                <input type="hidden" id="eventOriginDay" value="1">
                 <div class="modal-body">
                     <div class="form-row">
                         <div class="form-group">
@@ -3121,12 +3122,12 @@
 
                         <!-- 2. 自由文字輸入模式 (備用，透過按鈕切換) -->
                         <div id="customTimeInputBox" style="display:none; margin-top:6px;">
-                            <input type="text" id="eventTimeStr" class="form-input" placeholder="例如：08:30 - 11:30、全天、18:30 以後" oninput="handleCustomTimeInput()" required>
+                            <input type="text" id="eventTimeStr" class="form-input" placeholder="例如：08:30 - 11:30、全天、18:30 以後" oninput="handleCustomTimeInput()">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">活動或景點名稱</label>
-                        <input type="text" id="eventTitleStr" class="form-input" placeholder="例如：故宮博物院 (午門進，神武門出)" required>
+                        <label class="form-label">活動或景點名稱 <span style="color:#ef4444;">*</span></label>
+                        <input type="text" id="eventTitleStr" class="form-input" placeholder="例如：故宮博物院 (午門進，神武門出)">
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -3146,7 +3147,9 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="n-btn" onclick="closeModal('addEventModal')">取消</button>
-                    <button type="submit" class="n-btn n-btn-primary">儲存項目</button>
+                    <button type="button" class="n-btn n-btn-primary" onclick="handleSaveEventSubmit(event)" id="eventSubmitBtn">
+                        <i class="fa-solid fa-check"></i> 儲存項目
+                    </button>
                 </div>
             </form>
         </div>
@@ -8664,22 +8667,40 @@ const firebaseConfig = {
             if (preview && rawInput) preview.innerText = rawInput.value || '未設定';
         }
 
-        // Add/Edit Event
+        // Add/Edit Event (防閃退與跨天安全防護)
         function openAddEventModal(dayNum = null) {
             const plan = getCurrentPlan();
             if (!plan) return;
             const curr = getPlanCurrency(plan);
             const select = document.getElementById('eventTargetDay');
-            select.innerHTML = (plan.days || []).map(d => `<option value="${d.dayNum}">Day ${d.dayNum} ‧ ${d.title}</option>`).join('');
-            if (dayNum) select.value = dayNum;
+            if (select) {
+                select.innerHTML = (plan.days || []).map(d => `<option value="${d.dayNum}">Day ${d.dayNum} ‧ ${escapeHtml(d.title)}</option>`).join('');
+                if (dayNum) select.value = dayNum;
+            }
 
-            document.getElementById('eventEditIndex').value = '-1';
+            const originDayInput = document.getElementById('eventOriginDay');
+            if (originDayInput) originDayInput.value = dayNum || (select ? select.value : '1');
+
+            const editInput = document.getElementById('eventEditIndex');
+            if (editInput) editInput.value = '-1';
+
             setTimeSelectorValue('');
-            document.getElementById('eventTitleStr').value = '';
-            document.getElementById('eventLocStr').value = '';
-            document.getElementById('eventCostNum').value = '';
-            document.getElementById('eventNotesStr').value = '';
-            document.getElementById('eventTypeSelect').value = 'spot';
+            const titleInput = document.getElementById('eventTitleStr');
+            if (titleInput) titleInput.value = '';
+            const locInput = document.getElementById('eventLocStr');
+            if (locInput) locInput.value = '';
+            const costInput = document.getElementById('eventCostNum');
+            if (costInput) costInput.value = '';
+            const notesInput = document.getElementById('eventNotesStr');
+            if (notesInput) notesInput.value = '';
+            const typeSelect = document.getElementById('eventTypeSelect');
+            if (typeSelect) typeSelect.value = 'spot';
+
+            const modalTitle = document.getElementById('eventModalTitle');
+            if (modalTitle) modalTitle.innerHTML = '<i class="fa-solid fa-calendar-plus"></i> 新增行程項目';
+
+            const submitBtn = document.getElementById('eventSubmitBtn');
+            if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> 新增行程項目';
 
             const costLabel = document.getElementById('eventCostLabel');
             if (costLabel) costLabel.innerText = `預估單人費用 (${curr.symbol} ${curr.name})`;
@@ -8691,22 +8712,40 @@ const firebaseConfig = {
         function openEditEventModal(dayNum, eventIdx) {
             const plan = getCurrentPlan();
             if (!plan) return;
-            const day = (plan.days || []).find(d => d.dayNum === dayNum);
+            const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
             if (!day || !day.events || !day.events[eventIdx]) return;
 
             const curr = getPlanCurrency(plan);
             const ev = day.events[eventIdx];
             const select = document.getElementById('eventTargetDay');
-            select.innerHTML = (plan.days || []).map(d => `<option value="${d.dayNum}">Day ${d.dayNum} ‧ ${d.title}</option>`).join('');
-            select.value = dayNum;
+            if (select) {
+                select.innerHTML = (plan.days || []).map(d => `<option value="${d.dayNum}">Day ${d.dayNum} ‧ ${escapeHtml(d.title)}</option>`).join('');
+                select.value = dayNum;
+            }
 
-            document.getElementById('eventEditIndex').value = eventIdx;
+            const originDayInput = document.getElementById('eventOriginDay');
+            if (originDayInput) originDayInput.value = dayNum;
+
+            const editInput = document.getElementById('eventEditIndex');
+            if (editInput) editInput.value = eventIdx;
+
             setTimeSelectorValue(ev.time || '');
-            document.getElementById('eventTitleStr').value = ev.title || '';
-            document.getElementById('eventLocStr').value = ev.loc || '';
-            document.getElementById('eventCostNum').value = ev.cost || '';
-            document.getElementById('eventNotesStr').value = ev.notes || '';
-            document.getElementById('eventTypeSelect').value = ev.type || 'spot';
+            const titleInput = document.getElementById('eventTitleStr');
+            if (titleInput) titleInput.value = ev.title || '';
+            const locInput = document.getElementById('eventLocStr');
+            if (locInput) locInput.value = ev.loc || '';
+            const costInput = document.getElementById('eventCostNum');
+            if (costInput) costInput.value = (ev.cost !== undefined && ev.cost !== null) ? ev.cost : '';
+            const notesInput = document.getElementById('eventNotesStr');
+            if (notesInput) notesInput.value = ev.notes || '';
+            const typeSelect = document.getElementById('eventTypeSelect');
+            if (typeSelect) typeSelect.value = ev.type || 'spot';
+
+            const modalTitle = document.getElementById('eventModalTitle');
+            if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-pen-to-square"></i> 編輯行程項目 (${escapeHtml(ev.title || '項目')})`;
+
+            const submitBtn = document.getElementById('eventSubmitBtn');
+            if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> 儲存項目變更';
 
             const costLabel = document.getElementById('eventCostLabel');
             if (costLabel) costLabel.innerText = `預估單人費用 (${curr.symbol} ${curr.name})`;
@@ -8716,53 +8755,122 @@ const firebaseConfig = {
         }
 
         function handleSaveEventSubmit(e) {
-            e.preventDefault();
-            const plan = getCurrentPlan();
-            if (!plan) return;
-            const dayNum = parseInt(document.getElementById('eventTargetDay').value);
-            const editIdx = parseInt(document.getElementById('eventEditIndex').value);
-            const day = (plan.days || []).find(d => d.dayNum === dayNum);
-            if (!day) return;
-            if (!day.events) day.events = [];
-
-            const eventObj = {
-                time: document.getElementById('eventTimeStr').value,
-                title: document.getElementById('eventTitleStr').value,
-                type: document.getElementById('eventTypeSelect').value,
-                loc: document.getElementById('eventLocStr').value,
-                cost: parseFloat(document.getElementById('eventCostNum').value) || 0,
-                notes: document.getElementById('eventNotesStr').value
-            };
-
-            if (editIdx >= 0 && day.events[editIdx]) {
-                day.events[editIdx] = eventObj;
-            } else {
-                day.events.push(eventObj);
+            if (e) {
+                if (typeof e.preventDefault === 'function') e.preventDefault();
+                if (typeof e.stopPropagation === 'function') e.stopPropagation();
             }
 
-            // 自動連動重算當日總預算
-            let evTrans = 0;
-            let evSpot = 0;
-            let evOther = 0;
-            day.events.forEach(item => {
-                const c = Number(item.cost || 0);
-                if (item.type === 'trans' || item.type === 'flight') evTrans += c;
-                else if (item.type === 'spot') evSpot += c;
-                else evOther += c;
-            });
-            const dTrans = (day.transportCost !== undefined && day.transportCost !== null) ? Number(day.transportCost) : evTrans;
-            const dSpot = (day.spotCost !== undefined && day.spotCost !== null) ? Number(day.spotCost) : evSpot;
-            const bf = Number(day.breakfastCost || 0);
-            const lc = Number(day.lunchCost || 0);
-            const dn = Number(day.dinnerCost || 0);
-            day.budget = bf + lc + dn + dTrans + dSpot + evOther;
+            try {
+                const plan = getCurrentPlan();
+                if (!plan) {
+                    showToast('error', '找不到當前旅行計畫！');
+                    return false;
+                }
 
-            saveState();
-            closeModal('addEventModal');
-            renderTimelineView();
-            renderBudgetWidget();
-            renderBudgetView();
-            showToast('success', '已儲存項目');
+                const targetDaySelect = document.getElementById('eventTargetDay');
+                const targetDayNum = parseInt(targetDaySelect ? targetDaySelect.value : '1');
+                const originDayNum = parseInt(document.getElementById('eventOriginDay')?.value || targetDayNum);
+                const editIdx = parseInt(document.getElementById('eventEditIndex')?.value || '-1');
+
+                const targetDay = (plan.days || []).find(d => d.dayNum === targetDayNum);
+                if (!targetDay) {
+                    showToast('error', `找不到 Day ${targetDayNum} 之行程資料！`);
+                    return false;
+                }
+                if (!targetDay.events) targetDay.events = [];
+
+                const titleInput = document.getElementById('eventTitleStr');
+                const titleVal = titleInput ? titleInput.value.trim() : '';
+                if (!titleVal) {
+                    showToast('warning', '請填寫活動或景點名稱！');
+                    if (titleInput) titleInput.focus();
+                    return false;
+                }
+
+                // 取得整合時段
+                let timeVal = '';
+                const customBox = document.getElementById('customTimeInputBox');
+                if (customBox && customBox.style.display !== 'none') {
+                    timeVal = document.getElementById('eventTimeStr')?.value.trim() || '全天';
+                } else {
+                    const hasEnd = document.getElementById('eventHasEndTime')?.checked ?? true;
+                    const sH = document.getElementById('timeStartHour')?.value || '09';
+                    const sM = document.getElementById('timeStartMin')?.value || '00';
+                    const eH = document.getElementById('timeEndHour')?.value || '11';
+                    const eM = document.getElementById('timeEndMin')?.value || '00';
+                    timeVal = hasEnd ? `${sH}:${sM} - ${eH}:${eM}` : `${sH}:${sM}`;
+                }
+
+                const costNum = parseFloat(document.getElementById('eventCostNum')?.value) || 0;
+                const locVal = document.getElementById('eventLocStr')?.value.trim() || '';
+                const notesVal = document.getElementById('eventNotesStr')?.value.trim() || '';
+                const typeVal = document.getElementById('eventTypeSelect')?.value || 'spot';
+
+                const eventObj = {
+                    time: timeVal,
+                    title: titleVal,
+                    type: typeVal,
+                    loc: locVal,
+                    cost: costNum,
+                    notes: notesVal
+                };
+
+                // 處理編輯或新增，包含跨天遷移
+                if (editIdx >= 0) {
+                    if (originDayNum === targetDayNum) {
+                        // 同一天內修改
+                        if (targetDay.events[editIdx]) {
+                            targetDay.events[editIdx] = eventObj;
+                        } else {
+                            targetDay.events.push(eventObj);
+                        }
+                    } else {
+                        // 遷移至不同天
+                        const originDay = (plan.days || []).find(d => d.dayNum === originDayNum);
+                        if (originDay && originDay.events && originDay.events[editIdx]) {
+                            originDay.events.splice(editIdx, 1);
+                        }
+                        targetDay.events.push(eventObj);
+                    }
+                } else {
+                    targetDay.events.push(eventObj);
+                }
+
+                // 自動重新計算當日預算
+                [originDayNum, targetDayNum].forEach(dNum => {
+                    const d = (plan.days || []).find(day => day.dayNum === dNum);
+                    if (!d) return;
+                    let evTrans = 0;
+                    let evSpot = 0;
+                    let evOther = 0;
+                    (d.events || []).forEach(item => {
+                        const c = Number(item.cost || 0);
+                        if (item.type === 'trans' || item.type === 'flight') evTrans += c;
+                        else if (item.type === 'spot') evSpot += c;
+                        else evOther += c;
+                    });
+                    const dTrans = (d.transportCost !== undefined && d.transportCost !== null) ? Number(d.transportCost) : evTrans;
+                    const dSpot = (d.spotCost !== undefined && d.spotCost !== null) ? Number(d.spotCost) : evSpot;
+                    const bf = Number(d.breakfastCost || 0);
+                    const lc = Number(d.lunchCost || 0);
+                    const dn = Number(d.dinnerCost || 0);
+                    const snack = Number(d.snackCost || 0);
+                    d.budget = bf + lc + dn + snack + dTrans + dSpot + evOther;
+                });
+
+                saveState();
+                closeModal('addEventModal');
+                renderTimelineView();
+                renderBudgetWidget();
+                renderBudgetView();
+                if (typeof renderTripSummary === 'function') renderTripSummary();
+                showToast('success', editIdx >= 0 ? `已儲存「${titleVal}」之變更！` : `已新增「${titleVal}」至 Day ${targetDayNum}！`);
+            } catch (err) {
+                console.error('儲存行程項目時發生例外:', err);
+                showToast('error', '儲存失敗：' + (err.message || '未知錯誤'));
+            }
+
+            return false;
         }
 
         function deleteEventItem(dayNum, eIdx) {
