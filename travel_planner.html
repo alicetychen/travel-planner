@@ -2508,7 +2508,7 @@
     <div class="notion-topbar">
         <div class="notion-breadcrumbs">
             <span style="font-weight: 700; color: var(--notion-text); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.8</span>
+                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.9</span>
             </span>
         </div>
         <div class="topbar-actions">
@@ -2770,12 +2770,13 @@
                     <table class="notion-table">
                         <thead>
                             <tr>
-                                <th style="width: 140px;">搶票 / 開放日期</th>
-                                <th style="width: 100px;">時間</th>
+                                <th style="width: 130px;">搶票 / 開放日期</th>
+                                <th style="width: 85px;">時間</th>
                                 <th>目標項目 (參觀日 / 體驗內容)</th>
-                                <th style="width: 180px;">預約平台 / 管道</th>
-                                <th style="width: 110px;">狀態</th>
-                                <th style="width: 110px; text-align: right;">操作</th>
+                                <th style="width: 170px;">預約平台 / 管道</th>
+                                <th style="width: 110px;">難易程度</th>
+                                <th style="width: 100px;">預約狀態</th>
+                                <th style="width: 100px; text-align: right;">操作</th>
                             </tr>
                         </thead>
                         <tbody id="bookingScheduleTbody">
@@ -3603,15 +3604,23 @@
                         <label class="form-label">預約平台 / 管道</label>
                         <input type="text" id="bPlatform" class="form-input" placeholder="例如：重慶索道官方微信 或 KKday / 飛豬 / 本地專車">
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">預約難度 / 狀態</label>
-                        <select id="bStatus" class="form-input">
-                            <option value="優先預約">優先預約</option>
-                            <option value="待開放">待開放</option>
-                            <option value="手速關鍵">手速關鍵</option>
-                            <option value="極難搶">極難搶</option>
-                            <option value="已預約完成">已預約完成 ✅</option>
-                        </select>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">難易程度</label>
+                            <select id="bDifficulty" class="form-input">
+                                <option value="手速關鍵">🔥 手速關鍵</option>
+                                <option value="極難搶">⚡ 極難搶</option>
+                                <option value="優先預約">🌟 優先預約</option>
+                                <option value="一般預約">📌 一般預約</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">預約狀態</label>
+                            <select id="bStatus" class="form-input">
+                                <option value="待開放">⏳ 待開放</option>
+                                <option value="已完成">✅ 已完成</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -3875,12 +3884,12 @@ const firebaseConfig = {
             ],
 
             bookingSchedule: [
-                { date: '即刻', time: '-', target: '宮宴 (5/9)、銘門盛宴 (5/6)、慕田峪包車 (5/8)', platform: '微信/點評/KKday', status: '優先預約' },
-                { date: '04/29 (三)', time: '17:00', target: '中國國家博物館 (5/6 參觀日)', platform: '微信：國家博物館', status: '極難搶' },
-                { date: '04/29 (三)', time: '20:00', target: '恭王府 (5/9 參觀日)', platform: '微信：恭王府', status: '待開放' },
-                { date: '04/30 (四)', time: '20:00', target: '故宮博物院 + 珍寶館 (5/7 參觀日)', platform: '微信：故宮博物院', status: '手速關鍵' },
-                { date: '05/02 (六)', time: '09:00', target: '頤和園 & 圓明園聯票 (5/6 參觀日)', platform: '微信：頤和園', status: '待開放' },
-                { date: '05/03 (日)', time: '21:00', target: '天壇公園 (5/10 參觀日)', platform: '微信：天壇公園', status: '待開放' }
+                { date: '即刻', time: '-', target: '宮宴 (5/9)、銘門盛宴 (5/6)、慕田峪包車 (5/8)', platform: '微信/點評/KKday', difficulty: '優先預約', status: '待開放' },
+                { date: '04/29 (三)', time: '17:00', target: '中國國家博物館 (5/6 參觀日)', platform: '微信：國家博物館', difficulty: '極難搶', status: '待開放' },
+                { date: '04/29 (三)', time: '20:00', target: '恭王府 (5/9 參觀日)', platform: '微信：恭王府', difficulty: '手速關鍵', status: '待開放' },
+                { date: '04/30 (四)', time: '20:00', target: '故宮博物院 + 珍寶館 (5/7 參觀日)', platform: '微信：故宮博物院', difficulty: '極難搶', status: '待開放' },
+                { date: '05/02 (六)', time: '09:00', target: '頤和園 & 圓明園聯票 (5/6 參觀日)', platform: '微信：頤和園', difficulty: '優先預約', status: '待開放' },
+                { date: '05/03 (日)', time: '21:00', target: '天壇公園 (5/10 參觀日)', platform: '微信：天壇公園', difficulty: '一般預約', status: '待開放' }
             ],
 
             spotTips: [
@@ -4098,11 +4107,11 @@ const firebaseConfig = {
             ],
 
             bookingSchedule: [
-                { date: '即刻', time: '-', target: '武隆天生三橋專屬包車 (D4)', platform: 'KKday / 飛豬 / 本地專車', status: '優先預約' },
-                { date: '10/10', time: '10:00', target: '長江索道單程門票 (D5)', platform: '重慶索道官方微信', status: '待開放' },
-                { date: '10/15', time: '09:00', target: '重慶中國三峽博物館免費參觀預約 (D2)', platform: '三峽博物館微信公眾號', status: '已預約完成' },
-                { date: '10/24', time: '16:00', target: '來福士烤匠麻辣烤魚 (D2 晚餐提早線上取號)', platform: '大眾點評 APP', status: '手速關鍵' },
-                { date: '10/25', time: '12:00', target: '野果 Yeguo 晚餐訂位 (D3)', platform: '電話 / 微信小程式', status: '待開放' }
+                { date: '即刻', time: '-', target: '武隆天生三橋專屬包車 (D4)', platform: 'KKday / 飛豬 / 本地專車', difficulty: '優先預約', status: '待開放' },
+                { date: '10/10', time: '10:00', target: '長江索道單程門票 (D5)', platform: '重慶索道官方微信', difficulty: '手速關鍵', status: '待開放' },
+                { date: '10/15', time: '09:00', target: '重慶中國三峽博物館免費參觀預約 (D2)', platform: '三峽博物館微信公眾號', difficulty: '一般預約', status: '已完成' },
+                { date: '10/24', time: '16:00', target: '來福士烤匠麻辣烤魚 (D2 晚餐提早線上取號)', platform: '大眾點評 APP', difficulty: '手速關鍵', status: '待開放' },
+                { date: '10/25', time: '12:00', target: '野果 Yeguo 晚餐訂位 (D3)', platform: '電話 / 微信小程式', difficulty: '優先預約', status: '待開放' }
             ],
 
             spotTips: [
@@ -5936,6 +5945,47 @@ const firebaseConfig = {
         // ==========================================
         // VIEW 2: BOOKING SCHEDULE
         // ==========================================
+        function normalizeBookingItem(rawItem) {
+            if (!rawItem) return { date: '即刻', time: '-', target: '', platform: '', difficulty: '一般預約', status: '待開放' };
+            let diff = rawItem.difficulty;
+            let stat = rawItem.status;
+
+            if (!diff) {
+                if (stat === '手速關鍵' || stat === '極難搶' || stat === '優先預約') {
+                    diff = stat;
+                    stat = '待開放';
+                } else if (stat === '已預約完成' || stat === '已完成') {
+                    diff = '一般預約';
+                    stat = '已完成';
+                } else {
+                    diff = '一般預約';
+                    stat = '待開放';
+                }
+            }
+
+            if (stat === '已預約完成') stat = '已完成';
+            if (!stat || stat !== '已完成') stat = '待開放';
+            if (!diff) diff = '一般預約';
+
+            return {
+                ...rawItem,
+                difficulty: diff,
+                status: stat
+            };
+        }
+
+        function toggleBookingItemStatus(idx) {
+            const plan = getCurrentPlan();
+            if (!plan || !plan.bookingSchedule || !plan.bookingSchedule[idx]) return;
+            const norm = normalizeBookingItem(plan.bookingSchedule[idx]);
+            const nextStatus = (norm.status === '已完成') ? '待開放' : '已完成';
+            plan.bookingSchedule[idx].difficulty = norm.difficulty;
+            plan.bookingSchedule[idx].status = nextStatus;
+            saveState();
+            renderBookingView();
+            showToast('success', `「${plan.bookingSchedule[idx].target || '時程'}」狀態已切換為：${nextStatus}`);
+        }
+
         function renderBookingView() {
             const plan = getCurrentPlan();
             const tbody = document.getElementById('bookingScheduleTbody');
@@ -5943,14 +5993,31 @@ const firebaseConfig = {
 
             const list = plan.bookingSchedule || [];
             if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--notion-text-sub); padding: 24px;">尚無預約或搶票時程，點擊右上角「＋ 新增預約項目」即可建立。</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--notion-text-sub); padding: 24px;">尚無預約或搶票時程，點擊右上角「＋ 新增預約項目」即可建立。</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = list.map((item, idx) => {
-                let badgeClass = 'pill-blue';
-                if (item.status === '極難搶' || item.status === '手速關鍵') badgeClass = 'pill-orange';
-                if (item.status === '已預約完成' || item.status?.includes('已預約')) badgeClass = 'pill-green';
+            tbody.innerHTML = list.map((rawItem, idx) => {
+                const item = normalizeBookingItem(rawItem);
+
+                // 難易程度 Badge
+                let diffBadgeClass = 'pill-gray';
+                let diffIcon = '📌';
+                if (item.difficulty === '極難搶') {
+                    diffBadgeClass = 'pill-red';
+                    diffIcon = '⚡';
+                } else if (item.difficulty === '手速關鍵') {
+                    diffBadgeClass = 'pill-orange';
+                    diffIcon = '🔥';
+                } else if (item.difficulty === '優先預約') {
+                    diffBadgeClass = 'pill-blue';
+                    diffIcon = '🌟';
+                }
+
+                // 預約狀態 Badge (待開放 vs 已完成)
+                const isCompleted = (item.status === '已完成');
+                const statusBadgeClass = isCompleted ? 'pill-green' : 'pill-yellow';
+                const statusText = isCompleted ? '✅ 已完成' : '⏳ 待開放';
 
                 return `
                     <tr style="cursor: pointer; transition: background 0.15s ease;" onclick="openEditBookingModal(${idx})" title="點擊編輯此筆預約時程">
@@ -5958,7 +6025,10 @@ const firebaseConfig = {
                         <td style="color: #0284c7; font-weight: 700; white-space: nowrap;">${escapeHtml(item.time)}</td>
                         <td style="font-weight: 600; color: #0f172a;">${escapeHtml(item.target)}</td>
                         <td style="color: #475569;">${escapeHtml(item.platform)}</td>
-                        <td><span class="prop-pill ${badgeClass}">${escapeHtml(item.status)}</span></td>
+                        <td><span class="prop-pill ${diffBadgeClass}" style="font-size:0.75rem; white-space:nowrap;">${diffIcon} ${escapeHtml(item.difficulty)}</span></td>
+                        <td onclick="event.stopPropagation(); toggleBookingItemStatus(${idx})" title="點擊快速切換狀態 (待開放 ⇄ 已完成)">
+                            <span class="prop-pill ${statusBadgeClass}" style="cursor:pointer; font-size:0.75rem; white-space:nowrap;">${statusText}</span>
+                        </td>
                         <td style="text-align: right; white-space: nowrap;" onclick="event.stopPropagation();">
                             <div style="display: inline-flex; gap: 4px;">
                                 <button type="button" class="n-btn" style="padding: 2px 7px; font-size: 0.72rem;" onclick="openEditBookingModal(${idx})" title="編輯此筆預約時程">
@@ -7058,14 +7128,24 @@ const firebaseConfig = {
                             </tr>
                         </thead>
                         <tbody>
-                            ${bookingList.map(b => `
+                            ${bookingList.map(b => {
+                                const nb = normalizeBookingItem(b);
+                                const isDone = (nb.status === '已完成');
+                                return `
                                 <tr>
-                                    <td style="font-weight: 700; color: #0f172a;">${escapeHtml(b.date || '即刻')}</td>
-                                    <td style="font-weight: 600;">${escapeHtml(b.target || '')}</td>
-                                    <td style="color: #0284c7; font-weight: 700;">${escapeHtml(b.time || '-')}</td>
-                                    <td style="color: #475569;">${escapeHtml(b.platform || '')}</td>
+                                    <td style="font-weight: 700; color: #0f172a;">${escapeHtml(nb.date || '即刻')}</td>
+                                    <td style="font-weight: 600;">
+                                        ${escapeHtml(nb.target || '')}
+                                        <div style="font-size: 0.72rem; margin-top: 2px;">
+                                            <span style="background: #f1f5f9; padding: 1px 5px; border-radius: 3px; color: #475569;">${escapeHtml(nb.difficulty)}</span>
+                                            <span style="margin-left: 4px; font-weight: 700; color: ${isDone ? '#16a34a' : '#ea580c'};">${isDone ? '✅ 已完成' : '⏳ 待開放'}</span>
+                                        </div>
+                                    </td>
+                                    <td style="color: #0284c7; font-weight: 700;">${escapeHtml(nb.time || '-')}</td>
+                                    <td style="color: #475569;">${escapeHtml(nb.platform || '')}</td>
                                 </tr>
-                            `).join('')}
+                                `;
+                            }).join('')}
                         </tbody>
                     </table>
                 `;
@@ -9651,13 +9731,15 @@ const firebaseConfig = {
             if (!plan.bookingSchedule) plan.bookingSchedule = [];
 
             const isEdit = (editIdx !== null && editIdx !== undefined && editIdx >= 0 && plan.bookingSchedule[editIdx]);
-            const item = isEdit ? plan.bookingSchedule[editIdx] : {
+            const rawItem = isEdit ? plan.bookingSchedule[editIdx] : {
                 date: '',
                 time: '',
                 target: '',
                 platform: '',
+                difficulty: '手速關鍵',
                 status: '待開放'
             };
+            const item = normalizeBookingItem(rawItem);
 
             const titleEl = document.getElementById('bookingModalTitle');
             if (titleEl) {
@@ -9683,6 +9765,11 @@ const firebaseConfig = {
             setVal('bTarget', item.target);
             setVal('bPlatform', item.platform);
             
+            const diffEl = document.getElementById('bDifficulty');
+            if (diffEl) {
+                diffEl.value = item.difficulty || '手速關鍵';
+            }
+
             const statusEl = document.getElementById('bStatus');
             if (statusEl) {
                 statusEl.value = item.status || '待開放';
@@ -9721,6 +9808,7 @@ const firebaseConfig = {
                 const dateVal = document.getElementById('bDate')?.value.trim() || '即刻';
                 const timeVal = document.getElementById('bTime')?.value.trim() || '-';
                 const platformVal = document.getElementById('bPlatform')?.value.trim() || '官方管道';
+                const diffVal = document.getElementById('bDifficulty')?.value || '一般預約';
                 const statusVal = document.getElementById('bStatus')?.value || '待開放';
 
                 const editIdxVal = document.getElementById('bEditIndex')?.value;
@@ -9731,6 +9819,7 @@ const firebaseConfig = {
                     time: timeVal,
                     target: target,
                     platform: platformVal,
+                    difficulty: diffVal,
                     status: statusVal
                 };
 
