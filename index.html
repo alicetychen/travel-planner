@@ -2508,7 +2508,7 @@
     <div class="notion-topbar">
         <div class="notion-breadcrumbs">
             <span style="font-weight: 700; color: var(--notion-text); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.6</span>
+                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.7</span>
             </span>
         </div>
         <div class="topbar-actions">
@@ -4715,6 +4715,15 @@ const firebaseConfig = {
                         }
                         if (!d.transportNote) d.transportNote = '';
                         if (!d.spotNote) d.spotNote = '';
+                        if (Array.isArray(d.transports)) {
+                            d.transports.forEach(t => { if (!t.mode) t.mode = 'single'; });
+                        }
+                        if (Array.isArray(d.spots)) {
+                            d.spots.forEach(s => { if (!s.mode) s.mode = 'single'; });
+                        }
+                        if (Array.isArray(d.extraCosts)) {
+                            d.extraCosts.forEach(it => { if (!it.mode) it.mode = 'single'; });
+                        }
                     });
 
                     // 自動相容修復：為既有景點補齊詳細地址
@@ -4847,6 +4856,79 @@ const firebaseConfig = {
             }
             const twd = Math.round(num * curr.rate);
             return `${sym}${num.toLocaleString()} (≈ NT$ ${twd.toLocaleString()})`;
+        }
+
+        /**
+         * 計算單筆費用在「單人每人模式」與「全團總計模式」下的每人分擔與全團總額
+         * @param {number|string} costVal 輸入數值
+         * @param {string} currType 幣別代碼 ('LOCAL' 或 'TWD')
+         * @param {string} mode 計費模式 ('single': 單人每人 / 'total': 全團整包總計)
+         * @param {number} memberCount 全團同行人數 (預設 1)
+         * @param {object} currInfo 貨幣資訊物件 ({ code, rate, symbol, ... })
+         * @param {number} [rateOverride] 匯率覆蓋值
+         * @returns {object} { val, mode, rawLocal, rawTwd, personLocal, personTwd, groupLocal, groupTwd }
+         */
+        function calcCostItemBreakdown(costVal, currType, mode, memberCount, currInfo, rateOverride) {
+            const m = Math.max(1, parseInt(memberCount || 1));
+            const val = Math.max(0, Number(costVal) || 0);
+            const itemMode = (mode === 'total') ? 'total' : 'single';
+            const currCode = currInfo?.code || 'CNY';
+            const rate = Math.max(0.0001, parseFloat(rateOverride || currInfo?.rate || 1.0));
+
+            if (val === 0) {
+                return {
+                    val: 0,
+                    currType: currType || 'LOCAL',
+                    mode: itemMode,
+                    rawLocal: 0,
+                    rawTwd: 0,
+                    personLocal: 0,
+                    personTwd: 0,
+                    groupLocal: 0,
+                    groupTwd: 0
+                };
+            }
+
+            let rawLocal = 0;
+            let rawTwd = 0;
+            if (currType === 'TWD') {
+                rawTwd = val;
+                rawLocal = (currCode === 'TWD') ? val : Math.round(val / rate);
+            } else {
+                rawLocal = val;
+                rawTwd = Math.round(val * rate);
+            }
+
+            let personLocal = 0;
+            let personTwd = 0;
+            let groupLocal = 0;
+            let groupTwd = 0;
+
+            if (itemMode === 'total') {
+                // 整包全團費用：全團就是原始費用，每人均攤
+                groupLocal = rawLocal;
+                groupTwd = rawTwd;
+                personLocal = Math.round(rawLocal / m);
+                personTwd = Math.round(rawTwd / m);
+            } else {
+                // 單人每人費用：每人就是原始費用，全團乘以人數
+                personLocal = rawLocal;
+                personTwd = rawTwd;
+                groupLocal = rawLocal * m;
+                groupTwd = rawTwd * m;
+            }
+
+            return {
+                val,
+                currType: currType || 'LOCAL',
+                mode: itemMode,
+                rawLocal,
+                rawTwd,
+                personLocal,
+                personTwd,
+                groupLocal,
+                groupTwd
+            };
         }
 
         // ==========================
@@ -5672,6 +5754,8 @@ const firebaseConfig = {
                 }
             });
 
+            const memberCount = Math.max(1, parseInt(plan.memberCount || 1));
+
             const dayTransVal = (activeDay.transportCost !== undefined && activeDay.transportCost !== null)
                 ? Number(activeDay.transportCost)
                 : evTransTotal;
@@ -5680,31 +5764,79 @@ const firebaseConfig = {
                 ? Number(activeDay.spotCost)
                 : evSpotTotal;
 
-            const cTrans = getItemLocalAndTwd(dayTransVal, activeDay.transportCurr);
-            const cSpot = getItemLocalAndTwd(daySpotVal, activeDay.spotCurr);
+            let transPersonLocal = 0;
+            let transPersonTwd = 0;
+            let transGroupLocal = 0;
+            let transGroupTwd = 0;
+            if (Array.isArray(activeDay.transports) && activeDay.transports.length > 0) {
+                activeDay.transports.forEach(t => {
+                    const c = calcCostItemBreakdown(t.cost, t.curr, t.mode, memberCount, curr, curr.rate);
+                    transPersonLocal += c.personLocal;
+                    transPersonTwd += c.personTwd;
+                    transGroupLocal += c.groupLocal;
+                    transGroupTwd += c.groupTwd;
+                });
+            } else {
+                const cTrans = getItemLocalAndTwd(dayTransVal, activeDay.transportCurr);
+                transPersonLocal = cTrans.local;
+                transPersonTwd = cTrans.twd;
+                transGroupLocal = cTrans.local * memberCount;
+                transGroupTwd = cTrans.twd * memberCount;
+            }
 
-            let dayExtraLocal = 0;
-            let dayExtraTwd = 0;
-            if (Array.isArray(activeDay.extraCosts)) {
+            let spotPersonLocal = 0;
+            let spotPersonTwd = 0;
+            let spotGroupLocal = 0;
+            let spotGroupTwd = 0;
+            if (Array.isArray(activeDay.spots) && activeDay.spots.length > 0) {
+                activeDay.spots.forEach(s => {
+                    const c = calcCostItemBreakdown(s.cost, s.curr, s.mode, memberCount, curr, curr.rate);
+                    spotPersonLocal += c.personLocal;
+                    spotPersonTwd += c.personTwd;
+                    spotGroupLocal += c.groupLocal;
+                    spotGroupTwd += c.groupTwd;
+                });
+            } else {
+                const cSpot = getItemLocalAndTwd(daySpotVal, activeDay.spotCurr);
+                spotPersonLocal = cSpot.local;
+                spotPersonTwd = cSpot.twd;
+                spotGroupLocal = cSpot.local * memberCount;
+                spotGroupTwd = cSpot.twd * memberCount;
+            }
+
+            let dayExtraPersonLocal = 0;
+            let dayExtraPersonTwd = 0;
+            let dayExtraGroupLocal = 0;
+            let dayExtraGroupTwd = 0;
+            if (Array.isArray(activeDay.extraCosts) && activeDay.extraCosts.length > 0) {
                 activeDay.extraCosts.forEach(it => {
-                    const c = getItemLocalAndTwd(it.cost, it.curr);
-                    dayExtraLocal += c.local;
-                    dayExtraTwd += c.twd;
+                    const c = calcCostItemBreakdown(it.cost, it.curr, it.mode, memberCount, curr, curr.rate);
+                    dayExtraPersonLocal += c.personLocal;
+                    dayExtraPersonTwd += c.personTwd;
+                    dayExtraGroupLocal += c.groupLocal;
+                    dayExtraGroupTwd += c.groupTwd;
                 });
             }
 
             const dayOtherLocal = dayOtherTotal;
             const dayOtherTwd = Math.round(dayOtherTotal * curr.rate);
 
-            const dayGrandLocal = dayMealsLocal + cTrans.local + cSpot.local + dayExtraLocal + dayOtherLocal;
-            const dayGrandTwd = dayMealsTwd + cTrans.twd + cSpot.twd + dayExtraTwd + dayOtherTwd;
+            const dayGrandLocal = dayMealsLocal + transPersonLocal + spotPersonLocal + dayExtraPersonLocal + dayOtherLocal;
+            const dayGrandTwd = dayMealsTwd + transPersonTwd + spotPersonTwd + dayExtraPersonTwd + dayOtherTwd;
 
             activeDay.budget = dayGrandLocal;
             activeDay.budgetTwd = dayGrandTwd;
 
-            const memberCount = Math.max(1, parseInt(plan.memberCount || 1));
-            const groupGrandLocal = dayGrandLocal * memberCount;
-            const groupGrandTwd = dayGrandTwd * memberCount;
+            const groupGrandLocal = (dayMealsLocal + dayOtherLocal) * memberCount + transGroupLocal + spotGroupLocal + dayExtraGroupLocal;
+            const groupGrandTwd = (dayMealsTwd + dayOtherTwd) * memberCount + transGroupTwd + spotGroupTwd + dayExtraGroupTwd;
+
+            const transDisplay = (memberCount > 1 && transGroupLocal !== transPersonLocal * memberCount)
+                ? `${curr.symbol} ${transPersonLocal.toLocaleString()} <span style="font-size:0.68rem; opacity:0.85;">(全團${curr.symbol}${transGroupLocal.toLocaleString()})</span>`
+                : `${curr.symbol} ${transPersonLocal.toLocaleString()} <span style="font-size:0.68rem; opacity:0.85;">(≈NT$${transPersonTwd.toLocaleString()})</span>`;
+
+            const spotDisplay = (memberCount > 1 && spotGroupLocal !== spotPersonLocal * memberCount)
+                ? `${curr.symbol} ${spotPersonLocal.toLocaleString()} <span style="font-size:0.68rem; opacity:0.85;">(全團${curr.symbol}${spotGroupLocal.toLocaleString()})</span>`
+                : `${curr.symbol} ${spotPersonLocal.toLocaleString()} <span style="font-size:0.68rem; opacity:0.85;">(≈NT$${spotPersonTwd.toLocaleString()})</span>`;
 
             cardsContainer.innerHTML = `
                 <div class="day-card-container">
@@ -5764,14 +5896,14 @@ const firebaseConfig = {
                                 🍽️ 餐食小計: <strong>${curr.symbol} ${dayMealsLocal.toLocaleString()}</strong> <span style="font-size:0.72rem; color:#64748b;">(≈ NT$ ${dayMealsTwd.toLocaleString()})</span> <i class="fa-solid fa-pen" style="font-size:0.7rem; color:#94a3b8; margin-left:3px;"></i>
                             </span>
                             <span class="subtotal-item subtotal-item-clickable" onclick="openEditDayMetaModal(${activeDay.dayNum}, 'transport')" title="點擊直接修改交通花費明細">
-                                🚗 交通開銷${(Array.isArray(activeDay.transports) && activeDay.transports.length > 1) ? ` (${activeDay.transports.length}趟)` : ''}: <strong style="color:#0284c7;">${cTrans.display}</strong> <i class="fa-solid fa-pen" style="font-size:0.7rem; color:#0284c7; margin-left:3px;"></i>
+                                🚗 交通開銷${(Array.isArray(activeDay.transports) && activeDay.transports.length > 1) ? ` (${activeDay.transports.length}趟)` : ''}: <strong style="color:#0284c7;">${transDisplay}</strong> <i class="fa-solid fa-pen" style="font-size:0.7rem; color:#0284c7; margin-left:3px;"></i>
                             </span>
                             <span class="subtotal-item subtotal-item-clickable" onclick="openEditDayMetaModal(${activeDay.dayNum}, 'spot')" title="點擊直接修改景點門票明細">
-                                🎫 景點門票${(Array.isArray(activeDay.spots) && activeDay.spots.length > 1) ? ` (${activeDay.spots.length}項)` : ''}: <strong style="color:#16a34a;">${cSpot.display}</strong> <i class="fa-solid fa-pen" style="font-size:0.7rem; color:#16a34a; margin-left:3px;"></i>
+                                🎫 景點門票${(Array.isArray(activeDay.spots) && activeDay.spots.length > 1) ? ` (${activeDay.spots.length}項)` : ''}: <strong style="color:#16a34a;">${spotDisplay}</strong> <i class="fa-solid fa-pen" style="font-size:0.7rem; color:#16a34a; margin-left:3px;"></i>
                             </span>
                             ${(Array.isArray(activeDay.extraCosts) && activeDay.extraCosts.length > 0) ? `
                             <span class="subtotal-item subtotal-item-clickable" onclick="openEditDayMetaModal(${activeDay.dayNum}, 'extra')" title="點擊編輯自訂其他費用項目">
-                                💼 其他花費 (${activeDay.extraCosts.length}項): <strong style="color:#d97706;">${curr.symbol} ${dayExtraLocal.toLocaleString()}</strong> <span style="font-size:0.72rem; color:#64748b;">(≈ NT$ ${dayExtraTwd.toLocaleString()})</span> <i class="fa-solid fa-pen" style="font-size:0.7rem; color:#d97706; margin-left:3px;"></i>
+                                💼 其他花費 (${activeDay.extraCosts.length}項): <strong style="color:#d97706;">${curr.symbol} ${dayExtraPersonLocal.toLocaleString()}</strong>${(memberCount > 1 && dayExtraGroupLocal !== dayExtraPersonLocal * memberCount) ? `<span style="font-size:0.7rem; color:#9a3412;"> (全團${curr.symbol}${dayExtraGroupLocal.toLocaleString()})</span>` : `<span style="font-size:0.72rem; color:#64748b;">(≈ NT$ ${dayExtraPersonTwd.toLocaleString()})</span>`} <i class="fa-solid fa-pen" style="font-size:0.7rem; color:#d97706; margin-left:3px;"></i>
                             </span>
                             ` : ''}
                             <span class="day-total-chip" onclick="openEditDayMetaModal(${activeDay.dayNum})" title="點擊編輯當日所有費用與主題">
@@ -6125,6 +6257,15 @@ const firebaseConfig = {
             let twdExtraTotal = 0;
             let twdOtherTotal = 0;
 
+            let groupTransTotal = 0;
+            let twdGroupTransTotal = 0;
+            let groupSpotTotal = 0;
+            let twdGroupSpotTotal = 0;
+            let groupExtraTotal = 0;
+            let twdGroupExtraTotal = 0;
+            let groupTotalBudget = 0;
+            let twdGroupTotalBudget = 0;
+
             // 單項幣別折算輔助
             function getItemLocalAndTwd(costVal, currType) {
                 const val = Math.max(0, Number(costVal) || 0);
@@ -6180,37 +6321,88 @@ const firebaseConfig = {
                 const dTrans = (d.transportCost !== undefined && d.transportCost !== null) ? Number(d.transportCost) : evTrans;
                 const dSpot = (d.spotCost !== undefined && d.spotCost !== null) ? Number(d.spotCost) : evSpot;
 
-                const cTrans = getItemLocalAndTwd(dTrans, d.transportCurr);
-                const cSpot = getItemLocalAndTwd(dSpot, d.spotCurr);
+                let dTransPerson = 0;
+                let dTransGroup = 0;
+                let dTransPersonTwd = 0;
+                let dTransGroupTwd = 0;
+                if (Array.isArray(d.transports) && d.transports.length > 0) {
+                    d.transports.forEach(t => {
+                        const c = calcCostItemBreakdown(t.cost, t.curr, t.mode, memberCount, curr, curr.rate);
+                        dTransPerson += c.personLocal;
+                        dTransPersonTwd += c.personTwd;
+                        dTransGroup += c.groupLocal;
+                        dTransGroupTwd += c.groupTwd;
+                    });
+                } else {
+                    const cTrans = getItemLocalAndTwd(dTrans, d.transportCurr);
+                    dTransPerson = cTrans.local;
+                    dTransPersonTwd = cTrans.twd;
+                    dTransGroup = cTrans.local * memberCount;
+                    dTransGroupTwd = cTrans.twd * memberCount;
+                }
+                transTotal += dTransPerson;
+                twdTransTotal += dTransPersonTwd;
+                groupTransTotal += dTransGroup;
+                twdGroupTransTotal += dTransGroupTwd;
 
-                transTotal += cTrans.local;
-                twdTransTotal += cTrans.twd;
-
-                spotTotal += cSpot.local;
-                twdSpotTotal += cSpot.twd;
+                let dSpotPerson = 0;
+                let dSpotGroup = 0;
+                let dSpotPersonTwd = 0;
+                let dSpotGroupTwd = 0;
+                if (Array.isArray(d.spots) && d.spots.length > 0) {
+                    d.spots.forEach(s => {
+                        const c = calcCostItemBreakdown(s.cost, s.curr, s.mode, memberCount, curr, curr.rate);
+                        dSpotPerson += c.personLocal;
+                        dSpotPersonTwd += c.personTwd;
+                        dSpotGroup += c.groupLocal;
+                        dSpotGroupTwd += c.groupTwd;
+                    });
+                } else {
+                    const cSpot = getItemLocalAndTwd(dSpot, d.spotCurr);
+                    dSpotPerson = cSpot.local;
+                    dSpotPersonTwd = cSpot.twd;
+                    dSpotGroup = cSpot.local * memberCount;
+                    dSpotGroupTwd = cSpot.twd * memberCount;
+                }
+                spotTotal += dSpotPerson;
+                twdSpotTotal += dSpotPersonTwd;
+                groupSpotTotal += dSpotGroup;
+                twdGroupSpotTotal += dSpotGroupTwd;
 
                 // 自訂其他費用項目加總
-                let dayExtraLocal = 0;
-                let dayExtraTwd = 0;
-                if (Array.isArray(d.extraCosts)) {
+                let dExtraPerson = 0;
+                let dExtraGroup = 0;
+                let dExtraPersonTwd = 0;
+                let dExtraGroupTwd = 0;
+                if (Array.isArray(d.extraCosts) && d.extraCosts.length > 0) {
                     d.extraCosts.forEach(it => {
-                        const c = getItemLocalAndTwd(it.cost, it.curr);
-                        dayExtraLocal += c.local;
-                        dayExtraTwd += c.twd;
+                        const c = calcCostItemBreakdown(it.cost, it.curr, it.mode, memberCount, curr, curr.rate);
+                        dExtraPerson += c.personLocal;
+                        dExtraPersonTwd += c.personTwd;
+                        dExtraGroup += c.groupLocal;
+                        dExtraGroupTwd += c.groupTwd;
                     });
                 }
-                extraTotal += dayExtraLocal;
-                twdExtraTotal += dayExtraTwd;
+                extraTotal += dExtraPerson;
+                twdExtraTotal += dExtraPersonTwd;
+                groupExtraTotal += dExtraGroup;
+                twdGroupExtraTotal += dExtraGroupTwd;
 
                 otherTotal += evOther;
                 twdOtherTotal += Math.round(evOther * curr.rate);
 
                 // 當日單人總額 (以當地幣別與台幣分別加總，含點心飲料與自訂項目)
-                const dayLocal = cBf.local + cLc.local + cDn.local + cSnack.local + cTrans.local + cSpot.local + dayExtraLocal + evOther;
-                const dayTwd = cBf.twd + cLc.twd + cDn.twd + cSnack.twd + cTrans.twd + cSpot.twd + dayExtraTwd + Math.round(evOther * curr.rate);
+                const dayLocal = cBf.local + cLc.local + cDn.local + cSnack.local + dTransPerson + dSpotPerson + dExtraPerson + evOther;
+                const dayTwd = cBf.twd + cLc.twd + cDn.twd + cSnack.twd + dTransPersonTwd + dSpotPersonTwd + dExtraPersonTwd + Math.round(evOther * curr.rate);
+
+                const dayGroupLocal = (cBf.local + cLc.local + cDn.local + cSnack.local + evOther) * memberCount + dTransGroup + dSpotGroup + dExtraGroup;
+                const dayGroupTwd = (cBf.twd + cLc.twd + cDn.twd + cSnack.twd + Math.round(evOther * curr.rate)) * memberCount + dTransGroupTwd + dSpotGroupTwd + dExtraGroupTwd;
 
                 totalBudget += dayLocal;
                 twdTotalBudget += dayTwd;
+
+                groupTotalBudget += dayGroupLocal;
+                twdGroupTotalBudget += dayGroupTwd;
 
                 if (dayLocal > maxBudget) {
                     maxBudget = dayLocal;
@@ -6223,10 +6415,6 @@ const firebaseConfig = {
             const avgBudget = days.length > 0 ? Math.round(totalBudget / days.length) : 0;
             const twdAvgBudget = days.length > 0 ? Math.round(twdTotalBudget / days.length) : 0;
 
-            // 全團乘算 (依據同行人數)
-            const groupTotalBudget = totalBudget * memberCount;
-            const twdGroupTotalBudget = twdTotalBudget * memberCount;
-
             const groupAvgBudget = Math.round(groupTotalBudget / (days.length || 1));
             const twdGroupAvgBudget = Math.round(twdGroupTotalBudget / (days.length || 1));
 
@@ -6235,8 +6423,6 @@ const firebaseConfig = {
             const twdGroupMaxBudget = twdMaxBudget * memberCount;
 
             const twdGroupMealsTotal = twdMealsTotal * memberCount;
-            const twdGroupTransTotal = twdTransTotal * memberCount;
-            const twdGroupSpotTotal = twdSpotTotal * memberCount;
 
             return { 
                 curr,
@@ -6251,10 +6437,10 @@ const firebaseConfig = {
                 lcTotal, groupLcTotal: lcTotal * memberCount,
                 dnTotal, groupDnTotal: dnTotal * memberCount,
                 mealsTotal, groupMealsTotal: mealsTotal * memberCount,
-                transTotal, groupTransTotal: transTotal * memberCount,
-                spotTotal, groupSpotTotal: spotTotal * memberCount,
-                extraTotal, groupExtraTotal: extraTotal * memberCount,
-                twdExtraTotal, twdGroupExtraTotal: twdExtraTotal * memberCount,
+                transTotal, groupTransTotal,
+                spotTotal, groupSpotTotal,
+                extraTotal, groupExtraTotal,
+                twdExtraTotal, twdGroupExtraTotal,
                 otherTotal, totalEventCost,
                 twdMealsTotal, twdGroupMealsTotal,
                 twdTransTotal, twdGroupTransTotal,
@@ -6411,8 +6597,8 @@ const firebaseConfig = {
             days.forEach(d => {
                 const dayCost = Number(d.budget || 0);
                 const dayTwd = Math.round(dayCost * curr.rate);
-                const groupDayCost = dayCost * stats.memberCount;
-                const groupDayTwd = Math.round(groupDayCost * curr.rate);
+                const groupDayCost = d.budgetGroup || (dayCost * stats.memberCount);
+                const groupDayTwd = d.budgetGroupTwd || Math.round(groupDayCost * curr.rate);
 
                 const bf = Number(d.breakfastCost || 0);
                 const lc = Number(d.lunchCost || 0);
@@ -6434,14 +6620,39 @@ const firebaseConfig = {
                     }
                 });
 
-                const dayTrans = (d.transportCost !== undefined && d.transportCost !== null) ? Number(d.transportCost) : evTrans;
-                const daySpot = (d.spotCost !== undefined && d.spotCost !== null) ? Number(d.spotCost) : evSpot;
+                let dTransPerson = 0;
+                let dTransGroup = 0;
+                if (Array.isArray(d.transports) && d.transports.length > 0) {
+                    d.transports.forEach(t => {
+                        const c = calcCostItemBreakdown(t.cost, t.curr, t.mode, stats.memberCount, curr, curr.rate);
+                        dTransPerson += c.personLocal;
+                        dTransGroup += c.groupLocal;
+                    });
+                } else {
+                    dTransPerson = (d.transportCost !== undefined && d.transportCost !== null) ? Number(d.transportCost) : evTrans;
+                    dTransGroup = dTransPerson * stats.memberCount;
+                }
 
-                let dayExtra = 0;
+                let dSpotPerson = 0;
+                let dSpotGroup = 0;
+                if (Array.isArray(d.spots) && d.spots.length > 0) {
+                    d.spots.forEach(s => {
+                        const c = calcCostItemBreakdown(s.cost, s.curr, s.mode, stats.memberCount, curr, curr.rate);
+                        dSpotPerson += c.personLocal;
+                        dSpotGroup += c.groupLocal;
+                    });
+                } else {
+                    dSpotPerson = (d.spotCost !== undefined && d.spotCost !== null) ? Number(d.spotCost) : evSpot;
+                    dSpotGroup = dSpotPerson * stats.memberCount;
+                }
+
+                let dayExtraPerson = 0;
+                let dayExtraGroup = 0;
                 if (Array.isArray(d.extraCosts)) {
                     d.extraCosts.forEach(it => {
-                        const c = getItemLocalAndTwd(it.cost, it.curr);
-                        dayExtra += c.local;
+                        const c = calcCostItemBreakdown(it.cost, it.curr, it.mode, stats.memberCount, curr, curr.rate);
+                        dayExtraPerson += c.personLocal;
+                        dayExtraGroup += c.groupLocal;
                     });
                 }
 
@@ -6461,13 +6672,13 @@ const firebaseConfig = {
                             </div>
                             <!-- 交通與景點拆解 -->
                             <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:0.76rem; color:#64748b; margin-top:4px;">
-                                <span style="color:#0284c7;">🚗 交通${(Array.isArray(d.transports) && d.transports.length > 1) ? ` (${d.transports.length}趟)` : ''}: ${curr.symbol} ${dayTrans.toLocaleString()} ${d.transportNote ? `(${d.transportNote})` : ''}</span>
-                                <span style="color:#16a34a;">🎫 景點${(Array.isArray(d.spots) && d.spots.length > 1) ? ` (${d.spots.length}項)` : ''}: ${curr.symbol} ${daySpot.toLocaleString()} ${d.spotNote ? `(${d.spotNote})` : ''}</span>
+                                <span style="color:#0284c7;">🚗 交通${(Array.isArray(d.transports) && d.transports.length > 1) ? ` (${d.transports.length}趟)` : ''}: 每人 ${curr.symbol} ${dTransPerson.toLocaleString()}${stats.memberCount > 1 ? ` (全團 ${curr.symbol} ${dTransGroup.toLocaleString()})` : ''} ${d.transportNote ? `(${escapeHtml(d.transportNote)})` : ''}</span>
+                                <span style="color:#16a34a;">🎫 景點${(Array.isArray(d.spots) && d.spots.length > 1) ? ` (${d.spots.length}項)` : ''}: 每人 ${curr.symbol} ${dSpotPerson.toLocaleString()}${stats.memberCount > 1 ? ` (全團 ${curr.symbol} ${dSpotGroup.toLocaleString()})` : ''} ${d.spotNote ? `(${escapeHtml(d.spotNote)})` : ''}</span>
                                 <span style="color:#c2410c;">🍽️ 餐食小計: ${curr.symbol} ${mealsSum.toLocaleString()} (≈ NT$ ${Math.round(mealsSum * curr.rate).toLocaleString()})</span>
                             </div>
-                            ${(dayExtra > 0 || (Array.isArray(d.extraCosts) && d.extraCosts.length > 0)) ? `
+                            ${(dayExtraPerson > 0 || (Array.isArray(d.extraCosts) && d.extraCosts.length > 0)) ? `
                             <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:0.76rem; color:#b45309; margin-top:3px;">
-                                <span>💼 自訂其他花費: <strong>${curr.symbol} ${dayExtra.toLocaleString()}</strong> <span style="color:#64748b;">(${d.extraCosts.map(it => it.title || '自訂項目').join('、')})</span></span>
+                                <span>💼 自訂其他花費: 每人 <strong>${curr.symbol} ${dayExtraPerson.toLocaleString()}</strong>${stats.memberCount > 1 ? ` (全團 ${curr.symbol} ${dayExtraGroup.toLocaleString()})` : ''} <span style="color:#64748b;">(${d.extraCosts.map(it => `${escapeHtml(it.title || '自訂項目')}${it.mode === 'total' ? '(總計)' : ''}`).join('、')})</span></span>
                             </div>` : ''}
                         </div>
                         <div style="display:flex; align-items:center; gap:12px; flex-shrink:0;">
@@ -8584,17 +8795,25 @@ const firebaseConfig = {
                 ? `<option value="LOCAL" ${selLocal}>NT$ 新台幣</option><option value="USD" ${item.curr === 'USD' ? 'selected' : ''}>$ 美元</option><option value="CNY" ${item.curr === 'CNY' ? 'selected' : ''}>¥ 人民幣</option><option value="JPY" ${item.curr === 'JPY' ? 'selected' : ''}>¥ 日圓</option>`
                 : `<option value="LOCAL" ${selLocal}>${curr.symbol} ${curr.name}</option><option value="TWD" ${selTwd}>NT$ 台幣</option>`;
 
+            const itemMode = (item.mode === 'total') ? 'total' : 'single';
+            const selSingle = (itemMode === 'single') ? 'selected' : '';
+            const selTotal = (itemMode === 'total') ? 'selected' : '';
+            const modeOptions = `<option value="single" ${selSingle}>👤 單人</option><option value="total" ${selTotal}>👥 總計</option>`;
+
             const safeTitle = escapeHtml(item.title || '');
             const safeCost = (item.cost !== undefined && item.cost !== null && item.cost !== '') ? Number(item.cost) : '';
 
             row.innerHTML = `
-                <div style="flex:1; min-width:180px;">
-                    <input type="text" class="form-input extra-cost-title" placeholder="項目名稱 (例如：伴手禮購物 / 漢服體驗 / 索道包廂加價)" value="${safeTitle}" oninput="updateModalMealPreview()" style="font-size:0.82rem; height:32px;">
+                <div style="flex:1; min-width:140px;">
+                    <input type="text" class="form-input extra-cost-title" placeholder="項目名稱 (例如：伴手禮購物 / 漢服體驗 / 索道加價)" value="${safeTitle}" oninput="updateModalMealPreview()" style="font-size:0.82rem; height:32px;">
                 </div>
-                <div style="display:flex; align-items:center; gap:6px; width:185px; flex-shrink:0;">
-                    <input type="number" class="form-input extra-cost-val" placeholder="0" min="0" step="10" value="${safeCost}" oninput="updateModalMealPreview()" style="font-weight:700; color:#ea580c; font-size:0.85rem; height:32px; width:95px; text-align:right;">
-                    <select class="cost-curr-select extra-cost-curr" onchange="updateModalMealPreview()" style="font-size:0.75rem; height:32px; flex:1;">
+                <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
+                    <input type="number" class="form-input extra-cost-val" placeholder="0" min="0" step="10" value="${safeCost}" oninput="updateModalMealPreview()" style="font-weight:700; color:#ea580c; font-size:0.85rem; height:32px; width:82px; text-align:right;">
+                    <select class="cost-curr-select extra-cost-curr" onchange="updateModalMealPreview()" style="font-size:0.75rem; height:32px; width:80px;">
                         ${currOptions}
+                    </select>
+                    <select class="cost-mode-select extra-cost-mode" onchange="updateModalMealPreview()" title="計費模式：單人(每人開銷) 或 總計(全團整包花費)" style="font-size:0.75rem; height:32px; width:78px; border:1px solid #fed7aa; border-radius:4px; background:#fff7ed; color:#c2410c; font-weight:700; cursor:pointer;">
+                        ${modeOptions}
                     </select>
                 </div>
                 <button type="button" class="n-btn n-btn-danger" style="padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; flex-shrink:0;" onclick="removeModalExtraCostRow(this)" title="刪除此項目">
@@ -8668,17 +8887,25 @@ const firebaseConfig = {
                 ? `<option value="LOCAL" ${selLocal}>NT$ 新台幣</option><option value="USD" ${item.curr === 'USD' ? 'selected' : ''}>$ 美元</option><option value="CNY" ${item.curr === 'CNY' ? 'selected' : ''}>¥ 人民幣</option><option value="JPY" ${item.curr === 'JPY' ? 'selected' : ''}>¥ 日圓</option>`
                 : `<option value="LOCAL" ${selLocal}>${curr.symbol} ${curr.name}</option><option value="TWD" ${selTwd}>NT$ 台幣</option>`;
 
+            const itemMode = (item.mode === 'total') ? 'total' : 'single';
+            const selSingle = (itemMode === 'single') ? 'selected' : '';
+            const selTotal = (itemMode === 'total') ? 'selected' : '';
+            const modeOptions = `<option value="single" ${selSingle}>👤 單人</option><option value="total" ${selTotal}>👥 總計</option>`;
+
             const safeTitle = escapeHtml(item.title || '');
             const safeCost = (item.cost !== undefined && item.cost !== null && item.cost !== '') ? Number(item.cost) : '';
 
             row.innerHTML = `
-                <div style="flex:1; min-width:180px;">
+                <div style="flex:1; min-width:140px;">
                     <input type="text" class="form-input transport-cost-title" placeholder="交通安排 (例如：長江索道單程門票 / 行李打車 / 地鐵)" value="${safeTitle}" oninput="updateModalMealPreview()" style="font-size:0.82rem; height:32px;">
                 </div>
-                <div style="display:flex; align-items:center; gap:6px; width:185px; flex-shrink:0;">
-                    <input type="number" class="form-input transport-cost-val" placeholder="0" min="0" step="10" value="${safeCost}" oninput="updateModalMealPreview()" style="font-weight:700; color:#0284c7; font-size:0.85rem; height:32px; width:95px; text-align:right;">
-                    <select class="cost-curr-select transport-cost-curr" onchange="updateModalMealPreview()" style="font-size:0.75rem; height:32px; flex:1;">
+                <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
+                    <input type="number" class="form-input transport-cost-val" placeholder="0" min="0" step="10" value="${safeCost}" oninput="updateModalMealPreview()" style="font-weight:700; color:#0284c7; font-size:0.85rem; height:32px; width:82px; text-align:right;">
+                    <select class="cost-curr-select transport-cost-curr" onchange="updateModalMealPreview()" style="font-size:0.75rem; height:32px; width:80px;">
                         ${currOptions}
+                    </select>
+                    <select class="cost-mode-select transport-cost-mode" onchange="updateModalMealPreview()" title="計費模式：單人(每人費用) 或 總計(全團整包總額)" style="font-size:0.75rem; height:32px; width:78px; border:1px solid #bae6fd; border-radius:4px; background:#f0f9ff; color:#0369a1; font-weight:700; cursor:pointer;">
+                        ${modeOptions}
                     </select>
                 </div>
                 <button type="button" class="n-btn n-btn-danger" style="padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; flex-shrink:0;" onclick="removeModalTransportRow(this)" title="刪除此交通項目">
@@ -8752,17 +8979,25 @@ const firebaseConfig = {
                 ? `<option value="LOCAL" ${selLocal}>NT$ 新台幣</option><option value="USD" ${item.curr === 'USD' ? 'selected' : ''}>$ 美元</option><option value="CNY" ${item.curr === 'CNY' ? 'selected' : ''}>¥ 人民幣</option><option value="JPY" ${item.curr === 'JPY' ? 'selected' : ''}>¥ 日圓</option>`
                 : `<option value="LOCAL" ${selLocal}>${curr.symbol} ${curr.name}</option><option value="TWD" ${selTwd}>NT$ 台幣</option>`;
 
+            const itemMode = (item.mode === 'total') ? 'total' : 'single';
+            const selSingle = (itemMode === 'single') ? 'selected' : '';
+            const selTotal = (itemMode === 'total') ? 'selected' : '';
+            const modeOptions = `<option value="single" ${selSingle}>👤 單人</option><option value="total" ${selTotal}>👥 總計</option>`;
+
             const safeTitle = escapeHtml(item.title || '');
             const safeCost = (item.cost !== undefined && item.cost !== null && item.cost !== '') ? Number(item.cost) : '';
 
             row.innerHTML = `
-                <div style="flex:1; min-width:180px;">
+                <div style="flex:1; min-width:140px;">
                     <input type="text" class="form-input spot-cost-title" placeholder="景點門票安排 (例如：武隆天生三橋門票+電梯 / 羅漢寺香花券)" value="${safeTitle}" oninput="updateModalMealPreview()" style="font-size:0.82rem; height:32px;">
                 </div>
-                <div style="display:flex; align-items:center; gap:6px; width:185px; flex-shrink:0;">
-                    <input type="number" class="form-input spot-cost-val" placeholder="0" min="0" step="10" value="${safeCost}" oninput="updateModalMealPreview()" style="font-weight:700; color:#16a34a; font-size:0.85rem; height:32px; width:95px; text-align:right;">
-                    <select class="cost-curr-select spot-cost-curr" onchange="updateModalMealPreview()" style="font-size:0.75rem; height:32px; flex:1;">
+                <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
+                    <input type="number" class="form-input spot-cost-val" placeholder="0" min="0" step="10" value="${safeCost}" oninput="updateModalMealPreview()" style="font-weight:700; color:#16a34a; font-size:0.85rem; height:32px; width:82px; text-align:right;">
+                    <select class="cost-curr-select spot-cost-curr" onchange="updateModalMealPreview()" style="font-size:0.75rem; height:32px; width:80px;">
                         ${currOptions}
+                    </select>
+                    <select class="cost-mode-select spot-cost-mode" onchange="updateModalMealPreview()" title="計費模式：單人(每人一張) 或 總計(全團整包門票/導覽套票)" style="font-size:0.75rem; height:32px; width:78px; border:1px solid #bbf7d0; border-radius:4px; background:#f0fdf4; color:#15803d; font-weight:700; cursor:pointer;">
+                        ${modeOptions}
                     </select>
                 </div>
                 <button type="button" class="n-btn n-btn-danger" style="padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; flex-shrink:0;" onclick="removeModalSpotRow(this)" title="刪除此景點項目">
@@ -8863,35 +9098,53 @@ const firebaseConfig = {
             // 4. 初始化交通多筆清單 (向下相容既有 transportCost 與 transportNote)
             let initialTransports = [];
             if (Array.isArray(day.transports) && day.transports.length > 0) {
-                initialTransports = day.transports;
+                initialTransports = day.transports.map(t => ({
+                    title: t.title || '',
+                    cost: t.cost,
+                    curr: t.curr || 'LOCAL',
+                    mode: t.mode || 'single'
+                }));
             } else if (day.transportCost !== undefined && day.transportCost !== null && (day.transportCost > 0 || day.transportNote)) {
                 initialTransports = [{
                     title: day.transportNote || '當日交通安排',
                     cost: Number(day.transportCost) || 0,
-                    curr: day.transportCurr || 'LOCAL'
+                    curr: day.transportCurr || 'LOCAL',
+                    mode: 'single'
                 }];
             } else {
-                initialTransports = [{ title: '', cost: '', curr: 'LOCAL' }];
+                initialTransports = [{ title: '', cost: '', curr: 'LOCAL', mode: 'single' }];
             }
             populateModalTransports(initialTransports, curr);
 
             // 5. 初始化景點門票多筆清單 (向下相容既有 spotCost 與 spotNote)
             let initialSpots = [];
             if (Array.isArray(day.spots) && day.spots.length > 0) {
-                initialSpots = day.spots;
+                initialSpots = day.spots.map(s => ({
+                    title: s.title || '',
+                    cost: s.cost,
+                    curr: s.curr || 'LOCAL',
+                    mode: s.mode || 'single'
+                }));
             } else if (day.spotCost !== undefined && day.spotCost !== null && (day.spotCost > 0 || day.spotNote)) {
                 initialSpots = [{
                     title: day.spotNote || '當日景點門票安排',
                     cost: Number(day.spotCost) || 0,
-                    curr: day.spotCurr || 'LOCAL'
+                    curr: day.spotCurr || 'LOCAL',
+                    mode: 'single'
                 }];
             } else {
-                initialSpots = [{ title: '', cost: '', curr: 'LOCAL' }];
+                initialSpots = [{ title: '', cost: '', curr: 'LOCAL', mode: 'single' }];
             }
             populateModalSpots(initialSpots, curr);
 
             // 6. 載入自訂其他費用項目清單
-            populateModalExtraCosts(day.extraCosts || [], curr);
+            const initialExtras = (day.extraCosts || []).map(it => ({
+                title: it.title || '',
+                cost: it.cost,
+                curr: it.curr || 'LOCAL',
+                mode: it.mode || 'single'
+            }));
+            populateModalExtraCosts(initialExtras, curr);
 
             updateModalMealPreview();
             openModal('editDayMetaModal');
@@ -8942,7 +9195,8 @@ const firebaseConfig = {
             const items = transEvents.map(e => ({
                 title: e.title || (e.type === 'flight' ? '航班機票' : '交通'),
                 cost: Number(e.cost || 0),
-                curr: 'LOCAL'
+                curr: 'LOCAL',
+                mode: 'single'
             }));
             populateModalTransports(items, curr);
             updateModalMealPreview();
@@ -8967,7 +9221,8 @@ const firebaseConfig = {
             const items = spotEvents.map(e => ({
                 title: e.title || '景點門票',
                 cost: Number(e.cost || 0),
-                curr: 'LOCAL'
+                curr: 'LOCAL',
+                mode: 'single'
             }));
             populateModalSpots(items, curr);
             updateModalMealPreview();
@@ -9027,84 +9282,77 @@ const firebaseConfig = {
             const mealsLocal = bf.local + lc.local + dn.local + snack.local;
             const mealsTwd = bf.twd + lc.twd + dn.twd + snack.twd;
 
-            // 計算多筆交通項目
+            const memberCount = Math.max(1, Number(plan.memberCount) || 1);
+
+            // 計算多筆交通項目 (支援單人 vs 總計整包)
             const transRows = document.querySelectorAll('#modalTransportList .transport-cost-row');
-            let transTotalLocal = 0;
-            let transTotalTwd = 0;
+            let transPersonTotalLocal = 0;
+            let transPersonTotalTwd = 0;
+            let transGroupTotalLocal = 0;
+            let transGroupTotalTwd = 0;
             const transSummaryList = [];
             transRows.forEach(row => {
                 const title = row.querySelector('.transport-cost-title')?.value.trim() || '';
                 const val = Math.max(0, Number(row.querySelector('.transport-cost-val')?.value) || 0);
                 const currType = row.querySelector('.transport-cost-curr')?.value || 'LOCAL';
-                let itemLocal = 0;
-                let itemTwd = 0;
+                const mode = row.querySelector('.transport-cost-mode')?.value || 'single';
                 if (val > 0) {
-                    if (currType === 'TWD') {
-                        itemTwd = val;
-                        itemLocal = (currCode === 'TWD') ? val : Math.round(val / currentRate);
-                    } else {
-                        itemLocal = val;
-                        itemTwd = Math.round(val * currentRate);
-                    }
-                    transTotalLocal += itemLocal;
-                    transTotalTwd += itemTwd;
-                    transSummaryList.push({ title: title || '交通支出', local: itemLocal, twd: itemTwd });
+                    const c = calcCostItemBreakdown(val, currType, mode, memberCount, { code: currCode }, currentRate);
+                    transPersonTotalLocal += c.personLocal;
+                    transPersonTotalTwd += c.personTwd;
+                    transGroupTotalLocal += c.groupLocal;
+                    transGroupTotalTwd += c.groupTwd;
+                    transSummaryList.push({ title: title || '交通支出', mode, local: c.personLocal, twd: c.personTwd, groupLocal: c.groupLocal, groupTwd: c.groupTwd });
                 } else if (title) {
-                    transSummaryList.push({ title, local: 0, twd: 0 });
+                    transSummaryList.push({ title, mode, local: 0, twd: 0, groupLocal: 0, groupTwd: 0 });
                 }
             });
 
-            // 計算多筆景點門票項目
+            // 計算多筆景點門票項目 (支援單人 vs 總計整包)
             const spotRows = document.querySelectorAll('#modalSpotList .spot-cost-row');
-            let spotTotalLocal = 0;
-            let spotTotalTwd = 0;
+            let spotPersonTotalLocal = 0;
+            let spotPersonTotalTwd = 0;
+            let spotGroupTotalLocal = 0;
+            let spotGroupTotalTwd = 0;
             const spotSummaryList = [];
             spotRows.forEach(row => {
                 const title = row.querySelector('.spot-cost-title')?.value.trim() || '';
                 const val = Math.max(0, Number(row.querySelector('.spot-cost-val')?.value) || 0);
                 const currType = row.querySelector('.spot-cost-curr')?.value || 'LOCAL';
-                let itemLocal = 0;
-                let itemTwd = 0;
+                const mode = row.querySelector('.spot-cost-mode')?.value || 'single';
                 if (val > 0) {
-                    if (currType === 'TWD') {
-                        itemTwd = val;
-                        itemLocal = (currCode === 'TWD') ? val : Math.round(val / currentRate);
-                    } else {
-                        itemLocal = val;
-                        itemTwd = Math.round(val * currentRate);
-                    }
-                    spotTotalLocal += itemLocal;
-                    spotTotalTwd += itemTwd;
-                    spotSummaryList.push({ title: title || '門票', local: itemLocal, twd: itemTwd });
+                    const c = calcCostItemBreakdown(val, currType, mode, memberCount, { code: currCode }, currentRate);
+                    spotPersonTotalLocal += c.personLocal;
+                    spotPersonTotalTwd += c.personTwd;
+                    spotGroupTotalLocal += c.groupLocal;
+                    spotGroupTotalTwd += c.groupTwd;
+                    spotSummaryList.push({ title: title || '門票', mode, local: c.personLocal, twd: c.personTwd, groupLocal: c.groupLocal, groupTwd: c.groupTwd });
                 } else if (title) {
-                    spotSummaryList.push({ title, local: 0, twd: 0 });
+                    spotSummaryList.push({ title, mode, local: 0, twd: 0, groupLocal: 0, groupTwd: 0 });
                 }
             });
 
-            // 計算自訂其他費用項目 (動態列表)
+            // 計算自訂其他費用項目 (動態列表，支援單人 vs 總計整包)
             const extraRows = document.querySelectorAll('#modalExtraCostsList .extra-cost-row');
-            let extraSumLocal = 0;
-            let extraSumTwd = 0;
+            let extraPersonTotalLocal = 0;
+            let extraPersonTotalTwd = 0;
+            let extraGroupTotalLocal = 0;
+            let extraGroupTotalTwd = 0;
             const extraItemsSummary = [];
             extraRows.forEach(row => {
                 const title = row.querySelector('.extra-cost-title')?.value.trim() || '';
                 const val = Math.max(0, Number(row.querySelector('.extra-cost-val')?.value) || 0);
                 const currType = row.querySelector('.extra-cost-curr')?.value || 'LOCAL';
+                const mode = row.querySelector('.extra-cost-mode')?.value || 'single';
                 if (val > 0) {
-                    let itemLocal = 0;
-                    let itemTwd = 0;
-                    if (currType === 'TWD') {
-                        itemTwd = val;
-                        itemLocal = (currCode === 'TWD') ? val : Math.round(val / currentRate);
-                    } else {
-                        itemLocal = val;
-                        itemTwd = Math.round(val * currentRate);
-                    }
-                    extraSumLocal += itemLocal;
-                    extraSumTwd += itemTwd;
-                    extraItemsSummary.push({ title: title || '自訂花費', local: itemLocal, twd: itemTwd });
+                    const c = calcCostItemBreakdown(val, currType, mode, memberCount, { code: currCode }, currentRate);
+                    extraPersonTotalLocal += c.personLocal;
+                    extraPersonTotalTwd += c.personTwd;
+                    extraGroupTotalLocal += c.groupLocal;
+                    extraGroupTotalTwd += c.groupTwd;
+                    extraItemsSummary.push({ title: title || '自訂花費', mode, local: c.personLocal, twd: c.personTwd, groupLocal: c.groupLocal, groupTwd: c.groupTwd });
                 } else if (title) {
-                    extraItemsSummary.push({ title, local: 0, twd: 0 });
+                    extraItemsSummary.push({ title, mode, local: 0, twd: 0, groupLocal: 0, groupTwd: 0 });
                 }
             });
 
@@ -9115,12 +9363,20 @@ const firebaseConfig = {
 
             const previewTransEl = document.getElementById('modalTransportTotalPreview');
             if (previewTransEl) {
-                previewTransEl.innerHTML = `交通小計: <strong>${currSymbol} ${transTotalLocal.toLocaleString()}</strong> <small style="color:#64748b; font-weight:normal;">(≈ NT$ ${transTotalTwd.toLocaleString()})</small>`;
+                if (memberCount > 1) {
+                    previewTransEl.innerHTML = `交通小計: 每人 <strong>${currSymbol} ${transPersonTotalLocal.toLocaleString()}</strong> <small style="color:#64748b;">(≈NT$${transPersonTotalTwd.toLocaleString()})</small> ｜ 全團 <strong>${currSymbol} ${transGroupTotalLocal.toLocaleString()}</strong>`;
+                } else {
+                    previewTransEl.innerHTML = `交通小計: <strong>${currSymbol} ${transPersonTotalLocal.toLocaleString()}</strong> <small style="color:#64748b; font-weight:normal;">(≈ NT$ ${transTotalTwd.toLocaleString()})</small>`;
+                }
             }
 
             const previewSpotEl = document.getElementById('modalSpotTotalPreview');
             if (previewSpotEl) {
-                previewSpotEl.innerHTML = `門票小計: <strong>${currSymbol} ${spotTotalLocal.toLocaleString()}</strong> <small style="color:#64748b; font-weight:normal;">(≈ NT$ ${spotTotalTwd.toLocaleString()})</small>`;
+                if (memberCount > 1) {
+                    previewSpotEl.innerHTML = `門票小計: 每人 <strong>${currSymbol} ${spotPersonTotalLocal.toLocaleString()}</strong> <small style="color:#64748b;">(≈NT$${spotPersonTotalTwd.toLocaleString()})</small> ｜ 全團 <strong>${currSymbol} ${spotGroupTotalLocal.toLocaleString()}</strong>`;
+                } else {
+                    previewSpotEl.innerHTML = `門票小計: <strong>${currSymbol} ${spotPersonTotalLocal.toLocaleString()}</strong> <small style="color:#64748b; font-weight:normal;">(≈ NT$ ${spotTotalTwd.toLocaleString()})</small>`;
+                }
             }
 
             // 計算其他未分類活動開銷 (非交通非景點)
@@ -9135,11 +9391,10 @@ const firebaseConfig = {
                     }
                 });
             }
-            const grandTotalLocal = mealsLocal + transTotalLocal + spotTotalLocal + extraSumLocal + otherSumLocal;
-            const grandTotalTwd = mealsTwd + transTotalTwd + spotTotalTwd + extraSumTwd + otherSumTwd;
-            const memberCount = Math.max(1, Number(plan.memberCount) || 1);
-            const grandTotalGroupLocal = grandTotalLocal * memberCount;
-            const grandTotalGroupTwd = grandTotalTwd * memberCount;
+            const grandTotalLocal = mealsLocal + transPersonTotalLocal + spotPersonTotalLocal + extraPersonTotalLocal + otherSumLocal;
+            const grandTotalTwd = mealsTwd + transPersonTotalTwd + spotPersonTotalTwd + extraPersonTotalTwd + otherSumTwd;
+            const grandTotalGroupLocal = (mealsLocal + otherSumLocal) * memberCount + transGroupTotalLocal + spotGroupTotalLocal + extraGroupTotalLocal;
+            const grandTotalGroupTwd = (mealsTwd + otherSumTwd) * memberCount + transGroupTotalTwd + spotGroupTotalTwd + extraGroupTotalTwd;
 
             const breakdownEl = document.getElementById('modalDayCostBreakdownPreview');
             if (breakdownEl) {
@@ -9161,26 +9416,26 @@ const firebaseConfig = {
                     </div>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:6px;">
                         <div style="background:#f0f9ff; padding:7px 10px; border-radius:5px; border:1px solid #bae6fd; font-size:0.8rem;">
-                            🚗 交通 (${transSummaryList.length}趟): <strong style="color:#0284c7;">${currSymbol} ${transTotalLocal.toLocaleString()}</strong> <small style="color:#64748b;">(≈NT$${transTotalTwd.toLocaleString()})</small>
-                            ${transSummaryList.length > 0 ? `<div style="font-size:0.72rem; color:#0369a1; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(transSummaryList.map(it => it.title).join('、'))}</div>` : ''}
+                            🚗 交通 (${transSummaryList.length}趟): <strong style="color:#0284c7;">每人 ${currSymbol} ${transPersonTotalLocal.toLocaleString()}</strong> ${memberCount > 1 ? `<span style="font-size:0.75rem; color:#0369a1;">(全團 ${currSymbol} ${transGroupTotalLocal.toLocaleString()})</span>` : ''} <small style="color:#64748b;">(≈NT$${transPersonTotalTwd.toLocaleString()})</small>
+                            ${transSummaryList.length > 0 ? `<div style="font-size:0.72rem; color:#0369a1; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(transSummaryList.map(it => `${it.title}${it.mode === 'total' ? '(總計)' : ''}`).join('、'))}</div>` : ''}
                         </div>
                         <div style="background:#f0fdf4; padding:7px 10px; border-radius:5px; border:1px solid #bbf7d0; font-size:0.8rem;">
-                            🎫 景點 (${spotSummaryList.length}項): <strong style="color:#16a34a;">${currSymbol} ${spotTotalLocal.toLocaleString()}</strong> <small style="color:#64748b;">(≈NT$${spotTotalTwd.toLocaleString()})</small>
-                            ${spotSummaryList.length > 0 ? `<div style="font-size:0.72rem; color:#15803d; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(spotSummaryList.map(it => it.title).join('、'))}</div>` : ''}
+                            🎫 景點 (${spotSummaryList.length}項): <strong style="color:#16a34a;">每人 ${currSymbol} ${spotPersonTotalLocal.toLocaleString()}</strong> ${memberCount > 1 ? `<span style="font-size:0.75rem; color:#15803d;">(全團 ${currSymbol} ${spotGroupTotalLocal.toLocaleString()})</span>` : ''} <small style="color:#64748b;">(≈NT$${spotPersonTotalTwd.toLocaleString()})</small>
+                            ${spotSummaryList.length > 0 ? `<div style="font-size:0.72rem; color:#15803d; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(spotSummaryList.map(it => `${it.title}${it.mode === 'total' ? '(總計)' : ''}`).join('、'))}</div>` : ''}
                         </div>
                     </div>
-                    ${extraSumLocal > 0 ? `
+                    ${(extraPersonTotalLocal > 0 || extraGroupTotalLocal > 0) ? `
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; background:#fff7ed; padding:7px 10px; border-radius:5px; border:1px solid #fed7aa; font-size:0.8rem; flex-wrap:wrap; gap:6px;">
-                        <span>💼 自訂其他花費 (${extraItemsSummary.length}項): <strong style="color:#d97706;">${currSymbol} ${extraSumLocal.toLocaleString()}</strong> <small style="color:#64748b;">(≈NT$${extraSumTwd.toLocaleString()})</small></span>
-                        <span style="font-size:0.75rem; color:#9a3412; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(extraItemsSummary.map(it => it.title).join('、'))}</span>
+                        <span>💼 自訂其他花費 (${extraItemsSummary.length}項): <strong style="color:#d97706;">每人 ${currSymbol} ${extraPersonTotalLocal.toLocaleString()}</strong> ${memberCount > 1 ? `<span style="font-size:0.75rem; color:#c2410c;">(全團 ${currSymbol} ${extraGroupTotalLocal.toLocaleString()})</span>` : ''} <small style="color:#64748b;">(≈NT$${extraPersonTotalTwd.toLocaleString()})</small></span>
+                        <span style="font-size:0.75rem; color:#9a3412; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(extraItemsSummary.map(it => `${it.title}${it.mode === 'total' ? '(總計)' : ''}`).join('、'))}</span>
                     </div>` : ''}
                     <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #cbd5e1; padding-top:8px; font-weight:800; font-size:0.92rem;">
-                        <span style="color:#475569;">💰 Day ${dayNum} 單人總額：</span>
+                        <span style="color:#475569;">💰 Day ${dayNum} 單人每人總額：</span>
                         <span style="color:#ea580c; font-size:1.05rem;">${currSymbol} ${grandTotalLocal.toLocaleString()} <span style="font-size:0.82rem; font-weight:600; color:#64748b;">(≈ NT$ ${grandTotalTwd.toLocaleString()})</span></span>
                     </div>
                     ${memberCount > 1 ? `
                     <div style="display:flex; justify-content:space-between; align-items:center; padding-top:4px; font-size:0.82rem; color:#64748b;">
-                        <span>👥 全團 (${memberCount}人) 總估算：</span>
+                        <span>👥 全團 (${memberCount}人) 整體總估算：</span>
                         <span style="font-weight:700; color:#0f172a;">${currSymbol} ${grandTotalGroupLocal.toLocaleString()} <span style="font-size:0.78rem; font-weight:600; color:#64748b;">(≈ NT$ ${grandTotalGroupTwd.toLocaleString()})</span></span>
                     </div>` : ''}
                 `;
@@ -9245,60 +9500,79 @@ const firebaseConfig = {
                 }
             }
 
-            // 5. 儲存多筆交通項目
+            const memberCount = Math.max(1, Number(plan.memberCount) || 1);
+
+            // 5. 儲存多筆交通項目 (支援單人 vs 總計模式)
             const transRows = document.querySelectorAll('#modalTransportList .transport-cost-row');
             const transports = [];
-            let transSumLocal = 0;
-            let transSumTwd = 0;
+            let transPersonTotalLocal = 0;
+            let transPersonTotalTwd = 0;
+            let transGroupTotalLocal = 0;
+            let transGroupTotalTwd = 0;
             transRows.forEach(row => {
                 const title = row.querySelector('.transport-cost-title')?.value.trim() || '';
                 const cost = Math.max(0, Number(row.querySelector('.transport-cost-val')?.value) || 0);
                 const curr = row.querySelector('.transport-cost-curr')?.value || 'LOCAL';
+                const mode = row.querySelector('.transport-cost-mode')?.value || 'single';
                 if (title || cost > 0) {
-                    transports.push({ title: title || '交通支出', cost, curr });
-                    const c = getCostLocalAndTwd(cost, curr);
-                    transSumLocal += c.local;
-                    transSumTwd += c.twd;
+                    transports.push({ title: title || '交通支出', cost, curr, mode });
+                    const c = calcCostItemBreakdown(cost, curr, mode, memberCount, plan, currentRate);
+                    transPersonTotalLocal += c.personLocal;
+                    transPersonTotalTwd += c.personTwd;
+                    transGroupTotalLocal += c.groupLocal;
+                    transGroupTotalTwd += c.groupTwd;
                 }
             });
             day.transports = transports;
-            day.transportCost = transSumLocal;
-            day.transportNote = transports.map(t => t.title).filter(Boolean).join(' + ');
+            day.transportCost = transPersonTotalLocal;
+            day.transportCostGroup = transGroupTotalLocal;
+            day.transportNote = transports.map(t => `${t.title}${t.mode === 'total' ? '(總計)' : ''}`).filter(Boolean).join(' + ');
 
-            // 6. 儲存多筆景點門票項目
+            // 6. 儲存多筆景點門票項目 (支援單人 vs 總計模式)
             const spotRows = document.querySelectorAll('#modalSpotList .spot-cost-row');
             const spots = [];
-            let spotSumLocal = 0;
-            let spotSumTwd = 0;
+            let spotPersonTotalLocal = 0;
+            let spotPersonTotalTwd = 0;
+            let spotGroupTotalLocal = 0;
+            let spotGroupTotalTwd = 0;
             spotRows.forEach(row => {
                 const title = row.querySelector('.spot-cost-title')?.value.trim() || '';
                 const cost = Math.max(0, Number(row.querySelector('.spot-cost-val')?.value) || 0);
                 const curr = row.querySelector('.spot-cost-curr')?.value || 'LOCAL';
+                const mode = row.querySelector('.spot-cost-mode')?.value || 'single';
                 if (title || cost > 0) {
-                    spots.push({ title: title || '景點門票', cost, curr });
-                    const c = getCostLocalAndTwd(cost, curr);
-                    spotSumLocal += c.local;
-                    spotSumTwd += c.twd;
+                    spots.push({ title: title || '景點門票', cost, curr, mode });
+                    const c = calcCostItemBreakdown(cost, curr, mode, memberCount, plan, currentRate);
+                    spotPersonTotalLocal += c.personLocal;
+                    spotPersonTotalTwd += c.personTwd;
+                    spotGroupTotalLocal += c.groupLocal;
+                    spotGroupTotalTwd += c.groupTwd;
                 }
             });
             day.spots = spots;
-            day.spotCost = spotSumLocal;
-            day.spotNote = spots.map(s => s.title).filter(Boolean).join(' + ');
+            day.spotCost = spotPersonTotalLocal;
+            day.spotCostGroup = spotGroupTotalLocal;
+            day.spotNote = spots.map(s => `${s.title}${s.mode === 'total' ? '(總計)' : ''}`).filter(Boolean).join(' + ');
 
-            // 7. 儲存自訂其他費用項目
+            // 7. 儲存自訂其他費用項目 (支援單人 vs 總計模式)
             const extraRows = document.querySelectorAll('#modalExtraCostsList .extra-cost-row');
             const extraCosts = [];
-            let extraSumLocal = 0;
-            let extraSumTwd = 0;
+            let extraPersonTotalLocal = 0;
+            let extraPersonTotalTwd = 0;
+            let extraGroupTotalLocal = 0;
+            let extraGroupTotalTwd = 0;
             extraRows.forEach(row => {
                 const title = row.querySelector('.extra-cost-title')?.value.trim() || '';
                 const cost = Math.max(0, Number(row.querySelector('.extra-cost-val')?.value) || 0);
                 const curr = row.querySelector('.extra-cost-curr')?.value || 'LOCAL';
+                const mode = row.querySelector('.extra-cost-mode')?.value || 'single';
                 if (title || cost > 0) {
-                    extraCosts.push({ title: title || '自訂項目', cost, curr });
-                    const c = getCostLocalAndTwd(cost, curr);
-                    extraSumLocal += c.local;
-                    extraSumTwd += c.twd;
+                    extraCosts.push({ title: title || '自訂項目', cost, curr, mode });
+                    const c = calcCostItemBreakdown(cost, curr, mode, memberCount, plan, currentRate);
+                    extraPersonTotalLocal += c.personLocal;
+                    extraPersonTotalTwd += c.personTwd;
+                    extraGroupTotalLocal += c.groupLocal;
+                    extraGroupTotalTwd += c.groupTwd;
                 }
             });
             day.extraCosts = extraCosts;
@@ -9319,8 +9593,11 @@ const firebaseConfig = {
                 }
             });
 
-            day.budget = cBf.local + cLc.local + cDn.local + cSnack.local + transSumLocal + spotSumLocal + extraSumLocal + otherSumLocal;
-            day.budgetTwd = cBf.twd + cLc.twd + cDn.twd + cSnack.twd + transSumTwd + spotSumTwd + extraSumTwd + otherSumTwd;
+            day.budget = cBf.local + cLc.local + cDn.local + cSnack.local + transPersonTotalLocal + spotPersonTotalLocal + extraPersonTotalLocal + otherSumLocal;
+            day.budgetTwd = cBf.twd + cLc.twd + cDn.twd + cSnack.twd + transPersonTotalTwd + spotPersonTotalTwd + extraPersonTotalTwd + otherSumTwd;
+
+            day.budgetGroup = (cBf.local + cLc.local + cDn.local + cSnack.local + otherSumLocal) * memberCount + transGroupTotalLocal + spotGroupTotalLocal + extraGroupTotalLocal;
+            day.budgetGroupTwd = (cBf.twd + cLc.twd + cDn.twd + cSnack.twd + otherSumTwd) * memberCount + transGroupTotalTwd + spotGroupTotalTwd + extraGroupTotalTwd;
 
             saveState();
             closeModal('editDayMetaModal');
