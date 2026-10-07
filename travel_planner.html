@@ -2508,7 +2508,7 @@
     <div class="notion-topbar">
         <div class="notion-breadcrumbs">
             <span style="font-weight: 700; color: var(--notion-text); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.4</span>
+                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.5</span>
             </span>
         </div>
         <div class="topbar-actions">
@@ -3301,7 +3301,27 @@
                         </div>
                     </div>
 
-                    <!-- 3. 當日各項費用即時試算與拆解清單 -->
+                    <!-- 3. 自訂其他費用項目 (支援彈性自由新增/刪除) -->
+                    <div style="font-weight:700; font-size:0.88rem; color:#334155; margin:14px 0 8px; display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span>💼 3. 自訂其他費用項目</span>
+                            <span style="font-size:0.75rem; font-weight:normal; color:#64748b;">(如伴手禮購物、體驗活動、自費項目、雜支等)</span>
+                        </div>
+                        <button type="button" class="n-btn" style="font-size:0.75rem; padding:3px 10px; background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; font-weight:700; cursor:pointer;" onclick="addModalExtraCostRow()">
+                            <i class="fa-solid fa-plus"></i> 新增費用項目
+                        </button>
+                    </div>
+
+                    <div style="background:#fafafa; border:1px solid #e2e8f0; border-radius:6px; padding:10px; margin-bottom:14px;">
+                        <div id="modalExtraCostsList" style="display:flex; flex-direction:column; gap:8px;">
+                            <!-- JS 動態生成自訂項目列 -->
+                        </div>
+                        <div id="modalExtraCostsEmptyNotice" style="text-align:center; padding:12px 8px; color:#94a3b8; font-size:0.8rem; background:#fff; border:1px dashed #cbd5e1; border-radius:6px;">
+                            <i class="fa-regular fa-folder-open" style="margin-right:4px;"></i> 目前尚無自訂其他費用項目，點擊右上角「<strong>＋ 新增費用項目</strong>」可新增購物、體驗、自費活動等
+                        </div>
+                    </div>
+
+                    <!-- 4. 當日各項費用即時試算與拆解清單 -->
                     <div id="modalDayCostBreakdownPreview" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:12px; font-size:0.82rem; color:#334155;">
                         <!-- JS 動態填入即時試算 -->
                     </div>
@@ -5655,11 +5675,21 @@ const firebaseConfig = {
             const cTrans = getItemLocalAndTwd(dayTransVal, activeDay.transportCurr);
             const cSpot = getItemLocalAndTwd(daySpotVal, activeDay.spotCurr);
 
+            let dayExtraLocal = 0;
+            let dayExtraTwd = 0;
+            if (Array.isArray(activeDay.extraCosts)) {
+                activeDay.extraCosts.forEach(it => {
+                    const c = getItemLocalAndTwd(it.cost, it.curr);
+                    dayExtraLocal += c.local;
+                    dayExtraTwd += c.twd;
+                });
+            }
+
             const dayOtherLocal = dayOtherTotal;
             const dayOtherTwd = Math.round(dayOtherTotal * curr.rate);
 
-            const dayGrandLocal = dayMealsLocal + cTrans.local + cSpot.local + dayOtherLocal;
-            const dayGrandTwd = dayMealsTwd + cTrans.twd + cSpot.twd + dayOtherTwd;
+            const dayGrandLocal = dayMealsLocal + cTrans.local + cSpot.local + dayExtraLocal + dayOtherLocal;
+            const dayGrandTwd = dayMealsTwd + cTrans.twd + cSpot.twd + dayExtraTwd + dayOtherTwd;
 
             activeDay.budget = dayGrandLocal;
             activeDay.budgetTwd = dayGrandTwd;
@@ -5731,6 +5761,11 @@ const firebaseConfig = {
                             <span class="subtotal-item subtotal-item-clickable" onclick="openEditDayMetaModal(${activeDay.dayNum}, 'spot')" title="點擊直接修改景點門票">
                                 🎫 景點門票: <strong style="color:#16a34a;">${cSpot.display}</strong> <i class="fa-solid fa-pen" style="font-size:0.7rem; color:#16a34a; margin-left:3px;"></i>
                             </span>
+                            ${(Array.isArray(activeDay.extraCosts) && activeDay.extraCosts.length > 0) ? `
+                            <span class="subtotal-item subtotal-item-clickable" onclick="openEditDayMetaModal(${activeDay.dayNum}, 'extra')" title="點擊編輯自訂其他費用項目">
+                                💼 其他花費 (${activeDay.extraCosts.length}項): <strong style="color:#d97706;">${curr.symbol} ${dayExtraLocal.toLocaleString()}</strong> <span style="font-size:0.72rem; color:#64748b;">(≈ NT$ ${dayExtraTwd.toLocaleString()})</span> <i class="fa-solid fa-pen" style="font-size:0.7rem; color:#d97706; margin-left:3px;"></i>
+                            </span>
+                            ` : ''}
                             <span class="day-total-chip" onclick="openEditDayMetaModal(${activeDay.dayNum})" title="點擊編輯當日所有費用與主題">
                                 💰 當日總計: 每人 ${curr.symbol} ${dayGrandLocal.toLocaleString()} (≈ NT$ ${dayGrandTwd.toLocaleString()}) ｜ 全團 ${curr.symbol} ${groupGrandLocal.toLocaleString()} (≈ NT$ ${groupGrandTwd.toLocaleString()}) <i class="fa-solid fa-pen-to-square" style="font-size:0.7rem; margin-left:3px;"></i>
                             </span>
@@ -6072,12 +6107,14 @@ const firebaseConfig = {
             let spotTotal = 0;
             let otherTotal = 0;
             let snackTotal = 0;
+            let extraTotal = 0;
             let twdBfTotal = 0;
             let twdLcTotal = 0;
             let twdDnTotal = 0;
             let twdSnackTotal = 0;
             let twdTransTotal = 0;
             let twdSpotTotal = 0;
+            let twdExtraTotal = 0;
             let twdOtherTotal = 0;
 
             // 單項幣別折算輔助
@@ -6144,12 +6181,25 @@ const firebaseConfig = {
                 spotTotal += cSpot.local;
                 twdSpotTotal += cSpot.twd;
 
+                // 自訂其他費用項目加總
+                let dayExtraLocal = 0;
+                let dayExtraTwd = 0;
+                if (Array.isArray(d.extraCosts)) {
+                    d.extraCosts.forEach(it => {
+                        const c = getItemLocalAndTwd(it.cost, it.curr);
+                        dayExtraLocal += c.local;
+                        dayExtraTwd += c.twd;
+                    });
+                }
+                extraTotal += dayExtraLocal;
+                twdExtraTotal += dayExtraTwd;
+
                 otherTotal += evOther;
                 twdOtherTotal += Math.round(evOther * curr.rate);
 
-                // 當日單人總額 (以當地幣別與台幣分別加總，含點心飲料)
-                const dayLocal = cBf.local + cLc.local + cDn.local + cSnack.local + cTrans.local + cSpot.local + evOther;
-                const dayTwd = cBf.twd + cLc.twd + cDn.twd + cSnack.twd + cTrans.twd + cSpot.twd + Math.round(evOther * curr.rate);
+                // 當日單人總額 (以當地幣別與台幣分別加總，含點心飲料與自訂項目)
+                const dayLocal = cBf.local + cLc.local + cDn.local + cSnack.local + cTrans.local + cSpot.local + dayExtraLocal + evOther;
+                const dayTwd = cBf.twd + cLc.twd + cDn.twd + cSnack.twd + cTrans.twd + cSpot.twd + dayExtraTwd + Math.round(evOther * curr.rate);
 
                 totalBudget += dayLocal;
                 twdTotalBudget += dayTwd;
@@ -6195,6 +6245,8 @@ const firebaseConfig = {
                 mealsTotal, groupMealsTotal: mealsTotal * memberCount,
                 transTotal, groupTransTotal: transTotal * memberCount,
                 spotTotal, groupSpotTotal: spotTotal * memberCount,
+                extraTotal, groupExtraTotal: extraTotal * memberCount,
+                twdExtraTotal, twdGroupExtraTotal: twdExtraTotal * memberCount,
                 otherTotal, totalEventCost,
                 twdMealsTotal, twdGroupMealsTotal,
                 twdTransTotal, twdGroupTransTotal,
@@ -6244,6 +6296,7 @@ const firebaseConfig = {
                 <div class="budget-cat-pill" style="background:#fff7ed; border-color:#fed7aa; color:#c2410c;">🍽️ 餐食總計: <strong>${curr.symbol} ${stats.groupMealsTotal.toLocaleString()}</strong> (≈ NT$ ${stats.twdGroupMealsTotal.toLocaleString()})</div>
                 <div class="budget-cat-pill" style="background:#f0f9ff; border-color:#bae6fd; color:#0369a1;">🚗 交通/包車: <strong>${curr.symbol} ${stats.groupTransTotal.toLocaleString()}</strong> (≈ NT$ ${stats.twdGroupTransTotal.toLocaleString()})</div>
                 <div class="budget-cat-pill" style="background:#f0fdf4; border-color:#bbf7d0; color:#15803d;">🎫 景點門票: <strong>${curr.symbol} ${stats.groupSpotTotal.toLocaleString()}</strong> (≈ NT$ ${stats.twdGroupSpotTotal.toLocaleString()})</div>
+                ${stats.extraTotal > 0 ? `<div class="budget-cat-pill" style="background:#fffbeb; border-color:#fde68a; color:#b45309;">💼 其他自訂花費: <strong>${curr.symbol} ${stats.groupExtraTotal.toLocaleString()}</strong> (≈ NT$ ${stats.twdGroupExtraTotal.toLocaleString()})</div>` : ''}
             ` : `
                 <div class="budget-cat-pill">🍳 早餐: <strong>${curr.symbol} ${stats.bfTotal.toLocaleString()}</strong> <span style="font-size:0.7rem; color:#64748b;">(≈ NT$ ${Math.round(stats.bfTotal * curr.rate).toLocaleString()})</span></div>
                 <div class="budget-cat-pill">🍱 午餐: <strong>${curr.symbol} ${stats.lcTotal.toLocaleString()}</strong> <span style="font-size:0.7rem; color:#64748b;">(≈ NT$ ${Math.round(stats.lcTotal * curr.rate).toLocaleString()})</span></div>
@@ -6251,6 +6304,7 @@ const firebaseConfig = {
                 <div class="budget-cat-pill" style="background:#fff7ed; border-color:#fed7aa; color:#c2410c;">🍽️ 餐食總計: <strong>${curr.symbol} ${stats.mealsTotal.toLocaleString()}</strong> (≈ NT$ ${stats.twdMealsTotal.toLocaleString()})</div>
                 <div class="budget-cat-pill" style="background:#f0f9ff; border-color:#bae6fd; color:#0369a1;">🚗 交通/包車: <strong>${curr.symbol} ${stats.transTotal.toLocaleString()}</strong> (≈ NT$ ${stats.twdTransTotal.toLocaleString()})</div>
                 <div class="budget-cat-pill" style="background:#f0fdf4; border-color:#bbf7d0; color:#15803d;">🎫 景點門票: <strong>${curr.symbol} ${stats.spotTotal.toLocaleString()}</strong> (≈ NT$ ${stats.twdSpotTotal.toLocaleString()})</div>
+                ${stats.extraTotal > 0 ? `<div class="budget-cat-pill" style="background:#fffbeb; border-color:#fde68a; color:#b45309;">💼 其他自訂花費: <strong>${curr.symbol} ${stats.extraTotal.toLocaleString()}</strong> (≈ NT$ ${stats.twdExtraTotal.toLocaleString()})</div>` : ''}
             `;
 
             container.innerHTML = `
@@ -6375,6 +6429,14 @@ const firebaseConfig = {
                 const dayTrans = (d.transportCost !== undefined && d.transportCost !== null) ? Number(d.transportCost) : evTrans;
                 const daySpot = (d.spotCost !== undefined && d.spotCost !== null) ? Number(d.spotCost) : evSpot;
 
+                let dayExtra = 0;
+                if (Array.isArray(d.extraCosts)) {
+                    d.extraCosts.forEach(it => {
+                        const c = getItemLocalAndTwd(it.cost, it.curr);
+                        dayExtra += c.local;
+                    });
+                }
+
                 rowsHtml += `
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid var(--notion-border); background:#ffffff; transition:background 0.15s ease;" onmouseover="this.style.background='#fafaf9'" onmouseout="this.style.background='#ffffff'">
                         <div style="flex:1; min-width:0; padding-right:12px;">
@@ -6395,6 +6457,10 @@ const firebaseConfig = {
                                 <span style="color:#16a34a;">🎫 景點: ${curr.symbol} ${daySpot.toLocaleString()} ${d.spotNote ? `(${d.spotNote})` : ''}</span>
                                 <span style="color:#c2410c;">🍽️ 餐食小計: ${curr.symbol} ${mealsSum.toLocaleString()} (≈ NT$ ${Math.round(mealsSum * curr.rate).toLocaleString()})</span>
                             </div>
+                            ${(dayExtra > 0 || (Array.isArray(d.extraCosts) && d.extraCosts.length > 0)) ? `
+                            <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:0.76rem; color:#b45309; margin-top:3px;">
+                                <span>💼 自訂其他花費: <strong>${curr.symbol} ${dayExtra.toLocaleString()}</strong> <span style="color:#64748b;">(${d.extraCosts.map(it => it.title || '自訂項目').join('、')})</span></span>
+                            </div>` : ''}
                         </div>
                         <div style="display:flex; align-items:center; gap:12px; flex-shrink:0;">
                             <div style="text-align:right;">
@@ -6778,6 +6844,12 @@ const firebaseConfig = {
                     </div>
                 ` : '';
 
+                const extraCostsLine = (Array.isArray(d.extraCosts) && d.extraCosts.length > 0) ? `
+                    <div style="font-size: 0.82rem; color: #b45309; margin-top: 6px; padding: 6px 10px; background: #fffbeb; border-radius: 4px; border-left: 3px solid #f59e0b;">
+                        💼 <strong>自訂其他花費：</strong>${d.extraCosts.map(it => `${escapeHtml(it.title || '項目')} (${curr.symbol}${Number(it.cost || 0).toLocaleString()})`).join('、')}
+                    </div>
+                ` : '';
+
                 return `
                     <div class="booklet-sheet">
                         <div class="booklet-sheet-body">
@@ -6797,6 +6869,7 @@ const firebaseConfig = {
                             <div class="pdf-booklet-day-content">
                                 ${eventsLines || '<div style="color:#94a3b8; font-style:italic; padding:10px 0;">自由探索放鬆時光</div>'}
                                 ${mealLine}
+                                ${extraCostsLine}
                             </div>
 
                             <!-- 實體旅遊手帳手寫筆記 & 蓋章戳印方框 -->
@@ -7658,6 +7731,7 @@ const firebaseConfig = {
                 } else {
                     if (customRow) customRow.style.display = 'none';
                 }
+            }
             document.getElementById('basePlanExchangeRate').value = curr.rate;
             updateCurrencyExchangeExample();
             const noteEl = document.getElementById('basePlanRateStatusNote');
@@ -8485,7 +8559,90 @@ const firebaseConfig = {
             }
         }
 
-        // Day Meta Edit (支援主題、三餐、交通、景點費用全面自訂與連動)
+        // Day Meta Edit (支援主題、三餐、交通、景點與自訂額外花費項目全面自訂與連動)
+        function createExtraCostRowElement(item = {}, curr = null) {
+            if (!curr) {
+                const plan = getCurrentPlan();
+                curr = getPlanCurrency(plan);
+            }
+            const row = document.createElement('div');
+            row.className = 'extra-cost-row';
+            row.style.cssText = 'background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:8px 10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;';
+
+            const isTwd = (curr.code === 'TWD');
+            const selLocal = (!item.curr || item.curr === 'LOCAL') ? 'selected' : '';
+            const selTwd = (item.curr === 'TWD') ? 'selected' : '';
+            const currOptions = isTwd
+                ? `<option value="LOCAL" ${selLocal}>NT$ 新台幣</option><option value="USD" ${item.curr === 'USD' ? 'selected' : ''}>$ 美元</option><option value="CNY" ${item.curr === 'CNY' ? 'selected' : ''}>¥ 人民幣</option><option value="JPY" ${item.curr === 'JPY' ? 'selected' : ''}>¥ 日圓</option>`
+                : `<option value="LOCAL" ${selLocal}>${curr.symbol} ${curr.name}</option><option value="TWD" ${selTwd}>NT$ 台幣</option>`;
+
+            const safeTitle = escapeHtml(item.title || '');
+            const safeCost = (item.cost !== undefined && item.cost !== null && item.cost !== '') ? Number(item.cost) : '';
+
+            row.innerHTML = `
+                <div style="flex:1; min-width:180px;">
+                    <input type="text" class="form-input extra-cost-title" placeholder="項目名稱 (例如：伴手禮購物 / 漢服體驗 / 索道包廂加價)" value="${safeTitle}" oninput="updateModalMealPreview()" style="font-size:0.82rem; height:32px;">
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; width:185px; flex-shrink:0;">
+                    <input type="number" class="form-input extra-cost-val" placeholder="0" min="0" step="10" value="${safeCost}" oninput="updateModalMealPreview()" style="font-weight:700; color:#ea580c; font-size:0.85rem; height:32px; width:95px; text-align:right;">
+                    <select class="cost-curr-select extra-cost-curr" onchange="updateModalMealPreview()" style="font-size:0.75rem; height:32px; flex:1;">
+                        ${currOptions}
+                    </select>
+                </div>
+                <button type="button" class="n-btn n-btn-danger" style="padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; flex-shrink:0;" onclick="removeModalExtraCostRow(this)" title="刪除此項目">
+                    <i class="fa-regular fa-trash-can" style="font-size:0.8rem;"></i>
+                </button>
+            `;
+            return row;
+        }
+
+        function addModalExtraCostRow(defaultData = {}) {
+            const list = document.getElementById('modalExtraCostsList');
+            const emptyNotice = document.getElementById('modalExtraCostsEmptyNotice');
+            if (!list) return;
+            if (emptyNotice) emptyNotice.style.display = 'none';
+
+            const plan = getCurrentPlan();
+            const curr = getPlanCurrency(plan);
+            const row = createExtraCostRowElement(defaultData, curr);
+            list.appendChild(row);
+
+            const titleInput = row.querySelector('.extra-cost-title');
+            if (titleInput && !defaultData.title) {
+                titleInput.focus();
+            }
+            updateModalMealPreview();
+        }
+
+        function removeModalExtraCostRow(btn) {
+            const row = btn.closest('.extra-cost-row');
+            if (row) {
+                row.remove();
+            }
+            const list = document.getElementById('modalExtraCostsList');
+            const emptyNotice = document.getElementById('modalExtraCostsEmptyNotice');
+            if (list && list.children.length === 0 && emptyNotice) {
+                emptyNotice.style.display = 'block';
+            }
+            updateModalMealPreview();
+        }
+
+        function populateModalExtraCosts(extraCosts = [], curr = null) {
+            const list = document.getElementById('modalExtraCostsList');
+            const emptyNotice = document.getElementById('modalExtraCostsEmptyNotice');
+            if (!list) return;
+            list.innerHTML = '';
+            if (!Array.isArray(extraCosts) || extraCosts.length === 0) {
+                if (emptyNotice) emptyNotice.style.display = 'block';
+                return;
+            }
+            if (emptyNotice) emptyNotice.style.display = 'none';
+            extraCosts.forEach(item => {
+                const row = createExtraCostRowElement(item, curr);
+                list.appendChild(row);
+            });
+        }
+
         function openEditDayMetaModal(dayNum, focusField) {
             const plan = getCurrentPlan();
             if (!plan) return;
@@ -8545,6 +8702,9 @@ const firebaseConfig = {
             document.getElementById('editMetaSpotCost').value = spotVal;
             document.getElementById('editMetaSpotNote').value = day.spotNote || '';
 
+            // 6. 載入自訂其他費用項目清單
+            populateModalExtraCosts(day.extraCosts || [], curr);
+
             updateModalMealPreview();
             openModal('editDayMetaModal');
 
@@ -8563,6 +8723,15 @@ const firebaseConfig = {
                 setTimeout(() => {
                     const el = document.getElementById('editMetaBreakfastCost');
                     if (el) { el.focus(); el.select(); }
+                }, 150);
+            } else if (focusField === 'extra') {
+                setTimeout(() => {
+                    if (!day.extraCosts || day.extraCosts.length === 0) {
+                        addModalExtraCostRow();
+                    } else {
+                        const firstInput = document.querySelector('#modalExtraCostsList .extra-cost-title');
+                        if (firstInput) { firstInput.focus(); }
+                    }
                 }, 150);
             }
         }
@@ -8669,6 +8838,33 @@ const firebaseConfig = {
             const transSpotLocal = trans.local + spot.local;
             const transSpotTwd = trans.twd + spot.twd;
 
+            // 計算自訂其他費用項目 (動態列表)
+            const extraRows = document.querySelectorAll('#modalExtraCostsList .extra-cost-row');
+            let extraSumLocal = 0;
+            let extraSumTwd = 0;
+            const extraItemsSummary = [];
+            extraRows.forEach(row => {
+                const title = row.querySelector('.extra-cost-title')?.value.trim() || '';
+                const val = Math.max(0, Number(row.querySelector('.extra-cost-val')?.value) || 0);
+                const currType = row.querySelector('.extra-cost-curr')?.value || 'LOCAL';
+                if (val > 0) {
+                    let itemLocal = 0;
+                    let itemTwd = 0;
+                    if (currType === 'TWD') {
+                        itemTwd = val;
+                        itemLocal = (currCode === 'TWD') ? val : Math.round(val / currentRate);
+                    } else {
+                        itemLocal = val;
+                        itemTwd = Math.round(val * currentRate);
+                    }
+                    extraSumLocal += itemLocal;
+                    extraSumTwd += itemTwd;
+                    extraItemsSummary.push({ title: title || '自訂花費', local: itemLocal, twd: itemTwd });
+                } else if (title) {
+                    extraItemsSummary.push({ title, local: 0, twd: 0 });
+                }
+            });
+
             const previewTotalEl = document.getElementById('modalMealsTotalPreview');
             if (previewTotalEl) {
                 previewTotalEl.innerHTML = `餐食小計: <strong>${currSymbol} ${mealsLocal.toLocaleString()}</strong> <small style="color:#64748b; font-weight:normal;">(≈ NT$ ${mealsTwd.toLocaleString()})</small>`;
@@ -8691,8 +8887,8 @@ const firebaseConfig = {
                     }
                 });
             }
-            const grandTotalLocal = mealsLocal + transSpotLocal + otherSumLocal;
-            const grandTotalTwd = mealsTwd + transSpotTwd + otherSumTwd;
+            const grandTotalLocal = mealsLocal + transSpotLocal + extraSumLocal + otherSumLocal;
+            const grandTotalTwd = mealsTwd + transSpotTwd + extraSumTwd + otherSumTwd;
             const memberCount = Math.max(1, Number(plan.memberCount) || 1);
             const grandTotalGroupLocal = grandTotalLocal * memberCount;
             const grandTotalGroupTwd = grandTotalTwd * memberCount;
@@ -8715,11 +8911,16 @@ const firebaseConfig = {
                             🍲 晚餐: <strong>${dn.display}</strong>
                         </div>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; background:#ffffff; padding:7px 10px; border-radius:5px; border:1px solid #e2e8f0; font-size:0.8rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; background:#ffffff; padding:7px 10px; border-radius:5px; border:1px solid #e2e8f0; font-size:0.8rem; flex-wrap:wrap; gap:6px;">
                         <span>🚗 交通: <strong style="color:#0284c7;">${trans.display}</strong></span>
                         <span>🎫 景點: <strong style="color:#16a34a;">${spot.display}</strong></span>
                         <span>🍽️ 餐食小計: <strong style="color:#ea580c;">${currSymbol} ${mealsLocal.toLocaleString()}</strong> <small style="color:#64748b;">(≈NT$${mealsTwd.toLocaleString()})</small></span>
                     </div>
+                    ${extraSumLocal > 0 ? `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; background:#fff7ed; padding:7px 10px; border-radius:5px; border:1px solid #fed7aa; font-size:0.8rem; flex-wrap:wrap; gap:6px;">
+                        <span>💼 自訂其他花費 (${extraItemsSummary.length}項): <strong style="color:#d97706;">${currSymbol} ${extraSumLocal.toLocaleString()}</strong> <small style="color:#64748b;">(≈NT$${extraSumTwd.toLocaleString()})</small></span>
+                        <span style="font-size:0.75rem; color:#9a3412; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(extraItemsSummary.map(it => it.title).join('、'))}</span>
+                    </div>` : ''}
                     <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #cbd5e1; padding-top:8px; font-weight:800; font-size:0.92rem;">
                         <span style="color:#475569;">💰 Day ${dayNum} 單人總額：</span>
                         <span style="color:#ea580c; font-size:1.05rem;">${currSymbol} ${grandTotalLocal.toLocaleString()} <span style="font-size:0.82rem; font-weight:600; color:#64748b;">(≈ NT$ ${grandTotalTwd.toLocaleString()})</span></span>
@@ -8785,7 +8986,20 @@ const firebaseConfig = {
             day.spotCurr = document.getElementById('editMetaSpotCurr')?.value || 'LOCAL';
             day.spotNote = document.getElementById('editMetaSpotNote').value;
 
-            // 4. 計算當日折合當地幣與折合台幣總額
+            // 4. 儲存自訂其他費用項目
+            const extraRows = document.querySelectorAll('#modalExtraCostsList .extra-cost-row');
+            const extraCosts = [];
+            extraRows.forEach(row => {
+                const title = row.querySelector('.extra-cost-title')?.value.trim() || '';
+                const cost = Math.max(0, Number(row.querySelector('.extra-cost-val')?.value) || 0);
+                const curr = row.querySelector('.extra-cost-curr')?.value || 'LOCAL';
+                if (title || cost > 0) {
+                    extraCosts.push({ title: title || '自訂項目', cost, curr });
+                }
+            });
+            day.extraCosts = extraCosts;
+
+            // 5. 計算當日折合當地幣與折合台幣總額
             function getCostLocalAndTwd(val, currType) {
                 if (!val || val <= 0) return { local: 0, twd: 0 };
                 if (currType === 'TWD') {
@@ -8806,6 +9020,14 @@ const firebaseConfig = {
             const cTrans = getCostLocalAndTwd(day.transportCost, day.transportCurr);
             const cSpot = getCostLocalAndTwd(day.spotCost, day.spotCurr);
 
+            let extraSumLocal = 0;
+            let extraSumTwd = 0;
+            extraCosts.forEach(item => {
+                const c = getCostLocalAndTwd(item.cost, item.curr);
+                extraSumLocal += c.local;
+                extraSumTwd += c.twd;
+            });
+
             let otherSumLocal = 0;
             let otherSumTwd = 0;
             (day.events || []).forEach(ev => {
@@ -8816,8 +9038,8 @@ const firebaseConfig = {
                 }
             });
 
-            day.budget = cBf.local + cLc.local + cDn.local + cSnack.local + cTrans.local + cSpot.local + otherSumLocal;
-            day.budgetTwd = cBf.twd + cLc.twd + cDn.twd + cSnack.twd + cTrans.twd + cSpot.twd + otherSumTwd;
+            day.budget = cBf.local + cLc.local + cDn.local + cSnack.local + cTrans.local + cSpot.local + extraSumLocal + otherSumLocal;
+            day.budgetTwd = cBf.twd + cLc.twd + cDn.twd + cSnack.twd + cTrans.twd + cSpot.twd + extraSumTwd + otherSumTwd;
 
             saveState();
             closeModal('editDayMetaModal');
