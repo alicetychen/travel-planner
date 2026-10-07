@@ -2508,7 +2508,7 @@
     <div class="notion-topbar">
         <div class="notion-breadcrumbs">
             <span style="font-weight: 700; color: var(--notion-text); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.7</span>
+                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.8</span>
             </span>
         </div>
         <div class="topbar-actions">
@@ -2618,7 +2618,6 @@
                         <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('spots')"><i class="fa-solid fa-location-dot"></i> 觀光景點</a></li>
                         <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('budget')"><i class="fa-solid fa-chart-pie"></i> 預算統計</a></li>
                         <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('booking')"><i class="fa-solid fa-book-bookmark"></i> 旅遊資源</a></li>
-                        <li class="quick-nav-item"><a href="javascript:void(0)" onclick="openEmergencyModal()"><i class="fa-solid fa-phone"></i> 緊急狀況</a></li>
                     </ul>
                 </div>
             </div>
@@ -2720,31 +2719,6 @@
                 </div>
             </div>
 
-            <!-- Notion Widget: 獨立預算統計模組 (單獨拉出來做統計) -->
-            <div class="notion-budget-widget" id="main-budget-widget">
-                <div class="budget-widget-header">
-                    <div class="budget-widget-title">
-                        <span class="budget-icon">💰</span>
-                        <div>
-                            <div style="font-weight: 700; font-size: 0.92rem; color: var(--notion-text);">旅行預算統計總覽 (Budget Statistics)</div>
-                            <div style="font-size: 0.76rem; color: var(--notion-text-sub);">獨立統計分析 ‧ 自動彙整各日預算、每日平均與重點花費</div>
-                        </div>
-                    </div>
-                    <div class="budget-widget-actions">
-                        <button type="button" class="n-btn" style="padding: 3px 8px; font-size: 0.76rem;" onclick="openQuickEditBudgetModal()" title="快速調整每日預算">
-                            <i class="fa-solid fa-pen-to-square"></i> 調整每日預算
-                        </button>
-                        <button type="button" class="n-btn n-btn-primary" style="padding: 3px 8px; font-size: 0.76rem;" onclick="switchView('budget')" title="查看完整報表">
-                            <i class="fa-solid fa-chart-pie"></i> 詳細明細
-                        </button>
-                    </div>
-                </div>
-
-                <div class="budget-widget-body" id="budgetWidgetBody">
-                    <!-- Populated dynamically by JS -->
-                </div>
-            </div>
-
             <!-- Notion View Switcher Bar -->
             <div class="notion-views-bar">
                 <div class="view-tabs-list">
@@ -2826,14 +2800,43 @@
                 </div>
             </div>
 
-            <!-- VIEW 4: BUDGET TRACKER -->
+            <!-- VIEW 4: BUDGET TRACKER (獨立預算統計與明細分頁) -->
             <div class="view-content-pane" id="view-budget">
-                <div class="day-card-container">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--notion-text);">
-                            💰 當地支出預算統整 (依天數與項目拆解)
-                        </h3>
-                        <strong style="font-size: 1.05rem; color: #ea580c;" id="budgetSummaryHeader">總計: NT$ 13,690 / 人</strong>
+                <!-- 1. 旅行預算統計總覽儀表板 (KPI 卡片、每天支出長條圖、每人/全團切換) -->
+                <div class="notion-budget-widget" id="main-budget-widget" style="margin-top:0; margin-bottom:16px;">
+                    <div class="budget-widget-header">
+                        <div class="budget-widget-title">
+                            <span class="budget-icon">💰</span>
+                            <div>
+                                <div style="font-weight: 700; font-size: 0.95rem; color: var(--notion-text);">旅行預算統計總覽 (Budget Statistics)</div>
+                                <div style="font-size: 0.76rem; color: var(--notion-text-sub);">獨立統計分析 ‧ 自動彙整各日預算、每日平均與重點花費</div>
+                            </div>
+                        </div>
+                        <div class="budget-widget-actions">
+                            <button type="button" class="n-btn" style="padding: 4px 10px; font-size: 0.78rem;" onclick="openQuickEditBudgetModal()" title="快速調整每日預算">
+                                <i class="fa-solid fa-pen-to-square"></i> 調整每日預算
+                            </button>
+                            <button type="button" class="n-btn n-btn-primary" style="padding: 4px 10px; font-size: 0.78rem; font-weight:700; cursor:pointer;" onclick="scrollToBudgetDetails()" title="捲動至下方查看每日各項支出詳細明細">
+                                <i class="fa-solid fa-list-check"></i> 詳細明細 <i class="fa-solid fa-arrow-down" style="font-size:0.7rem; margin-left:2px;"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="budget-widget-body" id="budgetWidgetBody">
+                        <!-- Populated dynamically by JS -->
+                    </div>
+                </div>
+
+                <!-- 2. 每日支出詳細拆解與編輯 (Day 1 - Day 7 各項明細卡片) -->
+                <div class="day-card-container" id="budgetBreakdownSection">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap:wrap; gap:8px;">
+                        <div>
+                            <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--notion-text); margin:0;">
+                                📋 每日支出預算詳細拆解 (點擊任一日可直接編輯)
+                            </h3>
+                            <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">包含早中晚餐飲、多趟交通安排、景點門票與自訂其他花費之單人與全團支出</div>
+                        </div>
+                        <strong style="font-size: 1.05rem; color: #ea580c;" id="budgetSummaryHeader">總計: NT$ 0 / 人</strong>
                     </div>
                     <div id="budgetBreakdownContainer">
                         <!-- Populated dynamically -->
@@ -6196,13 +6199,29 @@ const firebaseConfig = {
         // INDEPENDENT BUDGET STATS WIDGET & VIEW 4
         // ==========================================
         function scrollToBudgetWidget() {
-            const widget = document.getElementById('main-budget-widget');
-            if (widget) {
-                widget.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                widget.style.outline = '2px solid #ea580c';
-                widget.style.transition = 'outline 0.3s ease';
-                setTimeout(() => { widget.style.outline = 'none'; }, 1500);
+            if (appState.activeView !== 'budget') {
+                switchView('budget');
             }
+            setTimeout(() => {
+                const widget = document.getElementById('main-budget-widget');
+                if (widget) {
+                    widget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    highlightElement(widget);
+                }
+            }, 60);
+        }
+
+        function scrollToBudgetDetails() {
+            if (appState.activeView !== 'budget') {
+                switchView('budget');
+            }
+            setTimeout(() => {
+                const breakdown = document.getElementById('budgetBreakdownSection');
+                if (breakdown) {
+                    breakdown.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    highlightElement(breakdown);
+                }
+            }, 60);
         }
 
         function setBudgetDisplayMode(mode) {
@@ -6657,11 +6676,16 @@ const firebaseConfig = {
                 }
 
                 rowsHtml += `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid var(--notion-border); background:#ffffff; transition:background 0.15s ease;" onmouseover="this.style.background='#fafaf9'" onmouseout="this.style.background='#ffffff'">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid var(--notion-border); background:#ffffff; cursor:pointer; transition:all 0.15s ease; border-radius:6px; margin-bottom:4px;" 
+                         onclick="openEditDayMetaModal(${d.dayNum})"
+                         onmouseover="this.style.background='#f8fafc'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)';" 
+                         onmouseout="this.style.background='#ffffff'; this.style.boxShadow='none';"
+                         title="點擊編輯 Day ${d.dayNum} 餐食、交通、門票與其他支出細項">
                         <div style="flex:1; min-width:0; padding-right:12px;">
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <strong style="color:var(--notion-text); font-size:0.92rem;">Day ${d.dayNum} ‧ ${d.title}</strong>
                                 <span style="font-size:0.75rem; color:var(--notion-text-sub); background:#f1f1ef; padding:1px 6px; border-radius:3px;">${d.date || ''}</span>
+                                <span style="font-size:0.7rem; color:#0284c7; background:#e0f2fe; padding:1px 6px; border-radius:3px;"><i class="fa-solid fa-pen-to-square"></i> 點擊編輯</span>
                             </div>
                             <!-- 餐飲與點心詳細拆解 (當地幣別) -->
                             <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:0.78rem; color:#475569; margin-top:5px;">
@@ -6693,7 +6717,7 @@ const firebaseConfig = {
                                     全團: ${curr.symbol} ${groupDayCost.toLocaleString()} (≈ NT$ ${groupDayTwd.toLocaleString()})
                                 </div>
                             </div>
-                            <button type="button" class="n-btn" style="padding:3px 8px; font-size:0.75rem;" onclick="openEditDayMetaModal(${d.dayNum})" title="修改當日餐食、交通與門票花費">
+                            <button type="button" class="n-btn" style="padding:4px 10px; font-size:0.76rem;" onclick="event.stopPropagation(); openEditDayMetaModal(${d.dayNum})" title="修改當日餐食、交通與門票花費">
                                 <i class="fa-solid fa-pen"></i> 編輯
                             </button>
                         </div>
@@ -6904,6 +6928,17 @@ const firebaseConfig = {
             });
             const target = document.getElementById('view-' + viewName);
             if (target) target.classList.add('active');
+
+            if (viewName === 'budget') {
+                renderBudgetWidget();
+                renderBudgetView();
+            } else if (viewName === 'timeline') {
+                renderTimelineView();
+            } else if (viewName === 'booking') {
+                renderBookingView();
+            } else if (viewName === 'spots') {
+                renderSpotGuidesView();
+            }
         }
 
         // ==========================
