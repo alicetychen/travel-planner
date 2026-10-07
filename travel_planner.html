@@ -2508,7 +2508,7 @@
     <div class="notion-topbar">
         <div class="notion-breadcrumbs">
             <span style="font-weight: 700; color: var(--notion-text); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.5</span>
+                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.6</span>
             </span>
         </div>
         <div class="topbar-actions">
@@ -3257,54 +3257,62 @@
                         </div>
                     </div>
 
-                    <!-- 2. 交通與景點分開輸入安排與費用 -->
-                    <div style="font-weight:700; font-size:0.88rem; color:#334155; margin:14px 0 8px; display:flex; justify-content:space-between; align-items:center;">
-                        <span>🚗 2. 交通與 🎫 景點門票費用管控</span>
-                        <span id="modalTransSpotTotalPreview" style="font-size:0.8rem; color:#0284c7; font-weight:700;">交通+景點: 0</span>
-                    </div>
-
-                    <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; padding:12px; margin-bottom:14px;">
-                        <!-- 交通 -->
-                        <div style="display:grid; grid-template-columns:1fr 175px; gap:10px; align-items:center; margin-bottom:10px;">
-                            <div>
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
-                                    <label class="form-label" style="font-size:0.78rem; margin-bottom:0; color:#0369a1;">🚗 當日交通安排 / 備註</label>
-                                    <button type="button" class="n-btn" style="font-size:0.72rem; padding:1px 6px; height:20px; line-height:1;" onclick="syncTransportFromEvents()" title="一鍵加總當天下方活動的交通費用填入">🔄 帶入活動加總</button>
-                                </div>
-                                <input type="text" id="editMetaTransportNote" class="form-input" placeholder="例如：地鐵乘車碼、滴滴打車、專屬包車">
-                            </div>
-                            <div>
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
-                                    <label class="form-label" id="editMetaTransportCostLabel" style="font-size:0.78rem; margin-bottom:0; color:#0369a1;">交通花費</label>
-                                    <select id="editMetaTransportCurr" class="cost-curr-select" onchange="updateModalMealPreview()"></select>
-                                </div>
-                                <input type="number" id="editMetaTransportCost" class="form-input" min="0" step="10" placeholder="0" oninput="updateModalMealPreview()" style="font-weight:700; color:#0284c7;">
-                            </div>
+                    <!-- 2. 交通支出明細 (支援新增多趟交通分開計算) -->
+                    <div style="font-weight:700; font-size:0.88rem; color:#0369a1; margin:14px 0 8px; display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span>🚗 2. 交通支出明細</span>
+                            <span style="font-size:0.75rem; font-weight:normal; color:#64748b;">(支援多趟打車、地鐵、包車分開計算)</span>
                         </div>
-
-                        <!-- 景點門票 -->
-                        <div style="display:grid; grid-template-columns:1fr 175px; gap:10px; align-items:center;">
-                            <div>
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
-                                    <label class="form-label" style="font-size:0.78rem; margin-bottom:0; color:#15803d;">🎫 當日景點門票安排 / 備註</label>
-                                    <button type="button" class="n-btn" style="font-size:0.72rem; padding:1px 6px; height:20px; line-height:1;" onclick="syncSpotFromEvents()" title="一鍵加總當天下方活動的門票費用填入">🔄 帶入活動加總</button>
-                                </div>
-                                <input type="text" id="editMetaSpotNote" class="form-input" placeholder="例如：武隆天生三橋門票+觀光電梯、羅漢寺香花券">
-                            </div>
-                            <div>
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
-                                    <label class="form-label" id="editMetaSpotCostLabel" style="font-size:0.78rem; margin-bottom:0; color:#15803d;">景點門票</label>
-                                    <select id="editMetaSpotCurr" class="cost-curr-select" onchange="updateModalMealPreview()"></select>
-                                </div>
-                                <input type="number" id="editMetaSpotCost" class="form-input" min="0" step="10" placeholder="0" oninput="updateModalMealPreview()" style="font-weight:700; color:#16a34a;">
-                            </div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <button type="button" class="n-btn" style="font-size:0.72rem; padding:2px 8px; height:24px; line-height:1;" onclick="syncTransportFromEvents()" title="將下方活動中的交通項目自動帶入為個別明細">🔄 帶入活動交通</button>
+                            <button type="button" class="n-btn" style="font-size:0.75rem; padding:2px 10px; height:24px; background:#eff6ff; color:#0284c7; border:1px solid #bae6fd; font-weight:700; cursor:pointer;" onclick="addModalTransportRow()">
+                                <i class="fa-solid fa-plus"></i> 新增交通
+                            </button>
                         </div>
                     </div>
 
-                    <!-- 3. 自訂其他費用項目 (支援彈性自由新增/刪除) -->
+                    <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; padding:10px; margin-bottom:14px;">
+                        <div id="modalTransportList" style="display:flex; flex-direction:column; gap:8px;">
+                            <!-- JS 動態生成交通項目 -->
+                        </div>
+                        <div id="modalTransportEmptyNotice" style="text-align:center; padding:10px 8px; color:#94a3b8; font-size:0.78rem; background:#fff; border:1px dashed #bae6fd; border-radius:6px; display:none;">
+                            <i class="fa-solid fa-car" style="margin-right:4px;"></i> 目前無額外交通項目，點擊右上角「<strong>＋ 新增交通</strong>」可新增打車、地鐵等花費
+                        </div>
+                        <div style="display:flex; justify-content:flex-end; align-items:center; margin-top:6px; padding-top:4px; font-size:0.78rem; color:#0369a1;">
+                            <span id="modalTransportTotalPreview">交通小計: <strong>¥ 0</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- 3. 景點門票明細 (支援新增多個景點門票分開計算) -->
+                    <div style="font-weight:700; font-size:0.88rem; color:#15803d; margin:14px 0 8px; display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span>🎫 3. 景點門票明細</span>
+                            <span style="font-size:0.75rem; font-weight:normal; color:#64748b;">(支援多個景點門票、纜車、演出票分開計算)</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <button type="button" class="n-btn" style="font-size:0.72rem; padding:2px 8px; height:24px; line-height:1;" onclick="syncSpotFromEvents()" title="將下方活動中的景點門票自動帶入為個別明細">🔄 帶入活動景點</button>
+                            <button type="button" class="n-btn" style="font-size:0.75rem; padding:2px 10px; height:24px; background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; font-weight:700; cursor:pointer;" onclick="addModalSpotRow()">
+                                <i class="fa-solid fa-plus"></i> 新增門票
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:10px; margin-bottom:14px;">
+                        <div id="modalSpotList" style="display:flex; flex-direction:column; gap:8px;">
+                            <!-- JS 動態生成景點項目 -->
+                        </div>
+                        <div id="modalSpotEmptyNotice" style="text-align:center; padding:10px 8px; color:#94a3b8; font-size:0.78rem; background:#fff; border:1px dashed #bbf7d0; border-radius:6px; display:none;">
+                            <i class="fa-solid fa-ticket" style="margin-right:4px;"></i> 目前無額外景點門票項目，點擊右上角「<strong>＋ 新增門票</strong>」可分開列出各景點票價
+                        </div>
+                        <div style="display:flex; justify-content:flex-end; align-items:center; margin-top:6px; padding-top:4px; font-size:0.78rem; color:#15803d;">
+                            <span id="modalSpotTotalPreview">門票小計: <strong>¥ 0</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- 4. 自訂其他費用項目 (支援彈性自由新增/刪除) -->
                     <div style="font-weight:700; font-size:0.88rem; color:#334155; margin:14px 0 8px; display:flex; justify-content:space-between; align-items:center;">
                         <div style="display:flex; align-items:center; gap:6px;">
-                            <span>💼 3. 自訂其他費用項目</span>
+                            <span>💼 4. 自訂其他費用項目</span>
                             <span style="font-size:0.75rem; font-weight:normal; color:#64748b;">(如伴手禮購物、體驗活動、自費項目、雜支等)</span>
                         </div>
                         <button type="button" class="n-btn" style="font-size:0.75rem; padding:3px 10px; background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; font-weight:700; cursor:pointer;" onclick="addModalExtraCostRow()">
@@ -5755,11 +5763,11 @@ const firebaseConfig = {
                             <span class="subtotal-item subtotal-item-clickable" onclick="openEditDayMetaModal(${activeDay.dayNum}, 'meals')" title="點擊編輯早中晚餐食費用">
                                 🍽️ 餐食小計: <strong>${curr.symbol} ${dayMealsLocal.toLocaleString()}</strong> <span style="font-size:0.72rem; color:#64748b;">(≈ NT$ ${dayMealsTwd.toLocaleString()})</span> <i class="fa-solid fa-pen" style="font-size:0.7rem; color:#94a3b8; margin-left:3px;"></i>
                             </span>
-                            <span class="subtotal-item subtotal-item-clickable" onclick="openEditDayMetaModal(${activeDay.dayNum}, 'transport')" title="點擊直接修改交通花費">
-                                🚗 交通開銷: <strong style="color:#0284c7;">${cTrans.display}</strong> <i class="fa-solid fa-pen" style="font-size:0.7rem; color:#0284c7; margin-left:3px;"></i>
+                            <span class="subtotal-item subtotal-item-clickable" onclick="openEditDayMetaModal(${activeDay.dayNum}, 'transport')" title="點擊直接修改交通花費明細">
+                                🚗 交通開銷${(Array.isArray(activeDay.transports) && activeDay.transports.length > 1) ? ` (${activeDay.transports.length}趟)` : ''}: <strong style="color:#0284c7;">${cTrans.display}</strong> <i class="fa-solid fa-pen" style="font-size:0.7rem; color:#0284c7; margin-left:3px;"></i>
                             </span>
-                            <span class="subtotal-item subtotal-item-clickable" onclick="openEditDayMetaModal(${activeDay.dayNum}, 'spot')" title="點擊直接修改景點門票">
-                                🎫 景點門票: <strong style="color:#16a34a;">${cSpot.display}</strong> <i class="fa-solid fa-pen" style="font-size:0.7rem; color:#16a34a; margin-left:3px;"></i>
+                            <span class="subtotal-item subtotal-item-clickable" onclick="openEditDayMetaModal(${activeDay.dayNum}, 'spot')" title="點擊直接修改景點門票明細">
+                                🎫 景點門票${(Array.isArray(activeDay.spots) && activeDay.spots.length > 1) ? ` (${activeDay.spots.length}項)` : ''}: <strong style="color:#16a34a;">${cSpot.display}</strong> <i class="fa-solid fa-pen" style="font-size:0.7rem; color:#16a34a; margin-left:3px;"></i>
                             </span>
                             ${(Array.isArray(activeDay.extraCosts) && activeDay.extraCosts.length > 0) ? `
                             <span class="subtotal-item subtotal-item-clickable" onclick="openEditDayMetaModal(${activeDay.dayNum}, 'extra')" title="點擊編輯自訂其他費用項目">
@@ -6453,8 +6461,8 @@ const firebaseConfig = {
                             </div>
                             <!-- 交通與景點拆解 -->
                             <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:0.76rem; color:#64748b; margin-top:4px;">
-                                <span style="color:#0284c7;">🚗 交通: ${curr.symbol} ${dayTrans.toLocaleString()} ${d.transportNote ? `(${d.transportNote})` : ''}</span>
-                                <span style="color:#16a34a;">🎫 景點: ${curr.symbol} ${daySpot.toLocaleString()} ${d.spotNote ? `(${d.spotNote})` : ''}</span>
+                                <span style="color:#0284c7;">🚗 交通${(Array.isArray(d.transports) && d.transports.length > 1) ? ` (${d.transports.length}趟)` : ''}: ${curr.symbol} ${dayTrans.toLocaleString()} ${d.transportNote ? `(${d.transportNote})` : ''}</span>
+                                <span style="color:#16a34a;">🎫 景點${(Array.isArray(d.spots) && d.spots.length > 1) ? ` (${d.spots.length}項)` : ''}: ${curr.symbol} ${daySpot.toLocaleString()} ${d.spotNote ? `(${d.spotNote})` : ''}</span>
                                 <span style="color:#c2410c;">🍽️ 餐食小計: ${curr.symbol} ${mealsSum.toLocaleString()} (≈ NT$ ${Math.round(mealsSum * curr.rate).toLocaleString()})</span>
                             </div>
                             ${(dayExtra > 0 || (Array.isArray(d.extraCosts) && d.extraCosts.length > 0)) ? `
@@ -8559,7 +8567,7 @@ const firebaseConfig = {
             }
         }
 
-        // Day Meta Edit (支援主題、三餐、交通、景點與自訂額外花費項目全面自訂與連動)
+        // Day Meta Edit (支援主題、三餐、多筆交通、多筆景點門票與自訂額外花費項目全面自訂與連動)
         function createExtraCostRowElement(item = {}, curr = null) {
             if (!curr) {
                 const plan = getCurrentPlan();
@@ -8643,6 +8651,174 @@ const firebaseConfig = {
             });
         }
 
+        // ===== 🚗 交通多筆明細處理 =====
+        function createTransportRowElement(item = {}, curr = null) {
+            if (!curr) {
+                const plan = getCurrentPlan();
+                curr = getPlanCurrency(plan);
+            }
+            const row = document.createElement('div');
+            row.className = 'transport-cost-row';
+            row.style.cssText = 'background:#ffffff; border:1px solid #bae6fd; border-radius:6px; padding:8px 10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;';
+
+            const isTwd = (curr.code === 'TWD');
+            const selLocal = (!item.curr || item.curr === 'LOCAL') ? 'selected' : '';
+            const selTwd = (item.curr === 'TWD') ? 'selected' : '';
+            const currOptions = isTwd
+                ? `<option value="LOCAL" ${selLocal}>NT$ 新台幣</option><option value="USD" ${item.curr === 'USD' ? 'selected' : ''}>$ 美元</option><option value="CNY" ${item.curr === 'CNY' ? 'selected' : ''}>¥ 人民幣</option><option value="JPY" ${item.curr === 'JPY' ? 'selected' : ''}>¥ 日圓</option>`
+                : `<option value="LOCAL" ${selLocal}>${curr.symbol} ${curr.name}</option><option value="TWD" ${selTwd}>NT$ 台幣</option>`;
+
+            const safeTitle = escapeHtml(item.title || '');
+            const safeCost = (item.cost !== undefined && item.cost !== null && item.cost !== '') ? Number(item.cost) : '';
+
+            row.innerHTML = `
+                <div style="flex:1; min-width:180px;">
+                    <input type="text" class="form-input transport-cost-title" placeholder="交通安排 (例如：長江索道單程門票 / 行李打車 / 地鐵)" value="${safeTitle}" oninput="updateModalMealPreview()" style="font-size:0.82rem; height:32px;">
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; width:185px; flex-shrink:0;">
+                    <input type="number" class="form-input transport-cost-val" placeholder="0" min="0" step="10" value="${safeCost}" oninput="updateModalMealPreview()" style="font-weight:700; color:#0284c7; font-size:0.85rem; height:32px; width:95px; text-align:right;">
+                    <select class="cost-curr-select transport-cost-curr" onchange="updateModalMealPreview()" style="font-size:0.75rem; height:32px; flex:1;">
+                        ${currOptions}
+                    </select>
+                </div>
+                <button type="button" class="n-btn n-btn-danger" style="padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; flex-shrink:0;" onclick="removeModalTransportRow(this)" title="刪除此交通項目">
+                    <i class="fa-regular fa-trash-can" style="font-size:0.8rem;"></i>
+                </button>
+            `;
+            return row;
+        }
+
+        function addModalTransportRow(defaultData = {}) {
+            const list = document.getElementById('modalTransportList');
+            const emptyNotice = document.getElementById('modalTransportEmptyNotice');
+            if (!list) return;
+            if (emptyNotice) emptyNotice.style.display = 'none';
+
+            const plan = getCurrentPlan();
+            const curr = getPlanCurrency(plan);
+            const row = createTransportRowElement(defaultData, curr);
+            list.appendChild(row);
+
+            const titleInput = row.querySelector('.transport-cost-title');
+            if (titleInput && !defaultData.title) {
+                titleInput.focus();
+            }
+            updateModalMealPreview();
+        }
+
+        function removeModalTransportRow(btn) {
+            const row = btn.closest('.transport-cost-row');
+            if (row) {
+                row.remove();
+            }
+            const list = document.getElementById('modalTransportList');
+            const emptyNotice = document.getElementById('modalTransportEmptyNotice');
+            if (list && list.children.length === 0 && emptyNotice) {
+                emptyNotice.style.display = 'block';
+            }
+            updateModalMealPreview();
+        }
+
+        function populateModalTransports(transports = [], curr = null) {
+            const list = document.getElementById('modalTransportList');
+            const emptyNotice = document.getElementById('modalTransportEmptyNotice');
+            if (!list) return;
+            list.innerHTML = '';
+            if (!Array.isArray(transports) || transports.length === 0) {
+                if (emptyNotice) emptyNotice.style.display = 'block';
+                return;
+            }
+            if (emptyNotice) emptyNotice.style.display = 'none';
+            transports.forEach(item => {
+                const row = createTransportRowElement(item, curr);
+                list.appendChild(row);
+            });
+        }
+
+        // ===== 🎫 景點門票多筆明細處理 =====
+        function createSpotRowElement(item = {}, curr = null) {
+            if (!curr) {
+                const plan = getCurrentPlan();
+                curr = getPlanCurrency(plan);
+            }
+            const row = document.createElement('div');
+            row.className = 'spot-cost-row';
+            row.style.cssText = 'background:#ffffff; border:1px solid #bbf7d0; border-radius:6px; padding:8px 10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;';
+
+            const isTwd = (curr.code === 'TWD');
+            const selLocal = (!item.curr || item.curr === 'LOCAL') ? 'selected' : '';
+            const selTwd = (item.curr === 'TWD') ? 'selected' : '';
+            const currOptions = isTwd
+                ? `<option value="LOCAL" ${selLocal}>NT$ 新台幣</option><option value="USD" ${item.curr === 'USD' ? 'selected' : ''}>$ 美元</option><option value="CNY" ${item.curr === 'CNY' ? 'selected' : ''}>¥ 人民幣</option><option value="JPY" ${item.curr === 'JPY' ? 'selected' : ''}>¥ 日圓</option>`
+                : `<option value="LOCAL" ${selLocal}>${curr.symbol} ${curr.name}</option><option value="TWD" ${selTwd}>NT$ 台幣</option>`;
+
+            const safeTitle = escapeHtml(item.title || '');
+            const safeCost = (item.cost !== undefined && item.cost !== null && item.cost !== '') ? Number(item.cost) : '';
+
+            row.innerHTML = `
+                <div style="flex:1; min-width:180px;">
+                    <input type="text" class="form-input spot-cost-title" placeholder="景點門票安排 (例如：武隆天生三橋門票+電梯 / 羅漢寺香花券)" value="${safeTitle}" oninput="updateModalMealPreview()" style="font-size:0.82rem; height:32px;">
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; width:185px; flex-shrink:0;">
+                    <input type="number" class="form-input spot-cost-val" placeholder="0" min="0" step="10" value="${safeCost}" oninput="updateModalMealPreview()" style="font-weight:700; color:#16a34a; font-size:0.85rem; height:32px; width:95px; text-align:right;">
+                    <select class="cost-curr-select spot-cost-curr" onchange="updateModalMealPreview()" style="font-size:0.75rem; height:32px; flex:1;">
+                        ${currOptions}
+                    </select>
+                </div>
+                <button type="button" class="n-btn n-btn-danger" style="padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; flex-shrink:0;" onclick="removeModalSpotRow(this)" title="刪除此景點項目">
+                    <i class="fa-regular fa-trash-can" style="font-size:0.8rem;"></i>
+                </button>
+            `;
+            return row;
+        }
+
+        function addModalSpotRow(defaultData = {}) {
+            const list = document.getElementById('modalSpotList');
+            const emptyNotice = document.getElementById('modalSpotEmptyNotice');
+            if (!list) return;
+            if (emptyNotice) emptyNotice.style.display = 'none';
+
+            const plan = getCurrentPlan();
+            const curr = getPlanCurrency(plan);
+            const row = createSpotRowElement(defaultData, curr);
+            list.appendChild(row);
+
+            const titleInput = row.querySelector('.spot-cost-title');
+            if (titleInput && !defaultData.title) {
+                titleInput.focus();
+            }
+            updateModalMealPreview();
+        }
+
+        function removeModalSpotRow(btn) {
+            const row = btn.closest('.spot-cost-row');
+            if (row) {
+                row.remove();
+            }
+            const list = document.getElementById('modalSpotList');
+            const emptyNotice = document.getElementById('modalSpotEmptyNotice');
+            if (list && list.children.length === 0 && emptyNotice) {
+                emptyNotice.style.display = 'block';
+            }
+            updateModalMealPreview();
+        }
+
+        function populateModalSpots(spots = [], curr = null) {
+            const list = document.getElementById('modalSpotList');
+            const emptyNotice = document.getElementById('modalSpotEmptyNotice');
+            if (!list) return;
+            list.innerHTML = '';
+            if (!Array.isArray(spots) || spots.length === 0) {
+                if (emptyNotice) emptyNotice.style.display = 'block';
+                return;
+            }
+            if (emptyNotice) emptyNotice.style.display = 'none';
+            spots.forEach(item => {
+                const row = createSpotRowElement(item, curr);
+                list.appendChild(row);
+            });
+        }
+
         function openEditDayMetaModal(dayNum, focusField) {
             const plan = getCurrentPlan();
             if (!plan) return;
@@ -8671,7 +8847,7 @@ const firebaseConfig = {
             const rateInput = document.getElementById('editMetaPlanExchangeRate');
             if (rateInput) rateInput.value = curr.rate;
 
-            // 2. 填充各欄位幣別選單並帶入既有選擇
+            // 2. 填充餐食幣別選單並帶入既有選擇
             populateCostCurrSelects(curr, day);
 
             // 3. 早中晚餐費與點心飲料備註
@@ -8684,23 +8860,35 @@ const firebaseConfig = {
             document.getElementById('editMetaDinnerCost').value = Number(day.dinnerCost || 0);
             document.getElementById('editMetaSnackCost').value = Number(day.snackCost || 0);
 
-            // 4. 計算活動加總作為參考
-            let evTrans = 0;
-            let evSpot = 0;
-            (day.events || []).forEach(e => {
-                const c = Number(e.cost || 0);
-                if (e.type === 'trans' || e.type === 'flight') evTrans += c;
-                else if (e.type === 'spot') evSpot += c;
-            });
+            // 4. 初始化交通多筆清單 (向下相容既有 transportCost 與 transportNote)
+            let initialTransports = [];
+            if (Array.isArray(day.transports) && day.transports.length > 0) {
+                initialTransports = day.transports;
+            } else if (day.transportCost !== undefined && day.transportCost !== null && (day.transportCost > 0 || day.transportNote)) {
+                initialTransports = [{
+                    title: day.transportNote || '當日交通安排',
+                    cost: Number(day.transportCost) || 0,
+                    curr: day.transportCurr || 'LOCAL'
+                }];
+            } else {
+                initialTransports = [{ title: '', cost: '', curr: 'LOCAL' }];
+            }
+            populateModalTransports(initialTransports, curr);
 
-            // 5. 交通與景點費用
-            const transVal = (day.transportCost !== undefined && day.transportCost !== null) ? Number(day.transportCost) : evTrans;
-            const spotVal = (day.spotCost !== undefined && day.spotCost !== null) ? Number(day.spotCost) : evSpot;
-
-            document.getElementById('editMetaTransportCost').value = transVal;
-            document.getElementById('editMetaTransportNote').value = day.transportNote || '';
-            document.getElementById('editMetaSpotCost').value = spotVal;
-            document.getElementById('editMetaSpotNote').value = day.spotNote || '';
+            // 5. 初始化景點門票多筆清單 (向下相容既有 spotCost 與 spotNote)
+            let initialSpots = [];
+            if (Array.isArray(day.spots) && day.spots.length > 0) {
+                initialSpots = day.spots;
+            } else if (day.spotCost !== undefined && day.spotCost !== null && (day.spotCost > 0 || day.spotNote)) {
+                initialSpots = [{
+                    title: day.spotNote || '當日景點門票安排',
+                    cost: Number(day.spotCost) || 0,
+                    curr: day.spotCurr || 'LOCAL'
+                }];
+            } else {
+                initialSpots = [{ title: '', cost: '', curr: 'LOCAL' }];
+            }
+            populateModalSpots(initialSpots, curr);
 
             // 6. 載入自訂其他費用項目清單
             populateModalExtraCosts(day.extraCosts || [], curr);
@@ -8711,12 +8899,12 @@ const firebaseConfig = {
             // 自動聚焦到指定欄位
             if (focusField === 'transport') {
                 setTimeout(() => {
-                    const el = document.getElementById('editMetaTransportCost');
+                    const el = document.querySelector('#modalTransportList .transport-cost-title');
                     if (el) { el.focus(); el.select(); }
                 }, 150);
             } else if (focusField === 'spot') {
                 setTimeout(() => {
-                    const el = document.getElementById('editMetaSpotCost');
+                    const el = document.querySelector('#modalSpotList .spot-cost-title');
                     if (el) { el.focus(); el.select(); }
                 }, 150);
             } else if (focusField === 'meals') {
@@ -8744,18 +8932,21 @@ const firebaseConfig = {
             if (!day) return;
 
             const curr = getPlanCurrency(plan);
-            let evTrans = 0;
-            (day.events || []).forEach(e => {
-                const c = Number(e.cost || 0);
-                if (e.type === 'trans' || e.type === 'flight') evTrans += c;
-            });
-            document.getElementById('editMetaTransportCost').value = evTrans;
-            const transCurrSel = document.getElementById('editMetaTransportCurr');
-            if (transCurrSel) transCurrSel.value = 'LOCAL';
-            updateModalMealPreview();
-            if (typeof showToast === 'function') {
-                showToast('info', `已帶入當日活動交通合計 ${curr.symbol} ${evTrans.toLocaleString()} (≈ NT$ ${Math.round(evTrans * curr.rate).toLocaleString()})`);
+            const transEvents = (day.events || []).filter(e => e.type === 'trans' || e.type === 'flight');
+            
+            if (transEvents.length === 0) {
+                showToast('info', '當日行程活動中尚未標註任何交通項目');
+                return;
             }
+
+            const items = transEvents.map(e => ({
+                title: e.title || (e.type === 'flight' ? '航班機票' : '交通'),
+                cost: Number(e.cost || 0),
+                curr: 'LOCAL'
+            }));
+            populateModalTransports(items, curr);
+            updateModalMealPreview();
+            showToast('success', `已帶入當日活動 ${items.length} 趟交通明細！`);
         }
 
         function syncSpotFromEvents() {
@@ -8766,18 +8957,21 @@ const firebaseConfig = {
             if (!day) return;
 
             const curr = getPlanCurrency(plan);
-            let evSpot = 0;
-            (day.events || []).forEach(e => {
-                const c = Number(e.cost || 0);
-                if (e.type === 'spot') evSpot += c;
-            });
-            document.getElementById('editMetaSpotCost').value = evSpot;
-            const spotCurrSel = document.getElementById('editMetaSpotCurr');
-            if (spotCurrSel) spotCurrSel.value = 'LOCAL';
-            updateModalMealPreview();
-            if (typeof showToast === 'function') {
-                showToast('info', `已帶入當日活動景點合計 ${curr.symbol} ${evSpot.toLocaleString()} (≈ NT$ ${Math.round(evSpot * curr.rate).toLocaleString()})`);
+            const spotEvents = (day.events || []).filter(e => e.type === 'spot');
+            
+            if (spotEvents.length === 0) {
+                showToast('info', '當日行程活動中尚未標註任何景點門票項目');
+                return;
             }
+
+            const items = spotEvents.map(e => ({
+                title: e.title || '景點門票',
+                cost: Number(e.cost || 0),
+                curr: 'LOCAL'
+            }));
+            populateModalSpots(items, curr);
+            updateModalMealPreview();
+            showToast('success', `已帶入當日活動 ${items.length} 個景點門票明細！`);
         }
 
         function quickEditDayCost(dayNum, category) {
@@ -8829,14 +9023,63 @@ const firebaseConfig = {
             const lc = parseItem('editMetaLunchCost', 'editMetaLunchCurr');
             const dn = parseItem('editMetaDinnerCost', 'editMetaDinnerCurr');
             const snack = parseItem('editMetaSnackCost', 'editMetaSnackCurr');
-            const trans = parseItem('editMetaTransportCost', 'editMetaTransportCurr');
-            const spot = parseItem('editMetaSpotCost', 'editMetaSpotCurr');
 
             const mealsLocal = bf.local + lc.local + dn.local + snack.local;
             const mealsTwd = bf.twd + lc.twd + dn.twd + snack.twd;
 
-            const transSpotLocal = trans.local + spot.local;
-            const transSpotTwd = trans.twd + spot.twd;
+            // 計算多筆交通項目
+            const transRows = document.querySelectorAll('#modalTransportList .transport-cost-row');
+            let transTotalLocal = 0;
+            let transTotalTwd = 0;
+            const transSummaryList = [];
+            transRows.forEach(row => {
+                const title = row.querySelector('.transport-cost-title')?.value.trim() || '';
+                const val = Math.max(0, Number(row.querySelector('.transport-cost-val')?.value) || 0);
+                const currType = row.querySelector('.transport-cost-curr')?.value || 'LOCAL';
+                let itemLocal = 0;
+                let itemTwd = 0;
+                if (val > 0) {
+                    if (currType === 'TWD') {
+                        itemTwd = val;
+                        itemLocal = (currCode === 'TWD') ? val : Math.round(val / currentRate);
+                    } else {
+                        itemLocal = val;
+                        itemTwd = Math.round(val * currentRate);
+                    }
+                    transTotalLocal += itemLocal;
+                    transTotalTwd += itemTwd;
+                    transSummaryList.push({ title: title || '交通支出', local: itemLocal, twd: itemTwd });
+                } else if (title) {
+                    transSummaryList.push({ title, local: 0, twd: 0 });
+                }
+            });
+
+            // 計算多筆景點門票項目
+            const spotRows = document.querySelectorAll('#modalSpotList .spot-cost-row');
+            let spotTotalLocal = 0;
+            let spotTotalTwd = 0;
+            const spotSummaryList = [];
+            spotRows.forEach(row => {
+                const title = row.querySelector('.spot-cost-title')?.value.trim() || '';
+                const val = Math.max(0, Number(row.querySelector('.spot-cost-val')?.value) || 0);
+                const currType = row.querySelector('.spot-cost-curr')?.value || 'LOCAL';
+                let itemLocal = 0;
+                let itemTwd = 0;
+                if (val > 0) {
+                    if (currType === 'TWD') {
+                        itemTwd = val;
+                        itemLocal = (currCode === 'TWD') ? val : Math.round(val / currentRate);
+                    } else {
+                        itemLocal = val;
+                        itemTwd = Math.round(val * currentRate);
+                    }
+                    spotTotalLocal += itemLocal;
+                    spotTotalTwd += itemTwd;
+                    spotSummaryList.push({ title: title || '門票', local: itemLocal, twd: itemTwd });
+                } else if (title) {
+                    spotSummaryList.push({ title, local: 0, twd: 0 });
+                }
+            });
 
             // 計算自訂其他費用項目 (動態列表)
             const extraRows = document.querySelectorAll('#modalExtraCostsList .extra-cost-row');
@@ -8870,12 +9113,17 @@ const firebaseConfig = {
                 previewTotalEl.innerHTML = `餐食小計: <strong>${currSymbol} ${mealsLocal.toLocaleString()}</strong> <small style="color:#64748b; font-weight:normal;">(≈ NT$ ${mealsTwd.toLocaleString()})</small>`;
             }
 
-            const previewTransSpotEl = document.getElementById('modalTransSpotTotalPreview');
-            if (previewTransSpotEl) {
-                previewTransSpotEl.innerHTML = `交通+景點: <strong>${currSymbol} ${transSpotLocal.toLocaleString()}</strong> <small style="color:#64748b; font-weight:normal;">(≈ NT$ ${transSpotTwd.toLocaleString()})</small>`;
+            const previewTransEl = document.getElementById('modalTransportTotalPreview');
+            if (previewTransEl) {
+                previewTransEl.innerHTML = `交通小計: <strong>${currSymbol} ${transTotalLocal.toLocaleString()}</strong> <small style="color:#64748b; font-weight:normal;">(≈ NT$ ${transTotalTwd.toLocaleString()})</small>`;
             }
 
-            // 計算其他活動開銷 (非交通非景點)
+            const previewSpotEl = document.getElementById('modalSpotTotalPreview');
+            if (previewSpotEl) {
+                previewSpotEl.innerHTML = `門票小計: <strong>${currSymbol} ${spotTotalLocal.toLocaleString()}</strong> <small style="color:#64748b; font-weight:normal;">(≈ NT$ ${spotTotalTwd.toLocaleString()})</small>`;
+            }
+
+            // 計算其他未分類活動開銷 (非交通非景點)
             let otherSumLocal = 0;
             let otherSumTwd = 0;
             if (day && day.events) {
@@ -8887,8 +9135,8 @@ const firebaseConfig = {
                     }
                 });
             }
-            const grandTotalLocal = mealsLocal + transSpotLocal + extraSumLocal + otherSumLocal;
-            const grandTotalTwd = mealsTwd + transSpotTwd + extraSumTwd + otherSumTwd;
+            const grandTotalLocal = mealsLocal + transTotalLocal + spotTotalLocal + extraSumLocal + otherSumLocal;
+            const grandTotalTwd = mealsTwd + transTotalTwd + spotTotalTwd + extraSumTwd + otherSumTwd;
             const memberCount = Math.max(1, Number(plan.memberCount) || 1);
             const grandTotalGroupLocal = grandTotalLocal * memberCount;
             const grandTotalGroupTwd = grandTotalTwd * memberCount;
@@ -8911,10 +9159,15 @@ const firebaseConfig = {
                             🍲 晚餐: <strong>${dn.display}</strong>
                         </div>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; background:#ffffff; padding:7px 10px; border-radius:5px; border:1px solid #e2e8f0; font-size:0.8rem; flex-wrap:wrap; gap:6px;">
-                        <span>🚗 交通: <strong style="color:#0284c7;">${trans.display}</strong></span>
-                        <span>🎫 景點: <strong style="color:#16a34a;">${spot.display}</strong></span>
-                        <span>🍽️ 餐食小計: <strong style="color:#ea580c;">${currSymbol} ${mealsLocal.toLocaleString()}</strong> <small style="color:#64748b;">(≈NT$${mealsTwd.toLocaleString()})</small></span>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:6px;">
+                        <div style="background:#f0f9ff; padding:7px 10px; border-radius:5px; border:1px solid #bae6fd; font-size:0.8rem;">
+                            🚗 交通 (${transSummaryList.length}趟): <strong style="color:#0284c7;">${currSymbol} ${transTotalLocal.toLocaleString()}</strong> <small style="color:#64748b;">(≈NT$${transTotalTwd.toLocaleString()})</small>
+                            ${transSummaryList.length > 0 ? `<div style="font-size:0.72rem; color:#0369a1; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(transSummaryList.map(it => it.title).join('、'))}</div>` : ''}
+                        </div>
+                        <div style="background:#f0fdf4; padding:7px 10px; border-radius:5px; border:1px solid #bbf7d0; font-size:0.8rem;">
+                            🎫 景點 (${spotSummaryList.length}項): <strong style="color:#16a34a;">${currSymbol} ${spotTotalLocal.toLocaleString()}</strong> <small style="color:#64748b;">(≈NT$${spotTotalTwd.toLocaleString()})</small>
+                            ${spotSummaryList.length > 0 ? `<div style="font-size:0.72rem; color:#15803d; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(spotSummaryList.map(it => it.title).join('、'))}</div>` : ''}
+                        </div>
                     </div>
                     ${extraSumLocal > 0 ? `
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; background:#fff7ed; padding:7px 10px; border-radius:5px; border:1px solid #fed7aa; font-size:0.8rem; flex-wrap:wrap; gap:6px;">
@@ -8965,7 +9218,7 @@ const firebaseConfig = {
             day.dinner = document.getElementById('editMetaDinner').value;
             day.snack = document.getElementById('editMetaSnack')?.value || '';
 
-            // 3. 儲存費用數值與個別幣別
+            // 3. 儲存餐飲費用數值與個別幣別
             day.breakfastCost = Math.max(0, Number(document.getElementById('editMetaBreakfastCost').value) || 0);
             day.breakfastCurr = document.getElementById('editMetaBreakfastCurr')?.value || 'LOCAL';
 
@@ -8978,28 +9231,7 @@ const firebaseConfig = {
             day.snackCost = Math.max(0, Number(document.getElementById('editMetaSnackCost')?.value) || 0);
             day.snackCurr = document.getElementById('editMetaSnackCurr')?.value || 'LOCAL';
 
-            day.transportCost = Math.max(0, Number(document.getElementById('editMetaTransportCost').value) || 0);
-            day.transportCurr = document.getElementById('editMetaTransportCurr')?.value || 'LOCAL';
-            day.transportNote = document.getElementById('editMetaTransportNote').value;
-
-            day.spotCost = Math.max(0, Number(document.getElementById('editMetaSpotCost').value) || 0);
-            day.spotCurr = document.getElementById('editMetaSpotCurr')?.value || 'LOCAL';
-            day.spotNote = document.getElementById('editMetaSpotNote').value;
-
-            // 4. 儲存自訂其他費用項目
-            const extraRows = document.querySelectorAll('#modalExtraCostsList .extra-cost-row');
-            const extraCosts = [];
-            extraRows.forEach(row => {
-                const title = row.querySelector('.extra-cost-title')?.value.trim() || '';
-                const cost = Math.max(0, Number(row.querySelector('.extra-cost-val')?.value) || 0);
-                const curr = row.querySelector('.extra-cost-curr')?.value || 'LOCAL';
-                if (title || cost > 0) {
-                    extraCosts.push({ title: title || '自訂項目', cost, curr });
-                }
-            });
-            day.extraCosts = extraCosts;
-
-            // 5. 計算當日折合當地幣與折合台幣總額
+            // 4. 計算折合輔助函數
             function getCostLocalAndTwd(val, currType) {
                 if (!val || val <= 0) return { local: 0, twd: 0 };
                 if (currType === 'TWD') {
@@ -9013,20 +9245,69 @@ const firebaseConfig = {
                 }
             }
 
+            // 5. 儲存多筆交通項目
+            const transRows = document.querySelectorAll('#modalTransportList .transport-cost-row');
+            const transports = [];
+            let transSumLocal = 0;
+            let transSumTwd = 0;
+            transRows.forEach(row => {
+                const title = row.querySelector('.transport-cost-title')?.value.trim() || '';
+                const cost = Math.max(0, Number(row.querySelector('.transport-cost-val')?.value) || 0);
+                const curr = row.querySelector('.transport-cost-curr')?.value || 'LOCAL';
+                if (title || cost > 0) {
+                    transports.push({ title: title || '交通支出', cost, curr });
+                    const c = getCostLocalAndTwd(cost, curr);
+                    transSumLocal += c.local;
+                    transSumTwd += c.twd;
+                }
+            });
+            day.transports = transports;
+            day.transportCost = transSumLocal;
+            day.transportNote = transports.map(t => t.title).filter(Boolean).join(' + ');
+
+            // 6. 儲存多筆景點門票項目
+            const spotRows = document.querySelectorAll('#modalSpotList .spot-cost-row');
+            const spots = [];
+            let spotSumLocal = 0;
+            let spotSumTwd = 0;
+            spotRows.forEach(row => {
+                const title = row.querySelector('.spot-cost-title')?.value.trim() || '';
+                const cost = Math.max(0, Number(row.querySelector('.spot-cost-val')?.value) || 0);
+                const curr = row.querySelector('.spot-cost-curr')?.value || 'LOCAL';
+                if (title || cost > 0) {
+                    spots.push({ title: title || '景點門票', cost, curr });
+                    const c = getCostLocalAndTwd(cost, curr);
+                    spotSumLocal += c.local;
+                    spotSumTwd += c.twd;
+                }
+            });
+            day.spots = spots;
+            day.spotCost = spotSumLocal;
+            day.spotNote = spots.map(s => s.title).filter(Boolean).join(' + ');
+
+            // 7. 儲存自訂其他費用項目
+            const extraRows = document.querySelectorAll('#modalExtraCostsList .extra-cost-row');
+            const extraCosts = [];
+            let extraSumLocal = 0;
+            let extraSumTwd = 0;
+            extraRows.forEach(row => {
+                const title = row.querySelector('.extra-cost-title')?.value.trim() || '';
+                const cost = Math.max(0, Number(row.querySelector('.extra-cost-val')?.value) || 0);
+                const curr = row.querySelector('.extra-cost-curr')?.value || 'LOCAL';
+                if (title || cost > 0) {
+                    extraCosts.push({ title: title || '自訂項目', cost, curr });
+                    const c = getCostLocalAndTwd(cost, curr);
+                    extraSumLocal += c.local;
+                    extraSumTwd += c.twd;
+                }
+            });
+            day.extraCosts = extraCosts;
+
+            // 8. 計算當日早中晚與其他花費總額
             const cBf = getCostLocalAndTwd(day.breakfastCost, day.breakfastCurr);
             const cLc = getCostLocalAndTwd(day.lunchCost, day.lunchCurr);
             const cDn = getCostLocalAndTwd(day.dinnerCost, day.dinnerCurr);
             const cSnack = getCostLocalAndTwd(day.snackCost, day.snackCurr);
-            const cTrans = getCostLocalAndTwd(day.transportCost, day.transportCurr);
-            const cSpot = getCostLocalAndTwd(day.spotCost, day.spotCurr);
-
-            let extraSumLocal = 0;
-            let extraSumTwd = 0;
-            extraCosts.forEach(item => {
-                const c = getCostLocalAndTwd(item.cost, item.curr);
-                extraSumLocal += c.local;
-                extraSumTwd += c.twd;
-            });
 
             let otherSumLocal = 0;
             let otherSumTwd = 0;
@@ -9038,8 +9319,8 @@ const firebaseConfig = {
                 }
             });
 
-            day.budget = cBf.local + cLc.local + cDn.local + cSnack.local + cTrans.local + cSpot.local + extraSumLocal + otherSumLocal;
-            day.budgetTwd = cBf.twd + cLc.twd + cDn.twd + cSnack.twd + cTrans.twd + cSpot.twd + extraSumTwd + otherSumTwd;
+            day.budget = cBf.local + cLc.local + cDn.local + cSnack.local + transSumLocal + spotSumLocal + extraSumLocal + otherSumLocal;
+            day.budgetTwd = cBf.twd + cLc.twd + cDn.twd + cSnack.twd + transSumTwd + spotSumTwd + extraSumTwd + otherSumTwd;
 
             saveState();
             closeModal('editDayMetaModal');
@@ -9048,7 +9329,7 @@ const firebaseConfig = {
             renderBudgetView();
             renderTripSummary();
             syncCurrencyBoxWithPlan();
-            showToast('success', `已成功儲存 Day ${dayNum} 預算與設定！`);
+            showToast('success', `已成功儲存 Day ${dayNum} 交通、門票與預算設定！`);
         }
 
         // Booking Modal (支援新增與編輯，防呆與防閃退)
