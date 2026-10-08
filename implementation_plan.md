@@ -1,50 +1,45 @@
-# 旅遊規劃系統 v2.15 行程時間精準對齊與單點時間接駁修復計畫
+# 旅遊規劃系統 v2.16 每日行程航班與交通設定雙向連動實作計畫
 
-## 1. 問題分析與痛點確認
-- **使用者回報問題**：「前一項結束時間+移動時間和下一項開始時間對不起來」（截圖：前項為單點時間 `04:20` 機場專車接送出發，接駁移動自訂 45 分鐘，接駁條顯示 `(05:20 ➔ 06:05)`，次項班機開始時間為 `06:05`）。
-- **根本原因 (Root Cause)**：
-  1. `parseTimeString` 解析單點時間（如 `04:20`）時，系統預設為其加上 60 分鐘，導致回傳之 `endMinutes` 為 `05:20`。
-  2. 接駁推算與連動調整依賴 `pPrev.endMinutes`，以 `05:20` 作為起算點加上 45 分鐘車程，使得次項班機行程被推算為 `06:05` 開始，造成平白多出 60 分鐘差距，時間完全對不攏。
+## 1. 使用者需求與情境剖析
+- **使用者需求**：「這邊的航班幫我連動到第二張圖交通的設定」
+  - **圖一（行程項目編輯彈窗）**：目前 Day 1 航班活動時間顯示 `05:05 - 13:15`，與前站（桃園機場等待起飛 05:30 結束）發生重疊衝突，且與交通面板中實際機票時間脫節。
+  - **圖二（側邊欄「交通」設定）**：
+    - 去程轉機航班：國泰航空 CX 407 (08:00 - 10:00) ➔ 香港轉機 3h35m ➔ CX 928 (13:35 - 16:10)，總起訖時間為 **08:00 - 16:10**，PNR: EJ3HIM。
+    - 回程轉機航班：國泰航空 CX 945 (10:50 - 14:25) ➔ 香港轉機 4h50m ➔ CX 464 (19:35 - 21:20)，總起訖時間為 **10:50 - 21:20**，PNR: CX8888。
 - **目標**：
-  1. 徹底修正單點時間之結束時間與停留時長，單點時間結束時間即開始時間，停留時長為 0 分鐘。
-  2. 接駁起算時間依據「前項有效結束時間」（單點時間即其出發時間，區間時間即其結束時間）。
-  3. 時間軸接駁條清楚標註移動起迄時間，並新增「⚡ 一鍵對齊次站」快捷按鈕，讓時程未吻合時能秒級自動校正。
-  4. 接駁設定彈窗、停留時間調整彈窗、即時影響分析全方位同步校準。
-  5. 升級至 v2.15，通過 DOM 結構驗證與單元測試，完成 Git 版控與 GitHub 部署。
+  1. 在行程項目編輯彈窗（圖一）中，當類別為「✈️ 航班航程」時，提供「✈️ 連動交通設定航班」專屬控制區，支援下拉選取與「⚡ 一鍵同步帶入航班時間與資訊」，自動填入起訖時間（08:00 - 16:10）、標準名稱、抵達機場與轉機攻略，並自動排解時間衝突。
+  2. 在側邊欄交通航班卡片（圖二）上，增加「📅 同步至 Day 1 行程」與「📅 同步至回程行程」快捷按鈕，點擊即可一鍵更新每日時間軸行程活動。
+  3. 在交通航班編輯彈窗（`editFlightModal`）中，提供「同步更新每日行程中關聯之航班時間與資訊」選項，儲存時雙向連動更新每日行程。
+  4. 同步校準當前 Day 1 範例資料中的航班時間為交通設定之真實時間（08:00 - 16:10）。
+  5. 升級至 v2.16，通過單元測試與 DOM 檢驗，完成 Git 版控。
 
 ---
 
-## 2. 預計修改項目與架構規劃
+## 2. 實作架構設計
 
-### A. 時間解析演算法 (`parseTimeString`)
-- 當匹配單點時間（如 `04:20`、`08:30 以後`）時：
-  - `startMinutes`: `startM`
-  - `endMinutes`: `startM`
-  - `durationMinutes`: `0`
-  - `startTimeStr`: `HH:MM`
-  - `endTimeStr`: `HH:MM`
-  - `hasEnd`: `false`
+### A. 航班轉換工具函式 (`getFlightLegDetails`)
+- 輸入 `leg`，提取：
+  - `startTime`: `leg.depTime` (如 `08:00`)
+  - `endTime`: 轉機取 `leg.arrTime2` (如 `16:10`)，直飛取 `leg.arrTime`
+  - `timeStr`: `${startTime} - ${endTime}`
+  - `title`: 組合出標準標題（包含起訖城市與航空公司/班機代碼）
+  - `loc`: 最終抵達機場（如 `重慶江北國際機場 T3`）
+  - `notes`: 轉機資訊、總時長與 PNR 代碼
 
-### B. 接駁時間計算與時間軸呈現 (`renderTimelineView`)
-- 前項起算時間：`prevEndM = prevParsed.hasEnd ? prevParsed.endMinutes : prevParsed.startMinutes`
-- 前項時間標籤：`prevTimeLabel = prevParsed.hasEnd ? prevParsed.endTimeStr : prevParsed.startTimeStr`
-- 自訂車程預期抵達時間：`expNextStartM = prevEndM + displayMinutes`
-- 若次項開始時間與預期抵達時間不符（如曾被舊版推算算錯），接駁條顯示 `(${prevTimeLabel} ➔ 預計 ${expNextTimeStr})`，並在接駁動作區提供「⚡ 對齊次站 (${expNextTimeStr})」快捷按鈕。
-- 若兩站時間已完美吻合，顯示 `(${prevTimeLabel} ➔ ${parsed.startTimeStr})`。
+### B. 行程活動編輯彈窗介面與邏輯 (`addEventModal`)
+- 在行程類別標籤下方加入 `#eventFlightLinkBox`。
+- 切換至「航班航程」時動態顯示，並載入 `plan.flights.legs` 的所有航班選項。
+- 點擊「一鍵同步帶入」時，將時間選擇器設為該航班的起訖時間，並同步填入名稱、地點與備註。
+- 活動物件記錄 `flightLegIndex`，完成關聯綁定。
 
-### C. 新增一鍵對齊次站函數 (`syncNextEventWithTransit`)
-- 點擊後以「前項有效結束時間 ＋ 移動時間」精準平移次站開始時間，保持次站原本停留時長，並連鎖順延後續行程。
+### C. 側邊欄交通卡片一鍵連動按鈕 (`renderSidebarFlights`)
+- 在去程與回程航班卡片上，加入「📅 同步至 Day 1 行程」與「📅 同步至回程行程」快捷按鈕。
+- 點擊呼叫 `syncFlightLegToDaySchedule(legIndex)`，自動更新對應天的航班行程時間，重新排序時間軸並存檔。
 
-### D. 接駁設定彈窗與即時預覽推算 (`openTransitSettingsModal`, `updateTransitLivePreview`, `handleSaveTransitSubmit`)
-- 起算點統一採用前項有效結束時間，提示文字顯示「前站於 04:20 出發 ➔ 移動車程 45 分鐘 ➔ 次站時間將自動調整為 05:05」。
-- 儲存時以 `prevEndM + minutes` 精準平移次站開始時間。
+### D. 交通編輯彈窗雙向連動 (`handleSaveFlightSubmit`)
+- 儲存機票修改時，若勾選同步選項，自動更新行程中對應的航班時間與資訊。
 
-### E. 景點停留時間與行程編輯防護
-- 停留時間修改中，舊結束時間取用 `oldEndM = parsed.hasEnd ? parsed.endMinutes : parsed.startMinutes`。
-- 行程編輯時保留現有之 `transit` 物件設定。
-
-### F. 版本升級與同步
-- 升級版本號至 `v2.15`。
-- 同步至 `travel_planner.html`。
-- 透過 `uv run python` 進行自動化測試與 DOM 檢驗。
-- Git Commit 並 Push 到遠端倉庫。
+### E. 版本升級與測試
+- 升級版本號至 `v2.16`。
+- 執行自動化測試與 DOM 驗證。
+- 同步至 `travel_planner.html` 並提交 Git Commit & Push。

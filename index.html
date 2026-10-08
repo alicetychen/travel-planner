@@ -2656,7 +2656,7 @@
     <div class="notion-topbar">
         <div class="notion-breadcrumbs">
             <span style="font-weight: 700; color: var(--notion-text); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.15</span>
+                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.16</span>
             </span>
         </div>
         <div class="topbar-actions">
@@ -3220,6 +3220,29 @@
                                 <option value="relax">☕ 休閒放鬆</option>
                                 <option value="other">📌 其他安排</option>
                             </select>
+                        </div>
+                    </div>
+
+                    <!-- 航班交通設定即時連動卡片模組 (當行程類別選為「航班航程」時動態展開) -->
+                    <div id="eventFlightLinkBox" style="display:none; background:#f0f9ff; border:1px solid #7dd3fc; border-radius:8px; padding:12px; margin-bottom:14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <span style="font-weight:700; color:#0369a1; font-size:0.84rem; display:flex; align-items:center; gap:6px;">
+                                <i class="fa-solid fa-plane-departure"></i> 連動交通設定航班 (機票實際時刻)
+                            </span>
+                            <button type="button" class="n-btn" style="padding:2px 7px; font-size:0.72rem; color:#0284c7; background:#fff; border-color:#bae6fd;" onclick="openEditFlightModal()" title="開啟交通面板編輯機票資訊">
+                                <i class="fa-solid fa-gear"></i> 管理交通航班
+                            </button>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <select id="eventFlightSelect" class="form-input" style="flex:1; min-width:220px; font-size:0.8rem; font-weight:700; color:#0369a1; background:#fff;" onchange="handleFlightSelectChange()">
+                                <!-- 動態填入 options -->
+                            </select>
+                            <button type="button" class="n-btn n-btn-primary" style="padding:6px 12px; font-size:0.78rem; font-weight:700; white-space:nowrap; background:#0284c7; border-color:#0284c7;" onclick="applySelectedFlightToEvent()">
+                                <i class="fa-solid fa-cloud-arrow-down"></i> 一鍵同步帶入時間與資訊
+                            </button>
+                        </div>
+                        <div id="eventFlightLinkSummary" style="font-size:0.75rem; color:#475569; margin-top:8px; line-height:1.5; background:#fff; border:1px solid #e0f2fe; border-radius:6px; padding:8px 10px;">
+                            <!-- 顯示航線、起訖站、起飛降落時間與轉機時長 -->
                         </div>
                     </div>
 
@@ -3922,9 +3945,15 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="n-btn" onclick="closeModal('editFlightModal')">取消</button>
-                    <button type="submit" class="n-btn n-btn-primary">儲存航班交通設定</button>
+                <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                    <label style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#0369a1; cursor:pointer; user-select:none; font-weight:600;">
+                        <input type="checkbox" id="fSyncToScheduleCheckbox" checked>
+                        <i class="fa-solid fa-rotate"></i> 同步更新每日行程中關聯之航班時間與資訊
+                    </label>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" class="n-btn" onclick="closeModal('editFlightModal')">取消</button>
+                        <button type="submit" class="n-btn n-btn-primary">儲存航班交通設定</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -5237,6 +5266,23 @@ const firebaseConfig = {
                 }
             }
 
+            // 自動相容修復：若行程中航班活動被誤設為臨時推算時間 (例如 05:05 - 13:15)，自動與交通設定中之機票起訖時間對齊
+            Object.values(appState.plans || {}).forEach(p => {
+                if (p && p.flights && p.flights.legs && p.flights.legs[0] && p.days && p.days[0]) {
+                    const leg0 = p.flights.legs[0];
+                    const outInfo = getFlightLegDetails(leg0);
+                    if (outInfo && p.days[0].events) {
+                        const flightEv = p.days[0].events.find(e => e.type === 'flight' || (e.title && e.title.includes('CX407')));
+                        if (flightEv && flightEv.time.includes('05:05')) {
+                            flightEv.time = outInfo.timeStr; // 自動校準為交通設定之 08:00 - 16:10
+                            flightEv.flightLegIndex = 0;
+                            p.days[0].events = sortDayEventsByTime(p.days[0].events);
+                            saveState();
+                        }
+                    }
+                }
+            });
+
             if (!appState.plans[appState.activePlanId]) {
                 appState.activePlanId = 'plan-chongqing';
             }
@@ -5599,7 +5645,12 @@ const firebaseConfig = {
                     return `
                         <div class="flight-side-card" onclick="openEditFlightModal()" title="點擊編輯此航班交通資訊 (支援轉機)">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                <span class="prop-pill ${pillClass}" style="font-size: 0.72rem; padding: 1px 7px;">${pillLabel}</span>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span class="prop-pill ${pillClass}" style="font-size: 0.72rem; padding: 1px 7px;">${pillLabel}</span>
+                                    <button type="button" class="n-btn" style="background:#fff; border-color:${isOutbound ? '#7dd3fc' : '#fed7aa'}; color:${isOutbound ? '#0369a1' : '#c2410c'}; font-size:0.68rem; padding:1px 6px; font-weight:700; border-radius:4px;" onclick="event.stopPropagation(); syncFlightLegToDaySchedule(${idx})" title="點擊將此航班時間 (${leg.depTime} ➔ ${leg.arrTime2 || leg.arrTime}) 同步連動至 Day ${isOutbound ? 1 : '回程'} 行程活動">
+                                        <i class="fa-solid fa-calendar-check"></i> 同步至行程
+                                    </button>
+                                </div>
                                 <span class="flight-card-edit-badge"><i class="fa-solid fa-pen-to-square"></i> 編輯</span>
                             </div>
                             <div class="flight-airline-title">
@@ -5647,7 +5698,12 @@ const firebaseConfig = {
                     return `
                         <div class="flight-side-card" onclick="openEditFlightModal()" title="點擊編輯此航班交通資訊">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                <span class="prop-pill ${pillClass}" style="font-size: 0.72rem; padding: 1px 7px;">${pillLabel}</span>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span class="prop-pill ${pillClass}" style="font-size: 0.72rem; padding: 1px 7px;">${pillLabel}</span>
+                                    <button type="button" class="n-btn" style="background:#fff; border-color:${isOutbound ? '#7dd3fc' : '#fed7aa'}; color:${isOutbound ? '#0369a1' : '#c2410c'}; font-size:0.68rem; padding:1px 6px; font-weight:700; border-radius:4px;" onclick="event.stopPropagation(); syncFlightLegToDaySchedule(${idx})" title="點擊將此航班時間 (${leg.depTime} ➔ ${leg.arrTime}) 同步連動至 Day ${isOutbound ? 1 : '回程'} 行程活動">
+                                        <i class="fa-solid fa-calendar-check"></i> 同步至行程
+                                    </button>
+                                </div>
                                 <span class="flight-card-edit-badge"><i class="fa-solid fa-pen-to-square"></i> 編輯</span>
                             </div>
                             <div class="flight-airline-title">
@@ -5671,6 +5727,63 @@ const firebaseConfig = {
                     `;
                 }
             }).join('');
+        }
+
+        // 在交通卡片上一鍵將指定航班 (去程或回程) 同步更新至每日行程中
+        function syncFlightLegToDaySchedule(legIdx) {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const legs = plan.flights?.legs || [];
+            if (!legs[legIdx]) return;
+
+            const info = getFlightLegDetails(legs[legIdx]);
+            const isOutbound = (legIdx === 0 || legs[legIdx].type === 'outbound');
+
+            // 目標天數：去程為 Day 1，回程為最後一天
+            const targetDayNum = isOutbound ? 1 : (plan.days ? plan.days[plan.days.length - 1].dayNum : 1);
+            const targetDay = (plan.days || []).find(d => d.dayNum === targetDayNum);
+            if (!targetDay) {
+                showToast('error', `找不到 Day ${targetDayNum} 之行程！`);
+                return;
+            }
+            if (!targetDay.events) targetDay.events = [];
+
+            // 尋找對應的航班活動 (優先找 flightLegIndex 吻合、或 type === 'flight'、或標題含班機/航班關鍵字)
+            let eventIdx = targetDay.events.findIndex(e => e.flightLegIndex === legIdx);
+            if (eventIdx < 0) {
+                eventIdx = targetDay.events.findIndex(e => e.type === 'flight');
+            }
+            if (eventIdx < 0) {
+                eventIdx = targetDay.events.findIndex(e => e.title && (e.title.includes('班機') || e.title.includes('航班') || e.title.includes('飛機') || e.title.includes(info.flightNo1)));
+            }
+
+            if (eventIdx >= 0) {
+                // 已有航班活動，精準更新時間、標題、地點與備註
+                const ev = targetDay.events[eventIdx];
+                ev.time = info.timeStr;
+                ev.title = info.title;
+                ev.loc = info.loc;
+                ev.notes = info.notes;
+                ev.type = 'flight';
+                ev.flightLegIndex = legIdx;
+            } else {
+                // 尚未有航班活動，為使用者貼心建立
+                targetDay.events.push({
+                    time: info.timeStr,
+                    title: info.title,
+                    type: 'flight',
+                    loc: info.loc,
+                    cost: 0,
+                    notes: info.notes,
+                    flightLegIndex: legIdx
+                });
+            }
+
+            // 自動排序並儲存
+            targetDay.events = sortDayEventsByTime(targetDay.events);
+            saveState();
+            renderTimelineView();
+            showToast('success', `已成功將【${isOutbound ? '去程' : '回程'}航班】(${info.timeStr}) 同步連動至 Day ${targetDayNum} 行程活動！`);
         }
 
         // ==========================================
@@ -9054,10 +9167,53 @@ const firebaseConfig = {
                 legs: [outLeg, inLeg]
             };
 
+            // 雙向同步：檢查是否勾選同步更新行程活動
+            const syncToSchedule = document.getElementById('fSyncToScheduleCheckbox')?.checked ?? true;
+            if (syncToSchedule && plan.days) {
+                // 1. 同步更新去程至 Day 1
+                const outInfo = getFlightLegDetails(outLeg);
+                const day1 = plan.days.find(d => d.dayNum === 1);
+                if (day1 && day1.events) {
+                    let ev1 = day1.events.find(e => e.flightLegIndex === 0 || e.type === 'flight');
+                    if (!ev1) {
+                        ev1 = day1.events.find(e => e.title && (e.title.includes('班機') || e.title.includes('航班') || e.title.includes('飛機')));
+                    }
+                    if (ev1) {
+                        ev1.time = outInfo.timeStr;
+                        ev1.title = outInfo.title;
+                        ev1.loc = outInfo.loc;
+                        ev1.notes = outInfo.notes;
+                        ev1.type = 'flight';
+                        ev1.flightLegIndex = 0;
+                        day1.events = sortDayEventsByTime(day1.events);
+                    }
+                }
+
+                // 2. 同步更新回程至最後一天
+                const inInfo = getFlightLegDetails(inLeg);
+                const lastDay = plan.days[plan.days.length - 1];
+                if (lastDay && lastDay.events && lastDay.dayNum > 1) {
+                    let evLast = lastDay.events.find(e => e.flightLegIndex === 1);
+                    if (!evLast) {
+                        evLast = lastDay.events.find(e => e.type === 'flight' && e !== (day1 ? day1.events.find(x => x.type === 'flight') : null));
+                    }
+                    if (evLast) {
+                        evLast.time = inInfo.timeStr;
+                        evLast.title = inInfo.title;
+                        evLast.loc = inInfo.loc;
+                        evLast.notes = inInfo.notes;
+                        evLast.type = 'flight';
+                        evLast.flightLegIndex = 1;
+                        lastDay.events = sortDayEventsByTime(lastDay.events);
+                    }
+                }
+                renderTimelineView();
+            }
+
             saveState();
             closeModal('editFlightModal');
             renderSidebarFlights();
-            showToast('success', '交通航班資訊已更新！');
+            showToast('success', syncToSchedule ? '交通航班資訊已更新，並已同步更新每日行程活動！' : '交通航班資訊已更新！');
         }
 
         // ==========================================
@@ -9257,8 +9413,214 @@ const firebaseConfig = {
             updateEventModalImpactAnalysis(resultStr);
         }
 
+        // ==========================================
+        // FLIGHT TO SCHEDULE SYNC & LINKAGE HELPERS
+        // ==========================================
+        function getFlightLegDetails(leg) {
+            if (!leg) return null;
+            const isTrans = leg.isTransfer || !!leg.transferInfo || (leg.flightNo2 && leg.flightNo2.trim().length > 0);
+            const isOutbound = (leg.type === 'outbound');
+
+            // 1. 起訖時間 (轉機以第1段起飛至第2段抵達)
+            const startTime = (leg.depTime || '08:00').trim();
+            const endTime = (isTrans ? (leg.arrTime2 || '16:10') : (leg.arrTime || '12:00')).trim();
+            const timeStr = `${startTime} - ${endTime}`;
+
+            // 2. 航空公司與班機代號
+            const airline = leg.airline || '國泰航空';
+            const f1 = leg.flightNo || 'CX 407';
+            const f2 = leg.flightNo2 || 'CX 928';
+
+            // 3. 標準標題
+            let title = '';
+            const depShort = (leg.depLoc || '台北桃園').split(' ')[0].replace(/\(.*?\)/g, '').trim();
+            const transShort = (leg.arrLoc || '香港').split(' ')[0].replace(/\(.*?\)/g, '').trim();
+            const destShort = (isTrans ? (leg.arrLoc2 || '重慶江北') : (leg.arrLoc || '目的地')).split(' ')[0].replace(/\(.*?\)/g, '').trim();
+            if (isTrans) {
+                title = `搭乘班機出發：${depShort} ➔ ${transShort}轉機 ➔ 抵達${destShort} (${airline} ${f1} / ${f2})`;
+            } else {
+                title = `搭乘班機出發：${depShort} ➔ 直飛抵達${destShort} (${airline} ${f1})`;
+            }
+
+            // 4. 目的地導航地點
+            const loc = isTrans ? (leg.arrLoc2 || leg.arrLoc || '') : (leg.arrLoc || '');
+
+            // 5. 注意事項與攻略提示
+            let notes = '';
+            if (isTrans) {
+                notes = `${leg.transferInfo || '香港國際機場轉機停留'}，總時長 ${leg.duration || '經轉機'}，PNR: ${leg.pnr || ''}`.trim();
+            } else {
+                notes = `直飛航程，飛行時間 ${leg.duration || ''}，PNR: ${leg.pnr || ''}`.trim();
+            }
+
+            return {
+                type: leg.type,
+                isTransfer: isTrans,
+                airline,
+                flightNo1: f1,
+                flightNo2: f2,
+                depLoc1: leg.depLoc || '',
+                arrLoc1: leg.arrLoc || '',
+                depLoc2: leg.arrLoc || '',
+                arrLoc2: leg.arrLoc2 || '',
+                depTime1: leg.depTime || '',
+                arrTime1: leg.arrTime || '',
+                depTime2: leg.depTime2 || '',
+                arrTime2: leg.arrTime2 || '',
+                startTime,
+                endTime,
+                timeStr,
+                title,
+                loc,
+                notes,
+                pnr: leg.pnr || '',
+                duration: leg.duration || ''
+            };
+        }
+
+        // 更新行程活動彈窗中的航班連動區塊
+        function updateEventFlightLinkBox(preferredLegIdx = null) {
+            const box = document.getElementById('eventFlightLinkBox');
+            const selectEl = document.getElementById('eventFlightSelect');
+            const summaryEl = document.getElementById('eventFlightLinkSummary');
+            if (!box || !selectEl) return;
+
+            const typeSelect = document.getElementById('eventTypeSelect');
+            const isFlight = (typeSelect && typeSelect.value === 'flight');
+
+            if (!isFlight) {
+                box.style.display = 'none';
+                return;
+            }
+
+            const plan = getCurrentPlan();
+            const legs = plan?.flights?.legs || [];
+            if (legs.length === 0) {
+                box.style.display = 'block';
+                selectEl.innerHTML = `<option value="-1">（尚未在交通面板設定航班）</option>`;
+                if (summaryEl) summaryEl.innerHTML = `<span style="color:#ea580c;">⚠️ 目前交通設定中尚無航班資料，可點擊右上角「管理交通航班」建立。</span>`;
+                return;
+            }
+
+            box.style.display = 'block';
+
+            // 判斷當前隸屬天數推薦預設 leg
+            const targetDaySelect = document.getElementById('eventTargetDay');
+            const dayNum = parseInt(targetDaySelect ? targetDaySelect.value : '1', 10);
+            const totalDays = plan?.days?.length || 1;
+
+            let defaultIdx = 0;
+            if (preferredLegIdx !== null && preferredLegIdx >= 0 && preferredLegIdx < legs.length) {
+                defaultIdx = preferredLegIdx;
+            } else if (dayNum >= totalDays) {
+                // 最後一天偏好回程 (leg 1)
+                defaultIdx = legs.length > 1 ? 1 : 0;
+            }
+
+            selectEl.innerHTML = legs.map((leg, idx) => {
+                const info = getFlightLegDetails(leg);
+                const tag = (leg.type === 'inbound' || idx > 0) ? '🛬 [回程]' : '🛫 [去程]';
+                const transTag = info.isTransfer ? '轉機' : '直飛';
+                return `<option value="${idx}" ${idx === defaultIdx ? 'selected' : ''}>${tag} ${info.airline} ${info.flightNo1}${info.isTransfer ? ' / ' + info.flightNo2 : ''} (${info.startTime} ➔ ${info.endTime}, ${transTag})</option>`;
+            }).join('');
+
+            handleFlightSelectChange();
+        }
+
+        // 當使用者切換下拉選單中的航班選項
+        function handleFlightSelectChange() {
+            const selectEl = document.getElementById('eventFlightSelect');
+            const summaryEl = document.getElementById('eventFlightLinkSummary');
+            if (!selectEl || !summaryEl) return;
+
+            const plan = getCurrentPlan();
+            const legs = plan?.flights?.legs || [];
+            const idx = parseInt(selectEl.value, 10);
+            if (idx < 0 || !legs[idx]) {
+                summaryEl.innerHTML = `<span style="color:#64748b;">請選擇要連動的交通航班</span>`;
+                return;
+            }
+
+            const info = getFlightLegDetails(legs[idx]);
+            const isTrans = info.isTransfer;
+
+            let html = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
+                    <strong style="color:#0369a1; font-size:0.82rem;">
+                        <i class="fa-solid fa-plane"></i> ${escapeHtml(info.airline)} ${escapeHtml(info.flightNo1)}${isTrans ? ' / ' + escapeHtml(info.flightNo2) : ''}
+                    </strong>
+                    <span style="font-weight:700; color:#ea580c; font-size:0.8rem;">
+                        起訖時刻：${info.startTime} ➔ ${info.endTime}
+                    </span>
+                </div>
+                <div style="color:#334155; margin-bottom:2px;">
+                    <strong>航線：</strong>${escapeHtml(info.depLoc1)} ➔ ${escapeHtml(info.arrLoc1)} ${isTrans ? `➔ ${escapeHtml(info.arrLoc2)}` : ''}
+                </div>
+                <div style="color:#64748b; font-size:0.72rem; display:flex; gap:10px; flex-wrap:wrap;">
+                    <span><i class="fa-regular fa-clock"></i> 總時長：${escapeHtml(info.duration || (isTrans ? '轉機航程' : '直飛'))}</span>
+                    ${info.pnr ? `<span><i class="fa-solid fa-ticket"></i> PNR: <strong>${escapeHtml(info.pnr)}</strong></span>` : ''}
+                    ${isTrans ? `<span style="color:#c2410c;"><i class="fa-solid fa-rotate"></i> ${escapeHtml(info.notes.split('，')[0])}</span>` : ''}
+                </div>
+            `;
+            summaryEl.innerHTML = html;
+        }
+
+        // 一鍵將選中航班之資訊同步帶入表單中
+        function applySelectedFlightToEvent() {
+            const selectEl = document.getElementById('eventFlightSelect');
+            if (!selectEl) return;
+            const idx = parseInt(selectEl.value, 10);
+            const plan = getCurrentPlan();
+            const legs = plan?.flights?.legs || [];
+            if (idx < 0 || !legs[idx]) {
+                showToast('warning', '請先在下拉選單中選擇有效的交通航班！');
+                return;
+            }
+
+            const info = getFlightLegDetails(legs[idx]);
+
+            // 1. 同步起訖時間
+            const sParts = info.startTime.split(':');
+            const eParts = info.endTime.split(':');
+            const sH = (sParts[0] || '08').padStart(2, '0');
+            const sM = (sParts[1] || '00').padStart(2, '0');
+            const eH = (eParts[0] || '16').padStart(2, '0');
+            const eM = (eParts[1] || '10').padStart(2, '0');
+
+            ensureMinOptionExists('timeStartMin', sM);
+            ensureMinOptionExists('timeEndMin', eM);
+
+            const sHEl = document.getElementById('timeStartHour');
+            const sMEl = document.getElementById('timeStartMin');
+            const eHEl = document.getElementById('timeEndHour');
+            const eMEl = document.getElementById('timeEndMin');
+            const hasEndCb = document.getElementById('eventHasEndTime');
+
+            if (hasEndCb) hasEndCb.checked = true;
+            if (sHEl) sHEl.value = sH;
+            if (sMEl) sMEl.value = sM;
+            if (eHEl) eHEl.value = eH;
+            if (eMEl) eMEl.value = eM;
+
+            // 2. 同步標題、地點與備註
+            const titleEl = document.getElementById('eventTitleStr');
+            if (titleEl) titleEl.value = info.title;
+
+            const locEl = document.getElementById('eventLocStr');
+            if (locEl) locEl.value = info.loc;
+
+            const notesEl = document.getElementById('eventNotesStr');
+            if (notesEl) notesEl.value = info.notes;
+
+            // 3. 更新時間選擇器顯示與即時影響分析
+            handleTimeSelectorChange();
+
+            showToast('success', `已成功將交通航班時刻 (${info.startTime} - ${info.endTime}) 與航程資訊同步帶入！`);
+        }
+
         function handleEventTypeChange() {
             handleTimeSelectorChange();
+            updateEventFlightLinkBox();
         }
 
         // 即時行程關聯與影響分析 (Impact Analysis)
@@ -10034,6 +10396,7 @@ const firebaseConfig = {
             if (typeSelect) typeSelect.value = 'spot';
 
             setTimeSelectorValue('');
+            updateEventFlightLinkBox();
 
             const modalTitle = document.getElementById('eventModalTitle');
             if (modalTitle) modalTitle.innerHTML = '<i class="fa-solid fa-calendar-plus"></i> 新增行程項目';
@@ -10080,6 +10443,21 @@ const firebaseConfig = {
             if (typeSelect) typeSelect.value = ev.type || 'spot';
 
             setTimeSelectorValue(ev.time || '');
+
+            // 檢查此活動是否為航班或已記錄 flightLegIndex
+            if (ev.type === 'flight') {
+                let preferredIdx = (ev.flightLegIndex !== undefined && ev.flightLegIndex !== null) ? Number(ev.flightLegIndex) : null;
+                if (preferredIdx === null) {
+                    if (ev.title && (ev.title.includes('回程') || ev.title.includes('返程') || ev.title.includes('CX945') || ev.title.includes('CX 945'))) {
+                        preferredIdx = 1;
+                    } else {
+                        preferredIdx = 0;
+                    }
+                }
+                updateEventFlightLinkBox(preferredIdx);
+            } else {
+                updateEventFlightLinkBox();
+            }
 
             const modalTitle = document.getElementById('eventModalTitle');
             if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-pen-to-square"></i> 編輯行程項目 (${escapeHtml(ev.title || '項目')})`;
@@ -10146,6 +10524,14 @@ const firebaseConfig = {
                 const notesVal = document.getElementById('eventNotesStr')?.value.trim() || '';
                 const typeVal = document.getElementById('eventTypeSelect')?.value || 'spot';
 
+                let flightLegIdx = undefined;
+                if (typeVal === 'flight') {
+                    const selEl = document.getElementById('eventFlightSelect');
+                    if (selEl && parseInt(selEl.value, 10) >= 0) {
+                        flightLegIdx = parseInt(selEl.value, 10);
+                    }
+                }
+
                 const existingTransit = (editIdx >= 0 && originDayNum === targetDayNum && targetDay.events[editIdx])
                     ? targetDay.events[editIdx].transit
                     : undefined;
@@ -10158,6 +10544,9 @@ const firebaseConfig = {
                     cost: costNum,
                     notes: notesVal
                 };
+                if (flightLegIdx !== undefined) {
+                    eventObj.flightLegIndex = flightLegIdx;
+                }
                 if (existingTransit) {
                     eventObj.transit = existingTransit;
                 }
