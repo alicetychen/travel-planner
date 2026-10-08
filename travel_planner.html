@@ -1260,13 +1260,94 @@
             background: var(--hl-blue-bg);
             padding: 2px 7px;
             border-radius: 3px;
-            margin-bottom: 4px;
+        }
+
+        .timeline-duration-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #475569;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 1px 6px;
+            border-radius: 3px;
+            margin-left: 6px;
+        }
+
+        /* 行程分類標籤 (Category Badges) */
+        .event-cat-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 12px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+        .event-cat-spot { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
+        .event-cat-food { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+        .event-cat-trans { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+        .event-cat-flight { background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; }
+        .event-cat-hotel { background: #ccfbf1; color: #0f766e; border: 1px solid #99f6e4; }
+        .event-cat-shopping { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+        .event-cat-relax { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .event-cat-other { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+        /* 行程間移動時間接駁條 (Transit Connector) */
+        .timeline-transit-row {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 4px 0 4px 18px;
+            margin: -6px 0 -4px;
+            z-index: 2;
+        }
+        .timeline-transit-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.73rem;
+            font-weight: 600;
+            color: #0284c7;
+            background: #f0f9ff;
+            border: 1px dashed #7dd3fc;
+            padding: 2px 10px;
+            border-radius: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            transition: all 0.15s ease;
+        }
+        .timeline-transit-badge:hover {
+            background: #e0f2fe;
+            border-color: #38bdf8;
+        }
+        .timeline-transit-badge.seamless {
+            color: #64748b;
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            font-size: 0.7rem;
+        }
+        .timeline-transit-badge.conflict-badge {
+            color: #b91c1c;
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            font-weight: 700;
+            animation: pulseConflict 1.5s infinite;
+        }
+        @keyframes pulseConflict {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3); }
+            50% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15); }
         }
 
         .timeline-event-title {
             font-size: 0.95rem;
             font-weight: 700;
             color: var(--notion-text);
+            margin-top: 3px;
             margin-bottom: 3px;
         }
 
@@ -2508,7 +2589,7 @@
     <div class="notion-topbar">
         <div class="notion-breadcrumbs">
             <span style="font-weight: 700; color: var(--notion-text); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.10</span>
+                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.11</span>
             </span>
         </div>
         <div class="topbar-actions">
@@ -3061,14 +3142,16 @@
                             <select id="eventTargetDay" class="form-input"></select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">類型標籤</label>
+                            <label class="form-label">行程類別標籤</label>
                             <select id="eventTypeSelect" class="form-input">
-                                <option value="spot">景點參觀</option>
-                                <option value="food">美食品嚐</option>
-                                <option value="trans">交通接駁</option>
-                                <option value="flight">航班航程</option>
-                                <option value="hotel">飯店住宿</option>
-                                <option value="other">休閒雜項</option>
+                                <option value="spot">🏛️ 景點參觀</option>
+                                <option value="food">🍽️ 美食餐飲</option>
+                                <option value="trans">🚗 交通移動</option>
+                                <option value="flight">✈️ 航班航程</option>
+                                <option value="hotel">🏨 飯店住宿</option>
+                                <option value="shopping">🛍️ 購物商圈</option>
+                                <option value="relax">☕ 休閒放鬆</option>
+                                <option value="other">📌 其他安排</option>
                             </select>
                         </div>
                     </div>
@@ -3112,10 +3195,10 @@
                                     <select id="timeEndMin" class="form-input" style="width:74px; padding:5px 6px; font-weight:700; color:#0284c7;" onchange="handleTimeSelectorChange()"></select>
                                 </div>
 
-                                <!-- 預覽徽章 -->
-                                <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
-                                    <span style="font-size:0.75rem; color:#64748b;">整合結果：</span>
-                                    <span id="timePreviewBadge" style="font-size:0.82rem; font-weight:800; color:#0369a1; background:#e0f2fe; padding:3px 10px; border-radius:4px; border:1px solid #bae6fd;">09:30 - 11:00</span>
+                                <!-- 預覽與停留時長徽章 -->
+                                <div style="margin-left:auto; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                                    <span id="timePreviewBadge" style="font-size:0.82rem; font-weight:800; color:#0369a1; background:#e0f2fe; padding:3px 8px; border-radius:4px; border:1px solid #bae6fd;">09:30 - 11:00</span>
+                                    <span id="stayDurationBadge" style="font-size:0.75rem; font-weight:700; color:#15803d; background:#dcfce7; padding:3px 8px; border-radius:4px; border:1px solid #bbf7d0;">⏱️ 停留 1.5 小時</span>
                                 </div>
                             </div>
                         </div>
@@ -3123,6 +3206,21 @@
                         <!-- 2. 自由文字輸入模式 (備用，透過按鈕切換) -->
                         <div id="customTimeInputBox" style="display:none; margin-top:6px;">
                             <input type="text" id="eventTimeStr" class="form-input" placeholder="例如：08:30 - 11:30、全天、18:30 以後" oninput="handleCustomTimeInput()">
+                        </div>
+
+                        <!-- 3. 行程關聯影響與前後銜接分析即時面板 -->
+                        <div id="eventImpactAnalysisBox" style="margin-top:8px; padding:8px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; font-size:0.78rem; line-height:1.5;">
+                            <!-- 動態填入前後行程移動時間與重疊影響分析 -->
+                        </div>
+
+                        <!-- 4. 連動順延後續行程開關 -->
+                        <div id="cascadeShiftWrapper" style="margin-top:8px;">
+                            <label style="display:flex; align-items:flex-start; gap:8px; font-size:0.78rem; color:#0369a1; cursor:pointer; background:#f0f9ff; border:1px solid #bae6fd; padding:7px 10px; border-radius:6px; user-select:none;">
+                                <input type="checkbox" id="eventCascadeShift" style="margin-top:2px;">
+                                <span>
+                                    <strong>🔗 連動影響調整：</strong>此行程時間若有調整，自動順延當日後續所有行程時間 (保持各站移動車程與停留步調)
+                                </span>
+                            </label>
                         </div>
                     </div>
                     <div class="form-group">
@@ -5702,6 +5800,10 @@ const firebaseConfig = {
             `;
 
             const activeDay = days.find(d => d.dayNum === appState.activeDayTab) || days[0];
+            // 核心需求：確保行程依據時間先後正確排序
+            if (activeDay.events && activeDay.events.length > 1) {
+                activeDay.events = sortDayEventsByTime(activeDay.events);
+            }
             const events = activeDay.events || [];
             const curr = getPlanCurrency(plan);
 
@@ -5709,28 +5811,82 @@ const firebaseConfig = {
             if (events.length === 0) {
                 eventsHtml = `<div style="text-align:center; padding:20px; color:var(--notion-text-sub); font-size:0.86rem;">當天尚無排定活動</div>`;
             } else {
-                eventsHtml = events.map((ev, eIdx) => `
-                    <div class="timeline-event-row">
-                        <div class="timeline-node-dot"></div>
-                        <div style="flex:1;">
-                            <span class="timeline-time-tag">${ev.time || '全天'}</span>
-                            <h4 class="timeline-event-title">${ev.title}</h4>
-                            <div class="timeline-event-meta">
-                                ${ev.loc ? `<span><i class="fa-solid fa-location-dot" style="color:#ea580c;"></i> ${ev.loc}</span>` : ''}
-                                ${ev.cost ? `<span><i class="fa-solid fa-coins" style="color:#0f766e;"></i> ${curr.symbol} ${Number(ev.cost).toLocaleString()} <span style="font-size:0.72rem; color:#64748b;">(≈ NT$ ${Math.round(Number(ev.cost) * curr.rate).toLocaleString()})</span></span>` : ''}
-                                ${ev.notes ? `<span style="color:#64748b;"><i class="fa-regular fa-note-sticky"></i> ${ev.notes}</span>` : ''}
+                eventsHtml = events.map((ev, eIdx) => {
+                    const parsed = parseTimeString(ev.time);
+                    const catInfo = getEventCategoryInfo(ev.type);
+
+                    // 1. 停留時間徽章
+                    const durationHtml = (parsed.hasEnd && parsed.durationMinutes > 0)
+                        ? `<span class="timeline-duration-badge" title="預計活動/停留時間"><i class="fa-regular fa-hourglass-half"></i> 停留 ${formatDuration(parsed.durationMinutes)}</span>`
+                        : '';
+
+                    // 2. 行程類別標籤
+                    const catBadgeHtml = `<span class="event-cat-badge ${catInfo.class}" title="行程分類：${catInfo.label}"><i class="fa-solid ${catInfo.icon}"></i> ${catInfo.label}</span>`;
+
+                    // 3. 行程間移動時間接駁條 (Transit Connector)
+                    let transitHtml = '';
+                    if (eIdx > 0) {
+                        const prevParsed = parseTimeString(events[eIdx - 1].time);
+                        const transitMinutes = parsed.startMinutes - prevParsed.endMinutes;
+                        if (transitMinutes > 0) {
+                            transitHtml = `
+                                <div class="timeline-transit-row">
+                                    <span class="timeline-transit-badge" title="前後行程之移動/車程時間">
+                                        <i class="fa-solid fa-car-side"></i> 移動/車程約 <strong>${formatDuration(transitMinutes)}</strong>
+                                        <span style="font-size:0.68rem; opacity:0.8; margin-left:3px;">(${prevParsed.endTimeStr} ➔ ${parsed.startTimeStr})</span>
+                                    </span>
+                                </div>
+                            `;
+                        } else if (transitMinutes === 0) {
+                            transitHtml = `
+                                <div class="timeline-transit-row">
+                                    <span class="timeline-transit-badge seamless" title="前後兩站無縫接續">
+                                        <i class="fa-solid fa-shoe-prints"></i> 無縫銜接 (${prevParsed.endTimeStr})
+                                    </span>
+                                </div>
+                            `;
+                        } else if (transitMinutes < 0) {
+                            transitHtml = `
+                                <div class="timeline-transit-row">
+                                    <span class="timeline-transit-badge conflict-badge" title="此站開始時間比前一站結束時間更早，發生時間重疊衝突！">
+                                        <i class="fa-solid fa-triangle-exclamation"></i> 時程衝突！重疊 ${Math.abs(transitMinutes)} 分鐘
+                                    </span>
+                                    <button type="button" class="n-btn n-btn-danger" style="padding:1px 7px; font-size:0.7rem;" onclick="autoResolveConflict(${activeDay.dayNum}, ${eIdx})" title="點擊自動順延排解重疊衝突">
+                                        ⚡ 一鍵順延排解
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    return `
+                        ${transitHtml}
+                        <div class="timeline-event-row">
+                            <div class="timeline-node-dot"></div>
+                            <div style="flex:1; min-width:0;">
+                                <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px; margin-bottom:4px;">
+                                    <span class="timeline-time-tag">${escapeHtml(ev.time || '全天')}</span>
+                                    ${durationHtml}
+                                    ${catBadgeHtml}
+                                </div>
+                                <h4 class="timeline-event-title">${escapeHtml(ev.title)}</h4>
+                                <div class="timeline-event-meta">
+                                    ${ev.loc ? `<span><i class="fa-solid fa-location-dot" style="color:#ea580c;"></i> ${escapeHtml(ev.loc)}</span>` : ''}
+                                    ${ev.cost ? `<span><i class="fa-solid fa-coins" style="color:#0f766e;"></i> ${curr.symbol} ${Number(ev.cost).toLocaleString()} <span style="font-size:0.72rem; color:#64748b;">(≈ NT$ ${Math.round(Number(ev.cost) * curr.rate).toLocaleString()})</span></span>` : ''}
+                                    ${ev.notes ? `<span style="color:#64748b;"><i class="fa-regular fa-note-sticky"></i> ${escapeHtml(ev.notes)}</span>` : ''}
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:6px; flex-shrink:0;">
+                                <button class="n-btn" style="padding: 2px 7px; font-size: 0.74rem;" onclick="openEditEventModal(${activeDay.dayNum}, ${eIdx})" title="編輯此行程活動">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button class="n-btn n-btn-danger" style="padding: 2px 7px; font-size: 0.74rem;" onclick="deleteEventItem(${activeDay.dayNum}, ${eIdx})" title="刪除此行程活動">
+                                    <i class="fa-regular fa-trash-can"></i>
+                                </button>
                             </div>
                         </div>
-                        <div style="display:flex; gap:6px;">
-                            <button class="n-btn" style="padding: 2px 7px; font-size: 0.74rem;" onclick="openEditEventModal(${activeDay.dayNum}, ${eIdx})">
-                                <i class="fa-solid fa-pen"></i>
-                            </button>
-                            <button class="n-btn n-btn-danger" style="padding: 2px 7px; font-size: 0.74rem;" onclick="deleteEventItem(${activeDay.dayNum}, ${eIdx})">
-                                <i class="fa-regular fa-trash-can"></i>
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             }
 
             function getItemLocalAndTwd(costVal, currType) {
@@ -5866,6 +6022,9 @@ const firebaseConfig = {
                             </div>
                         </div>
                         <div class="day-card-header-actions">
+                            <button class="n-btn" style="font-size: 0.78rem;" onclick="sortActiveDayEventsManually()" title="依開始時間自動排序當日行程">
+                                <i class="fa-solid fa-arrow-down-short-wide"></i> 依時間排序
+                            </button>
                             <button class="n-btn" style="font-size: 0.78rem;" onclick="openEditDayMetaModal(${activeDay.dayNum})">
                                 <i class="fa-solid fa-pen-to-square"></i> 編輯當日預算與安排
                             </button>
@@ -8549,6 +8708,108 @@ const firebaseConfig = {
             }
         }
 
+        // ==========================================
+        // TIME CALCULATION, SORTING & IMPACT ANALYSIS ALGORITHMS
+        // ==========================================
+        function parseTimeString(timeStr) {
+            if (!timeStr) return { startMinutes: 9999, endMinutes: 9999, durationMinutes: 60, hasEnd: false, raw: '' };
+            timeStr = String(timeStr).trim();
+            // 1. 匹配標準時段 "08:30 - 10:30", "08:30 ~ 10:30"
+            const rangeMatch = timeStr.match(/^(\d{1,2}):(\d{2})\s*(?:-|~|–|➔)\s*(\d{1,2}):(\d{2})$/);
+            if (rangeMatch) {
+                const sH = parseInt(rangeMatch[1], 10);
+                const sM = parseInt(rangeMatch[2], 10);
+                const eH = parseInt(rangeMatch[3], 10);
+                const eM = parseInt(rangeMatch[4], 10);
+                const startM = sH * 60 + sM;
+                let endM = eH * 60 + eM;
+                if (endM < startM) endM += 1440; // 跨夜處理
+                return {
+                    startMinutes: startM,
+                    endMinutes: endM,
+                    durationMinutes: Math.max(0, endM - startM),
+                    startTimeStr: `${String(sH).padStart(2, '0')}:${String(sM).padStart(2, '0')}`,
+                    endTimeStr: `${String(eH).padStart(2, '0')}:${String(eM).padStart(2, '0')}`,
+                    hasEnd: true,
+                    raw: timeStr
+                };
+            }
+            // 2. 匹配單點時間 "08:30", "08:30 以後"
+            const singleMatch = timeStr.match(/^(\d{1,2}):(\d{2})/);
+            if (singleMatch) {
+                const sH = parseInt(singleMatch[1], 10);
+                const sM = parseInt(singleMatch[2], 10);
+                const startM = sH * 60 + sM;
+                return {
+                    startMinutes: startM,
+                    endMinutes: startM + 60,
+                    durationMinutes: 60,
+                    startTimeStr: `${String(sH).padStart(2, '0')}:${String(sM).padStart(2, '0')}`,
+                    endTimeStr: `${String((sH + 1) % 24).padStart(2, '0')}:${String(sM).padStart(2, '0')}`,
+                    hasEnd: false,
+                    raw: timeStr
+                };
+            }
+            // 3. 語意時段預估
+            if (timeStr.includes('早') || timeStr.includes('上午')) return { startMinutes: 540, endMinutes: 660, durationMinutes: 120, startTimeStr: '09:00', endTimeStr: '11:00', hasEnd: false, raw: timeStr };
+            if (timeStr.includes('午') || timeStr.includes('中午')) return { startMinutes: 720, endMinutes: 840, durationMinutes: 120, startTimeStr: '12:00', endTimeStr: '14:00', hasEnd: false, raw: timeStr };
+            if (timeStr.includes('下午')) return { startMinutes: 840, endMinutes: 1020, durationMinutes: 180, startTimeStr: '14:00', endTimeStr: '17:00', hasEnd: false, raw: timeStr };
+            if (timeStr.includes('晚') || timeStr.includes('夜')) return { startMinutes: 1140, endMinutes: 1260, durationMinutes: 120, startTimeStr: '19:00', endTimeStr: '21:00', hasEnd: false, raw: timeStr };
+            if (timeStr.includes('全天')) return { startMinutes: 480, endMinutes: 1200, durationMinutes: 720, startTimeStr: '08:00', endTimeStr: '20:00', hasEnd: false, raw: timeStr };
+            return { startMinutes: 9999, endMinutes: 9999, durationMinutes: 60, hasEnd: false, raw: timeStr };
+        }
+
+        function formatDuration(minutes) {
+            if (!minutes || isNaN(minutes) || minutes <= 0) return '0 分鐘';
+            const hrs = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            if (hrs > 0 && mins > 0) return `${hrs} 小時 ${mins} 分`;
+            if (hrs > 0) return `${hrs} 小時`;
+            return `${mins} 分鐘`;
+        }
+
+        function shiftTimeString(timeStr, shiftMinutes) {
+            if (!timeStr || shiftMinutes === 0) return timeStr;
+            const p = parseTimeString(timeStr);
+            if (p.startMinutes === 9999) return timeStr;
+            const newStart = Math.max(0, Math.min(1439, p.startMinutes + shiftMinutes));
+            const sH = String(Math.floor(newStart / 60)).padStart(2, '0');
+            const sM = String(newStart % 60).padStart(2, '0');
+            if (p.hasEnd) {
+                const newEnd = Math.max(0, Math.min(1439, p.endMinutes + shiftMinutes));
+                const eH = String(Math.floor(newEnd / 60)).padStart(2, '0');
+                const eM = String(newEnd % 60).padStart(2, '0');
+                return `${sH}:${sM} - ${eH}:${eM}`;
+            }
+            return `${sH}:${sM}`;
+        }
+
+        function sortDayEventsByTime(events) {
+            if (!Array.isArray(events) || events.length <= 1) return events || [];
+            return events.sort((a, b) => {
+                const pA = parseTimeString(a.time);
+                const pB = parseTimeString(b.time);
+                if (pA.startMinutes !== pB.startMinutes) {
+                    return pA.startMinutes - pB.startMinutes;
+                }
+                return pA.endMinutes - pB.endMinutes;
+            });
+        }
+
+        function getEventCategoryInfo(type) {
+            const map = {
+                'spot': { label: '景點參觀', icon: 'fa-landmark', class: 'event-cat-spot', emoji: '🏛️' },
+                'food': { label: '美食餐飲', icon: 'fa-utensils', class: 'event-cat-food', emoji: '🍽️' },
+                'trans': { label: '交通移動', icon: 'fa-car', class: 'event-cat-trans', emoji: '🚗' },
+                'flight': { label: '航班航程', icon: 'fa-plane', class: 'event-cat-flight', emoji: '✈️' },
+                'hotel': { label: '飯店住宿', icon: 'fa-hotel', class: 'event-cat-hotel', emoji: '🏨' },
+                'shopping': { label: '購物商圈', icon: 'fa-bag-shopping', class: 'event-cat-shopping', emoji: '🛍️' },
+                'relax': { label: '休閒放鬆', icon: 'fa-mug-hot', class: 'event-cat-relax', emoji: '☕' },
+                'other': { label: '其他安排', icon: 'fa-thumbtack', class: 'event-cat-other', emoji: '📌' }
+            };
+            return map[type] || map['other'];
+        }
+
         function handleTimeSelectorChange() {
             const hasEndTimeCheck = document.getElementById('eventHasEndTime');
             const hasEndTime = hasEndTimeCheck ? hasEndTimeCheck.checked : true;
@@ -8560,6 +8821,7 @@ const firebaseConfig = {
             const endBox = document.getElementById('timeEndBox');
             const divider = document.getElementById('timeDividerSpan');
             const preview = document.getElementById('timePreviewBadge');
+            const stayBadge = document.getElementById('stayDurationBadge');
             const rawInput = document.getElementById('eventTimeStr');
 
             if (endBox) endBox.style.display = hasEndTime ? 'flex' : 'none';
@@ -8572,6 +8834,100 @@ const firebaseConfig = {
 
             if (preview) preview.innerText = resultStr;
             if (rawInput) rawInput.value = resultStr;
+
+            // 計算停留時長
+            const parsed = parseTimeString(resultStr);
+            if (stayBadge) {
+                if (parsed.hasEnd && parsed.durationMinutes > 0) {
+                    stayBadge.style.display = 'inline-flex';
+                    stayBadge.innerHTML = `<i class="fa-regular fa-hourglass-half"></i> 停留 ${formatDuration(parsed.durationMinutes)}`;
+                } else {
+                    stayBadge.style.display = 'none';
+                }
+            }
+
+            updateEventModalImpactAnalysis(resultStr);
+        }
+
+        // 即時行程關聯與影響分析 (Impact Analysis)
+        function updateEventModalImpactAnalysis(currentTimeStr) {
+            const impactBox = document.getElementById('eventImpactAnalysisBox');
+            const cascadeWrapper = document.getElementById('cascadeShiftWrapper');
+            if (!impactBox) return;
+
+            const plan = getCurrentPlan();
+            if (!plan) return;
+
+            const targetDaySelect = document.getElementById('eventTargetDay');
+            const dayNum = parseInt(targetDaySelect ? targetDaySelect.value : '1');
+            const editIdx = parseInt(document.getElementById('eventEditIndex')?.value || '-1');
+            const day = (plan.days || []).find(d => d.dayNum === dayNum);
+            if (!day) return;
+
+            const currentParsed = parseTimeString(currentTimeStr || document.getElementById('eventTimeStr')?.value);
+            const events = day.events || [];
+
+            // 尋找此事件在列表中的前一個與後一個事件
+            let prevEvent = null;
+            let nextEvent = null;
+
+            if (editIdx >= 0 && events[editIdx]) {
+                // 編輯現有事件
+                const originEvent = events[editIdx];
+                const otherEvents = events.filter((_, i) => i !== editIdx);
+                const sortedOthers = sortDayEventsByTime([...otherEvents]);
+                for (let e of sortedOthers) {
+                    const p = parseTimeString(e.time);
+                    if (p.startMinutes <= currentParsed.startMinutes) {
+                        prevEvent = e;
+                    } else if (!nextEvent && p.startMinutes > currentParsed.startMinutes) {
+                        nextEvent = e;
+                    }
+                }
+            } else {
+                // 新增事件
+                const sorted = sortDayEventsByTime([...events]);
+                for (let e of sorted) {
+                    const p = parseTimeString(e.time);
+                    if (p.startMinutes <= currentParsed.startMinutes) {
+                        prevEvent = e;
+                    } else if (!nextEvent && p.startMinutes > currentParsed.startMinutes) {
+                        nextEvent = e;
+                    }
+                }
+            }
+
+            let impactHtml = '';
+
+            // 前站銜接
+            if (prevEvent) {
+                const prevP = parseTimeString(prevEvent.time);
+                const transitMinutes = currentParsed.startMinutes - prevP.endMinutes;
+                if (transitMinutes >= 0) {
+                    impactHtml += `<div>🚗 <strong>前一站銜接：</strong>【${escapeHtml(prevEvent.title)}】(${prevP.endTimeStr} 結束) ➔ 移動時間約 <strong>${formatDuration(transitMinutes)}</strong></div>`;
+                } else {
+                    impactHtml += `<div style="color:#b91c1c;">⚠️ <strong>時程衝突：</strong>與前一站【${escapeHtml(prevEvent.title)}】重疊 <strong>${Math.abs(transitMinutes)} 分鐘</strong> (前站於 ${prevP.endTimeStr} 結束)</div>`;
+                }
+            } else {
+                impactHtml += `<div>🌅 <strong>行程起點：</strong>此活動為 Day ${dayNum} 之首站行程。</div>`;
+            }
+
+            // 後站銜接與連鎖影響
+            if (nextEvent) {
+                const nextP = parseTimeString(nextEvent.time);
+                const gapMinutes = nextP.startMinutes - currentParsed.endMinutes;
+                if (gapMinutes > 0) {
+                    impactHtml += `<div style="margin-top:4px;">🚶 <strong>後續行程：</strong>距離下一站【${escapeHtml(nextEvent.title)}】(${nextP.startTimeStr} 開始) 尚有 <strong>${formatDuration(gapMinutes)}</strong> 移動空檔。</div>`;
+                } else if (gapMinutes === 0) {
+                    impactHtml += `<div style="margin-top:4px; color:#0284c7;">⚡ <strong>無縫接續：</strong>此站於 ${currentParsed.endTimeStr} 結束，立即無縫接續下一站【${escapeHtml(nextEvent.title)}】。</div>`;
+                } else {
+                    impactHtml += `<div style="margin-top:4px; color:#b91c1c; font-weight:700;">⚠️ <strong>時程重疊衝突：</strong>此站延至 ${currentParsed.endTimeStr} 結束，與下一站【${escapeHtml(nextEvent.title)}】(${nextP.startTimeStr} 開始) 重疊 <strong>${Math.abs(gapMinutes)} 分鐘</strong>！</div>`;
+                }
+            } else {
+                impactHtml += `<div style="margin-top:4px; color:#64748b;">🌙 <strong>行程終點：</strong>此活動為當天目前安排的最後一站。</div>`;
+            }
+
+            impactBox.innerHTML = impactHtml;
         }
 
         function setTimeSelectorValue(timeStr) {
@@ -8641,6 +8997,7 @@ const firebaseConfig = {
                 if (toggleBtn) toggleBtn.innerText = '切換時分模式';
                 const preview = document.getElementById('timePreviewBadge');
                 if (preview) preview.innerText = timeStr;
+                updateEventModalImpactAnalysis(timeStr);
             }
         }
 
@@ -8665,6 +9022,57 @@ const firebaseConfig = {
             const rawInput = document.getElementById('eventTimeStr');
             const preview = document.getElementById('timePreviewBadge');
             if (preview && rawInput) preview.innerText = rawInput.value || '未設定';
+            updateEventModalImpactAnalysis(rawInput ? rawInput.value : '');
+        }
+
+        // 手動一鍵依時間排序
+        function sortActiveDayEventsManually() {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === appState.activeDayTab);
+            if (!day || !day.events || day.events.length <= 1) {
+                showToast('info', '目前行程筆數不需排序');
+                return;
+            }
+            day.events = sortDayEventsByTime(day.events);
+            saveState();
+            renderTimelineView();
+            showToast('success', `Day ${day.dayNum} 行程已成功依開始時間自動排序！`);
+        }
+
+        // 自動排解特定時間衝突
+        function autoResolveConflict(dayNum, eventIdx) {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
+            if (!day || !day.events || !day.events[eventIdx] || eventIdx <= 0) return;
+
+            // 確保先排序
+            day.events = sortDayEventsByTime(day.events);
+            const prev = day.events[eventIdx - 1];
+            const curr = day.events[eventIdx];
+
+            const pPrev = parseTimeString(prev.time);
+            const pCurr = parseTimeString(curr.time);
+
+            if (pCurr.startMinutes < pPrev.endMinutes) {
+                // 需要順延的時間量 (至少銜接或留 15 分鐘)
+                const targetStart = pPrev.endMinutes + 15;
+                const shiftMin = targetStart - pCurr.startMinutes;
+                curr.time = shiftTimeString(curr.time, shiftMin);
+                // 後續行程也一併推移
+                for (let i = eventIdx + 1; i < day.events.length; i++) {
+                    const pNext = parseTimeString(day.events[i].time);
+                    const pThis = parseTimeString(day.events[i - 1].time);
+                    if (pNext.startMinutes < pThis.endMinutes) {
+                        const s = (pThis.endMinutes + 15) - pNext.startMinutes;
+                        day.events[i].time = shiftTimeString(day.events[i].time, s);
+                    }
+                }
+                saveState();
+                renderTimelineView();
+                showToast('success', `已自動排解「${curr.title}」的時間衝突並合理順延！`);
+            }
         }
 
         // Add/Edit Event (防閃退與跨天安全防護)
@@ -8815,14 +9223,30 @@ const firebaseConfig = {
                     notes: notesVal
                 };
 
-                // 處理編輯或新增，包含跨天遷移
+                // 處理編輯或新增，包含跨天遷移與連動後續行程順延
+                let shiftedCount = 0;
                 if (editIdx >= 0) {
                     if (originDayNum === targetDayNum) {
-                        // 同一天內修改
-                        if (targetDay.events[editIdx]) {
-                            targetDay.events[editIdx] = eventObj;
-                        } else {
-                            targetDay.events.push(eventObj);
+                        const oldTime = targetDay.events[editIdx]?.time;
+                        targetDay.events[editIdx] = eventObj;
+
+                        // 判斷是否勾選了連動順延後續行程
+                        const cascadeChecked = document.getElementById('eventCascadeShift')?.checked;
+                        if (cascadeChecked && oldTime && timeVal) {
+                            const pOld = parseTimeString(oldTime);
+                            const pNew = parseTimeString(timeVal);
+                            const shiftMin = pNew.endMinutes - pOld.endMinutes;
+                            if (shiftMin !== 0) {
+                                for (let i = 0; i < targetDay.events.length; i++) {
+                                    if (i !== editIdx) {
+                                        const pOther = parseTimeString(targetDay.events[i].time);
+                                        if (pOther.startMinutes >= pOld.startMinutes) {
+                                            targetDay.events[i].time = shiftTimeString(targetDay.events[i].time, shiftMin);
+                                            shiftedCount++;
+                                        }
+                                    }
+                                }
+                            }
                         }
                     } else {
                         // 遷移至不同天
@@ -8834,6 +9258,13 @@ const firebaseConfig = {
                     }
                 } else {
                     targetDay.events.push(eventObj);
+                }
+
+                // 核心需求：依據開始時間自動重新排序當天所有行程！
+                targetDay.events = sortDayEventsByTime(targetDay.events);
+                if (originDayNum !== targetDayNum) {
+                    const originDay = (plan.days || []).find(d => d.dayNum === originDayNum);
+                    if (originDay) originDay.events = sortDayEventsByTime(originDay.events);
                 }
 
                 // 自動重新計算當日預算
@@ -8864,7 +9295,10 @@ const firebaseConfig = {
                 renderBudgetWidget();
                 renderBudgetView();
                 if (typeof renderTripSummary === 'function') renderTripSummary();
-                showToast('success', editIdx >= 0 ? `已儲存「${titleVal}」之變更！` : `已新增「${titleVal}」至 Day ${targetDayNum}！`);
+                const successMsg = editIdx >= 0 
+                    ? (shiftedCount > 0 ? `已儲存「${titleVal}」，並已同步連動順延後續 ${shiftedCount} 個行程！` : `已儲存「${titleVal}」之變更 (已自動依時間排序)！`)
+                    : `已新增「${titleVal}」至 Day ${targetDayNum} (已自動依時間排序)！`;
+                showToast('success', successMsg);
             } catch (err) {
                 console.error('儲存行程項目時發生例外:', err);
                 showToast('error', '儲存失敗：' + (err.message || '未知錯誤'));
