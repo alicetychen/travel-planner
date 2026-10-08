@@ -2656,7 +2656,7 @@
     <div class="notion-topbar">
         <div class="notion-breadcrumbs">
             <span style="font-weight: 700; color: var(--notion-text); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.14</span>
+                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.15</span>
             </span>
         </div>
         <div class="topbar-actions">
@@ -6140,7 +6140,11 @@ const firebaseConfig = {
                     if (eIdx > 0) {
                         const prevEvent = events[eIdx - 1];
                         const prevParsed = parseTimeString(prevEvent.time);
-                        const naturalTransitMinutes = parsed.startMinutes - prevParsed.endMinutes;
+                        // 前項有效起算時間（單點時間即出發時間，區間時間即結束時間）
+                        const prevEndMinutes = prevParsed.hasEnd ? prevParsed.endMinutes : prevParsed.startMinutes;
+                        const prevTimeLabel = prevParsed.hasEnd ? prevParsed.endTimeStr : prevParsed.startTimeStr;
+
+                        const naturalTransitMinutes = parsed.startMinutes - prevEndMinutes;
                         const customTransit = ev.transit;
                         const isCustomSet = (customTransit && customTransit.minutes !== undefined && customTransit.minutes !== null && customTransit.minutes !== '');
                         const displayMinutes = isCustomSet ? Number(customTransit.minutes) : Math.max(0, naturalTransitMinutes);
@@ -6160,13 +6164,22 @@ const firebaseConfig = {
                             ? `<span style="color:#0f766e; font-size:0.68rem; margin-left:3px;"><i class="fa-solid fa-coins"></i> ${curr.symbol}${customTransit.cost}</span>`
                             : '';
 
+                        // 預期抵達/次站開始時間
+                        const expectedStartM = prevEndMinutes + displayMinutes;
+                        const expH = String(Math.floor(expectedStartM / 60) % 24).padStart(2, '0');
+                        const expM = String(expectedStartM % 60).padStart(2, '0');
+                        const expectedStartTimeStr = `${expH}:${expM}`;
+
+                        // 次站開始時間是否與預期抵達時間吻合
+                        const isTimeAligned = (parsed.startMinutes === expectedStartM);
+
                         let conflictHtml = '';
                         if (naturalTransitMinutes < 0) {
                             conflictHtml = `
                                 <span class="timeline-transit-badge conflict-badge" title="此站開始時間比前一站結束時間更早，發生時間重疊衝突！">
                                     <i class="fa-solid fa-triangle-exclamation"></i> 時程衝突！重疊 ${Math.abs(naturalTransitMinutes)} 分鐘
                                 </span>
-                                <button type="button" class="n-btn n-btn-danger" style="padding:1px 7px; font-size:0.7rem;" onclick="autoResolveConflict(${activeDay.dayNum}, ${eIdx})" title="點擊自動順延排解重疊衝突">
+                                <button type="button" class="n-btn n-btn-danger" style="padding:1px 7px; font-size:0.7rem;" onclick="event.stopPropagation(); autoResolveConflict(${activeDay.dayNum}, ${eIdx})" title="點擊自動順延排解重疊衝突">
                                     ⚡ 一鍵順延排解
                                 </button>
                             `;
@@ -6176,18 +6189,33 @@ const firebaseConfig = {
                         let badgeExtraClass = isCustomSet ? 'custom-set' : '';
 
                         if (naturalTransitMinutes > 0 || isCustomSet) {
+                            // 若次站已精準對齊，顯示 (04:20 ➔ 05:05)；若有設定自訂時間但次站未對齊，顯示 (04:20 ➔ 預計 05:05)
+                            const rangeDisplay = isTimeAligned
+                                ? `(${prevTimeLabel} ➔ ${parsed.startTimeStr})`
+                                : `(${prevTimeLabel} ➔ 預計 ${expectedStartTimeStr})`;
+
                             badgeInnerHtml = `
                                 <i class="fa-solid ${modeInfo.icon}"></i>
                                 <span>${modeInfo.label}約 <strong>${formatDuration(displayMinutes)}</strong></span>
                                 ${customTagHtml}
-                                <span style="font-size:0.68rem; opacity:0.8; margin-left:2px;">(${prevParsed.endTimeStr} ➔ ${parsed.startTimeStr})</span>
+                                <span style="font-size:0.68rem; opacity:0.85; margin-left:2px;">${rangeDisplay}</span>
                                 ${costTagHtml}
                             `;
                         } else if (naturalTransitMinutes === 0) {
                             badgeExtraClass += ' seamless';
                             badgeInnerHtml = `
                                 <i class="fa-solid fa-shoe-prints"></i>
-                                <span>無縫銜接 (${prevParsed.endTimeStr})</span>
+                                <span>無縫銜接 (${prevTimeLabel})</span>
+                            `;
+                        }
+
+                        // 若自訂車程與次站開始時間未對齊（且非重疊衝突），提供一鍵對齊按鈕
+                        let alignBtnHtml = '';
+                        if (isCustomSet && !isTimeAligned && naturalTransitMinutes >= 0) {
+                            alignBtnHtml = `
+                                <button type="button" class="n-btn n-btn-primary transit-action-btn" style="font-size:0.7rem; font-weight:700; background:#0284c7; border-color:#0284c7; color:#fff;" onclick="event.stopPropagation(); syncNextEventWithTransit(${activeDay.dayNum}, ${eIdx})" title="一鍵將次站開始時間自動對齊為 ${expectedStartTimeStr}，並保持停留時長順延後續行程">
+                                    ⚡ 對齊次站 (${expectedStartTimeStr})
+                                </button>
                             `;
                         }
 
@@ -6199,6 +6227,7 @@ const firebaseConfig = {
                                         <i class="fa-solid fa-pen-to-square" style="font-size:0.68rem; opacity:0.6; margin-left:4px;"></i>
                                     </div>
                                 ` : ''}
+                                ${alignBtnHtml}
                                 ${conflictHtml}
                                 <div class="timeline-transit-actions">
                                     <button type="button" class="n-btn transit-action-btn map-btn" onclick="openTransitExternalMapQuick(${activeDay.dayNum}, ${eIdx})" title="在 Google 地圖上開啟兩站間的路線規劃與交通時間">
@@ -9109,12 +9138,13 @@ const firebaseConfig = {
                 const sH = parseInt(singleMatch[1], 10);
                 const sM = parseInt(singleMatch[2], 10);
                 const startM = sH * 60 + sM;
+                const sStr = `${String(sH).padStart(2, '0')}:${String(sM).padStart(2, '0')}`;
                 return {
                     startMinutes: startM,
-                    endMinutes: startM + 60,
-                    durationMinutes: 60,
-                    startTimeStr: `${String(sH).padStart(2, '0')}:${String(sM).padStart(2, '0')}`,
-                    endTimeStr: `${String((sH + 1) % 24).padStart(2, '0')}:${String(sM).padStart(2, '0')}`,
+                    endMinutes: startM, // 單點時間無停留區間，結束時間即出發/開始時間
+                    durationMinutes: 0,
+                    startTimeStr: sStr,
+                    endTimeStr: sStr,
                     hasEnd: false,
                     raw: timeStr
                 };
@@ -9284,7 +9314,9 @@ const firebaseConfig = {
             // 前站銜接
             if (prevEvent) {
                 const prevP = parseTimeString(prevEvent.time);
-                const transitMinutes = currentParsed.startMinutes - prevP.endMinutes;
+                const prevEndMinutes = prevP.hasEnd ? prevP.endMinutes : prevP.startMinutes;
+                const prevTimeDesc = prevP.hasEnd ? `${prevP.endTimeStr} 結束` : `${prevP.startTimeStr} 出發`;
+                const transitMinutes = currentParsed.startMinutes - prevEndMinutes;
                 const originLoc = (prevEvent.loc || prevEvent.title || '').replace(/➔/g, ' ').trim();
                 const currentLoc = (document.getElementById('eventLocStr')?.value || document.getElementById('eventTitleStr')?.value || '').replace(/➔/g, ' ').trim();
                 const mapUrl = getMapRouteUrl(originLoc, currentLoc, 'driving', 'google');
@@ -9293,9 +9325,9 @@ const firebaseConfig = {
                     : '';
 
                 if (transitMinutes >= 0) {
-                    impactHtml += `<div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">🚗 <strong>前一站銜接：</strong>【${escapeHtml(prevEvent.title)}】(${prevP.endTimeStr} 結束) ➔ 移動時間約 <strong>${formatDuration(transitMinutes)}</strong> ${mapBtnHtml}</div>`;
+                    impactHtml += `<div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">🚗 <strong>前一站銜接：</strong>【${escapeHtml(prevEvent.title)}】(${prevTimeDesc}) ➔ 移動時間約 <strong>${formatDuration(transitMinutes)}</strong> ${mapBtnHtml}</div>`;
                 } else {
-                    impactHtml += `<div style="color:#b91c1c; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">⚠️ <strong>時程衝突：</strong>與前一站【${escapeHtml(prevEvent.title)}】重疊 <strong>${Math.abs(transitMinutes)} 分鐘</strong> (前站於 ${prevP.endTimeStr} 結束) ${mapBtnHtml}</div>`;
+                    impactHtml += `<div style="color:#b91c1c; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">⚠️ <strong>時程衝突：</strong>與前一站【${escapeHtml(prevEvent.title)}】重疊 <strong>${Math.abs(transitMinutes)} 分鐘</strong> (前站於 ${prevTimeDesc}) ${mapBtnHtml}</div>`;
                 }
             } else {
                 impactHtml += `<div>🌅 <strong>行程起點：</strong>此活動為 Day ${dayNum} 之首站行程。</div>`;
@@ -9304,13 +9336,15 @@ const firebaseConfig = {
             // 後站銜接與連鎖影響
             if (nextEvent) {
                 const nextP = parseTimeString(nextEvent.time);
-                const gapMinutes = nextP.startMinutes - currentParsed.endMinutes;
+                const currentEndMinutes = currentParsed.hasEnd ? currentParsed.endMinutes : currentParsed.startMinutes;
+                const currentEndDesc = currentParsed.hasEnd ? `${currentParsed.endTimeStr} 結束` : `${currentParsed.startTimeStr} 出發`;
+                const gapMinutes = nextP.startMinutes - currentEndMinutes;
                 if (gapMinutes > 0) {
                     impactHtml += `<div style="margin-top:4px;">🚶 <strong>後續行程：</strong>距離下一站【${escapeHtml(nextEvent.title)}】(${nextP.startTimeStr} 開始) 尚有 <strong>${formatDuration(gapMinutes)}</strong> 移動空檔。</div>`;
                 } else if (gapMinutes === 0) {
-                    impactHtml += `<div style="margin-top:4px; color:#0284c7;">⚡ <strong>無縫接續：</strong>此站於 ${currentParsed.endTimeStr} 結束，立即無縫接續下一站【${escapeHtml(nextEvent.title)}】。</div>`;
+                    impactHtml += `<div style="margin-top:4px; color:#0284c7;">⚡ <strong>無縫接續：</strong>此站於 ${currentEndDesc}，立即無縫接續下一站【${escapeHtml(nextEvent.title)}】。</div>`;
                 } else {
-                    impactHtml += `<div style="margin-top:4px; color:#b91c1c; font-weight:700;">⚠️ <strong>時程重疊衝突：</strong>此站延至 ${currentParsed.endTimeStr} 結束，與下一站【${escapeHtml(nextEvent.title)}】(${nextP.startTimeStr} 開始) 重疊 <strong>${Math.abs(gapMinutes)} 分鐘</strong>！</div>`;
+                    impactHtml += `<div style="margin-top:4px; color:#b91c1c; font-weight:700;">⚠️ <strong>時程重疊衝突：</strong>此站延至 ${currentEndDesc}，與下一站【${escapeHtml(nextEvent.title)}】(${nextP.startTimeStr} 開始) 重疊 <strong>${Math.abs(gapMinutes)} 分鐘</strong>！</div>`;
                 }
             } else {
                 impactHtml += `<div style="margin-top:4px; color:#64748b;">🌙 <strong>行程終點：</strong>此活動為當天目前安排的最後一站。</div>`;
@@ -9519,8 +9553,10 @@ const firebaseConfig = {
             document.getElementById('transitEventIdx').value = eventIdx;
 
             // 前站與次站資訊
+            const prevEndMinutes = pPrev.hasEnd ? pPrev.endMinutes : pPrev.startMinutes;
+            const prevTimeLabel = pPrev.hasEnd ? `${pPrev.endTimeStr} 結束` : `${pPrev.startTimeStr} 出發`;
             document.getElementById('transitFromTitle').innerText = prev.title || '前站行程';
-            document.getElementById('transitFromEndTime').innerText = `${pPrev.endTimeStr} 結束`;
+            document.getElementById('transitFromEndTime').innerText = prevTimeLabel;
             const fromLocEl = document.getElementById('transitFromLoc');
             const fromLocRow = document.getElementById('transitFromLocRow');
             if (prev.loc) {
@@ -9543,7 +9579,7 @@ const firebaseConfig = {
 
             // 預設或已自訂之接駁資訊
             const customTransit = curr.transit || {};
-            const naturalMinutes = Math.max(0, pCurr.startMinutes - pPrev.endMinutes);
+            const naturalMinutes = Math.max(0, pCurr.startMinutes - prevEndMinutes);
             const initialMinutes = (customTransit.minutes !== undefined && customTransit.minutes !== null && customTransit.minutes !== '')
                 ? Number(customTransit.minutes)
                 : naturalMinutes;
@@ -9639,11 +9675,14 @@ const firebaseConfig = {
             const pPrev = parseTimeString(prev.time);
             const pCurr = parseTimeString(curr.time);
 
+            const prevEndMinutes = pPrev.hasEnd ? pPrev.endMinutes : pPrev.startMinutes;
+            const prevTimeStr = pPrev.hasEnd ? pPrev.endTimeStr : pPrev.startTimeStr;
+
             const minsInput = document.getElementById('transitMinutesInput');
             const setMinutes = parseInt(minsInput ? minsInput.value : '0', 10) || 0;
             const syncNextTime = document.getElementById('transitSyncNextEventTime')?.checked;
 
-            const newStartMinutes = pPrev.endMinutes + setMinutes;
+            const newStartMinutes = prevEndMinutes + setMinutes;
             const newStartH = String(Math.floor(newStartMinutes / 60) % 24).padStart(2, '0');
             const newStartM = String(newStartMinutes % 60).padStart(2, '0');
             const newStartTimeStr = `${newStartH}:${newStartM}`;
@@ -9658,17 +9697,18 @@ const firebaseConfig = {
 
             let previewHtml = '';
             if (syncNextTime) {
+                const fromActionText = pPrev.hasEnd ? `於 <strong>${prevTimeStr}</strong> 結束` : `於 <strong>${prevTimeStr}</strong> 出發`;
                 previewHtml = `
                     <div style="color:#0369a1; font-weight:700; margin-bottom:3px;">
                         🎯 儲存後時程推算結果：
                     </div>
                     <div>
-                        前站於 <strong>${pPrev.endTimeStr}</strong> 結束 ➔ 移動車程 <strong>${formatDuration(setMinutes)}</strong> ➔ 次站「${escapeHtml(curr.title)}」時間將自動調整為 <strong>${newStartTimeStr}${newEndStr}</strong>
-                        ${(pCurr.hasEnd && pCurr.durationMinutes > 0) ? `<span style="color:#15803d; font-size:0.75rem;"> (維持停留 ${formatDuration(pCurr.durationMinutes)})</span>` : ''}
+                        前站${fromActionText} ➔ 移動車程 <strong>${formatDuration(setMinutes)}</strong> ➔ 次站「${escapeHtml(curr.title)}」時間將自動調整為 <strong>${newStartTimeStr}${newEndStr}</strong>
+                        ${(pCurr.hasEnd && pCurr.durationMinutes > 0) ? `<span style="color:#15803d; font-size:0.75rem;"> (維持停留/航程 ${formatDuration(pCurr.durationMinutes)})</span>` : ''}
                     </div>
                 `;
             } else {
-                const currentGap = pCurr.startMinutes - pPrev.endMinutes;
+                const currentGap = pCurr.startMinutes - prevEndMinutes;
                 previewHtml = `
                     <div>
                         設定移動時間：<strong>${formatDuration(setMinutes)}</strong> ｜ 目前兩站實際間隔：<strong>${formatDuration(currentGap)}</strong>
@@ -9717,8 +9757,9 @@ const firebaseConfig = {
             const cascadeNext = document.getElementById('transitCascadeNextEvents')?.checked;
 
             if (syncNextTime) {
+                const prevEndMinutes = pPrev.hasEnd ? pPrev.endMinutes : pPrev.startMinutes;
                 const oldStartMin = pCurr.startMinutes;
-                const newStartMin = pPrev.endMinutes + minutes;
+                const newStartMin = prevEndMinutes + minutes;
                 const shiftMin = newStartMin - oldStartMin;
 
                 if (shiftMin !== 0) {
@@ -9756,6 +9797,44 @@ const firebaseConfig = {
             renderTimelineView();
             closeModal('transitSettingsModal');
             showToast('info', '已恢復為依照行程起訖時間差自動計算移動時間！');
+        }
+
+        // 在時間軸上一鍵將次站開始時間對齊為「前站結束時間 + 移動時間」
+        function syncNextEventWithTransit(dayNum, eventIdx) {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
+            if (!day || !day.events || !day.events[eventIdx] || eventIdx <= 0) return;
+
+            day.events = sortDayEventsByTime(day.events);
+            const prev = day.events[eventIdx - 1];
+            const curr = day.events[eventIdx];
+            const pPrev = parseTimeString(prev.time);
+            const pCurr = parseTimeString(curr.time);
+
+            const prevEndM = pPrev.hasEnd ? pPrev.endMinutes : pPrev.startMinutes;
+            const customTransit = curr.transit;
+            const transitMins = (customTransit && customTransit.minutes !== undefined && customTransit.minutes !== null && customTransit.minutes !== '')
+                ? Number(customTransit.minutes)
+                : Math.max(0, pCurr.startMinutes - prevEndM);
+
+            const targetStartM = prevEndM + transitMins;
+            const shiftMin = targetStartM - pCurr.startMinutes;
+
+            if (shiftMin !== 0) {
+                curr.time = shiftTimeString(curr.time, shiftMin);
+                // 後續行程連鎖順延
+                for (let i = eventIdx + 1; i < day.events.length; i++) {
+                    day.events[i].time = shiftTimeString(day.events[i].time, shiftMin);
+                }
+            }
+
+            day.events = sortDayEventsByTime(day.events);
+            saveState();
+            renderTimelineView();
+            const targetH = String(Math.floor(targetStartM / 60) % 24).padStart(2, '0');
+            const targetM = String(targetStartM % 60).padStart(2, '0');
+            showToast('success', `已自動將「${curr.title}」開始時間對齊至 ${targetH}:${targetM}！`);
         }
 
         // ==========================================
@@ -9897,7 +9976,7 @@ const firebaseConfig = {
             }
 
             const startM = parsed.startMinutes !== 9999 ? parsed.startMinutes : 540;
-            const oldEndM = parsed.hasEnd ? parsed.endMinutes : (startM + 60);
+            const oldEndM = parsed.hasEnd ? parsed.endMinutes : startM;
             const newEndM = startM + newDurationMins;
             const shiftMins = newEndM - oldEndM;
 
@@ -10067,6 +10146,10 @@ const firebaseConfig = {
                 const notesVal = document.getElementById('eventNotesStr')?.value.trim() || '';
                 const typeVal = document.getElementById('eventTypeSelect')?.value || 'spot';
 
+                const existingTransit = (editIdx >= 0 && originDayNum === targetDayNum && targetDay.events[editIdx])
+                    ? targetDay.events[editIdx].transit
+                    : undefined;
+
                 const eventObj = {
                     time: timeVal,
                     title: titleVal,
@@ -10075,6 +10158,9 @@ const firebaseConfig = {
                     cost: costNum,
                     notes: notesVal
                 };
+                if (existingTransit) {
+                    eventObj.transit = existingTransit;
+                }
 
                 // 處理編輯或新增，包含跨天遷移與連動後續行程順延
                 let shiftedCount = 0;
