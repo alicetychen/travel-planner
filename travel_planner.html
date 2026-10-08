@@ -2656,7 +2656,7 @@
     <div class="notion-topbar">
         <div class="notion-breadcrumbs">
             <span style="font-weight: 700; color: var(--notion-text); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.13</span>
+                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.14</span>
             </span>
         </div>
         <div class="topbar-actions">
@@ -3210,7 +3210,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">行程類別標籤</label>
-                            <select id="eventTypeSelect" class="form-input">
+                            <select id="eventTypeSelect" class="form-input" onchange="handleEventTypeChange()">
                                 <option value="spot">🏛️ 景點參觀</option>
                                 <option value="food">🍽️ 美食餐飲</option>
                                 <option value="trans">🚗 交通移動</option>
@@ -6123,10 +6123,14 @@ const firebaseConfig = {
                     const parsed = parseTimeString(ev.time);
                     const catInfo = getEventCategoryInfo(ev.type);
 
-                    // 1. 停留時間徽章 (支援點擊直接修改)
-                    const durationHtml = (parsed.hasEnd && parsed.durationMinutes > 0)
-                        ? `<span class="timeline-duration-badge" onclick="openEditStayDurationModal(${activeDay.dayNum}, ${eIdx})" title="點擊直接修改停留時間"><i class="fa-regular fa-hourglass-half"></i> 停留 ${formatDuration(parsed.durationMinutes)} <i class="fa-solid fa-pen" style="font-size:0.62rem; opacity:0.6; margin-left:2px;"></i></span>`
-                        : `<span class="timeline-duration-badge ghost-add" onclick="openEditStayDurationModal(${activeDay.dayNum}, ${eIdx})" title="點擊設定此項目的停留時間"><i class="fa-solid fa-plus"></i> 設定停留</span>`;
+                    // 1. 停留時間徽章 (交通移動與航班航程不需顯示景點停留時間)
+                    const isTransitOrFlight = (ev.type === 'trans' || ev.type === 'flight');
+                    let durationHtml = '';
+                    if (!isTransitOrFlight) {
+                        durationHtml = (parsed.hasEnd && parsed.durationMinutes > 0)
+                            ? `<span class="timeline-duration-badge" onclick="openEditStayDurationModal(${activeDay.dayNum}, ${eIdx})" title="點擊直接修改停留時間"><i class="fa-regular fa-hourglass-half"></i> 停留 ${formatDuration(parsed.durationMinutes)} <i class="fa-solid fa-pen" style="font-size:0.62rem; opacity:0.6; margin-left:2px;"></i></span>`
+                            : `<span class="timeline-duration-badge ghost-add" onclick="openEditStayDurationModal(${activeDay.dayNum}, ${eIdx})" title="點擊設定此項目的停留時間"><i class="fa-solid fa-plus"></i> 設定停留</span>`;
+                    }
 
                     // 2. 行程類別標籤
                     const catBadgeHtml = `<span class="event-cat-badge ${catInfo.class}" title="行程分類：${catInfo.label}"><i class="fa-solid ${catInfo.icon}"></i> ${catInfo.label}</span>`;
@@ -6226,10 +6230,10 @@ const firebaseConfig = {
                                 </div>
                             </div>
                             <div style="display:flex; gap:6px; flex-shrink:0;">
-                                <button class="n-btn" style="padding: 2px 7px; font-size: 0.74rem;" onclick="openEditEventModal(${activeDay.dayNum}, ${eIdx})" title="編輯此行程活動">
+                                <button type="button" class="n-btn" style="padding: 2px 7px; font-size: 0.74rem;" onclick="event.stopPropagation(); openEditEventModal(${activeDay.dayNum}, ${eIdx})" title="編輯此行程活動">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
-                                <button class="n-btn n-btn-danger" style="padding: 2px 7px; font-size: 0.74rem;" onclick="deleteEventItem(${activeDay.dayNum}, ${eIdx})" title="刪除此行程活動">
+                                <button type="button" class="n-btn n-btn-danger" style="padding: 2px 7px; font-size: 0.74rem;" onclick="event.stopPropagation(); deleteEventItem(${activeDay.dayNum}, ${eIdx})" title="刪除此行程活動">
                                     <i class="fa-regular fa-trash-can"></i>
                                 </button>
                             </div>
@@ -8136,14 +8140,30 @@ const firebaseConfig = {
         // ==========================
         function openModal(id) {
             const el = document.getElementById(id);
-            if (el) el.classList.add('active');
+            if (!el) return;
+            // 防閃退保護：記錄開啟時間戳，防止同一個點擊事件冒泡或延遲穿透誤關閉彈窗
+            el.dataset.openedAt = String(Date.now());
+            el.classList.add('active');
+            // 每次打開彈窗時，自動將滾動條重設回最頂部
+            const body = el.querySelector('.modal-body');
+            if (body) {
+                body.scrollTop = 0;
+            }
         }
         function closeModal(id) {
             const el = document.getElementById(id);
             if (el) el.classList.remove('active');
         }
         function handleBackdropClick(event, modalId) {
-            if (event && event.target && event.target.id === modalId) closeModal(modalId);
+            if (!event || !event.target) return;
+            const el = document.getElementById(modalId);
+            // 防閃退保護：若剛開啟小於 300ms，忽略 backdrop 點擊
+            if (el && el.dataset.openedAt && (Date.now() - Number(el.dataset.openedAt) < 300)) {
+                return;
+            }
+            if (event.target.id === modalId) {
+                closeModal(modalId);
+            }
         }
 
         // 支援鍵盤 ESC 鍵快速關閉任何開啟中的彈窗
@@ -9184,10 +9204,19 @@ const firebaseConfig = {
             if (preview) preview.innerText = resultStr;
             if (rawInput) rawInput.value = resultStr;
 
-            // 計算停留時長
+            // 計算停留時長 (若為交通移動或航班航程則徹底隱藏停留時間設定)
+            const typeSelect = document.getElementById('eventTypeSelect');
+            const currentType = typeSelect ? typeSelect.value : 'spot';
+            const isTransitOrFlight = (currentType === 'trans' || currentType === 'flight');
+
+            const quickChips = document.getElementById('quickStayChipsRow');
+            if (quickChips) {
+                quickChips.style.display = isTransitOrFlight ? 'none' : 'flex';
+            }
+
             const parsed = parseTimeString(resultStr);
             if (stayBadge) {
-                if (parsed.hasEnd && parsed.durationMinutes > 0) {
+                if (!isTransitOrFlight && parsed.hasEnd && parsed.durationMinutes > 0) {
                     stayBadge.style.display = 'inline-flex';
                     stayBadge.innerHTML = `<i class="fa-regular fa-hourglass-half"></i> 停留 ${formatDuration(parsed.durationMinutes)}`;
                 } else {
@@ -9196,6 +9225,10 @@ const firebaseConfig = {
             }
 
             updateEventModalImpactAnalysis(resultStr);
+        }
+
+        function handleEventTypeChange() {
+            handleTimeSelectorChange();
         }
 
         // 即時行程關聯與影響分析 (Impact Analysis)
@@ -9762,6 +9795,10 @@ const firebaseConfig = {
             if (!day || !day.events || !day.events[eventIdx]) return;
 
             const ev = day.events[eventIdx];
+            if (ev.type === 'trans' || ev.type === 'flight') {
+                showToast('info', '交通移動與航班行程不需設定景點停留時間');
+                return;
+            }
             const parsed = parseTimeString(ev.time);
             const catInfo = getEventCategoryInfo(ev.type);
 
@@ -9906,7 +9943,6 @@ const firebaseConfig = {
             const editInput = document.getElementById('eventEditIndex');
             if (editInput) editInput.value = '-1';
 
-            setTimeSelectorValue('');
             const titleInput = document.getElementById('eventTitleStr');
             if (titleInput) titleInput.value = '';
             const locInput = document.getElementById('eventLocStr');
@@ -9917,6 +9953,8 @@ const firebaseConfig = {
             if (notesInput) notesInput.value = '';
             const typeSelect = document.getElementById('eventTypeSelect');
             if (typeSelect) typeSelect.value = 'spot';
+
+            setTimeSelectorValue('');
 
             const modalTitle = document.getElementById('eventModalTitle');
             if (modalTitle) modalTitle.innerHTML = '<i class="fa-solid fa-calendar-plus"></i> 新增行程項目';
@@ -9951,7 +9989,6 @@ const firebaseConfig = {
             const editInput = document.getElementById('eventEditIndex');
             if (editInput) editInput.value = eventIdx;
 
-            setTimeSelectorValue(ev.time || '');
             const titleInput = document.getElementById('eventTitleStr');
             if (titleInput) titleInput.value = ev.title || '';
             const locInput = document.getElementById('eventLocStr');
@@ -9962,6 +9999,8 @@ const firebaseConfig = {
             if (notesInput) notesInput.value = ev.notes || '';
             const typeSelect = document.getElementById('eventTypeSelect');
             if (typeSelect) typeSelect.value = ev.type || 'spot';
+
+            setTimeSelectorValue(ev.time || '');
 
             const modalTitle = document.getElementById('eventModalTitle');
             if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-pen-to-square"></i> 編輯行程項目 (${escapeHtml(ev.title || '項目')})`;
