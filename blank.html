@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>旅遊規劃 ‧ Travel Planner</title>
+    <title>空白旅行手帳・自由行行程規劃範本 (可分享與共編) ✈️</title>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2761,6 +2761,14 @@
                 <span id="cloudStatusText" style="font-weight: 700;">☁️ 雲端同步</span>
             </button>
 
+                        <!-- 分享中心按鈕 -->
+            <button class="n-btn" onclick="openShareModal()" style="background:#0284c7; color:#ffffff; border-color:#0369a1; font-weight:700;" title="分享此行程給朋友或複製空白範本連結">
+                <i class="fa-solid fa-share-nodes"></i> <span class="topbar-btn-text">分享行程</span>
+            </button>
+            <button class="n-btn" onclick="resetToCleanBlank()" style="color:#0f766e; border-color:#99f6e4; background:#f0fdfa;" title="清空重設為完全空白旅行手帳">
+                <i class="fa-solid fa-file-circle-plus"></i> <span class="topbar-btn-text">清空完全空白</span>
+            </button>
+
             <button class="n-btn" onclick="exportDataJson()" title="下載行程 JSON 備份">
                 <i class="fa-solid fa-file-export"></i> <span class="topbar-btn-text">匯出</span>
             </button>
@@ -2769,6 +2777,10 @@
             </button>
             <input type="file" id="importJsonFileInput" style="display: none;" accept=".json" onchange="handleImportJsonFile(event)">
             
+            <a href="blank.html" target="_blank" class="n-btn" style="border-color: #0284c7; color: #0284c7; background: #f0f9ff; text-decoration: none; font-weight: 700;" title="開啟可分享的空白旅行手帳範本 (方便發給朋友填寫)">
+                <i class="fa-solid fa-share-nodes"></i> <span class="topbar-btn-text">分享空白頁</span>
+            </a>
+
             <button class="n-btn n-btn-accent" onclick="openBookletModal()" title="產生隨身旅遊小手冊">
                 <i class="fa-solid fa-book-open"></i> <span class="topbar-btn-text">隨身手冊</span>
             </button>
@@ -2796,7 +2808,7 @@
 
         <div class="notion-title-row">
             <div style="flex: 1;">
-                <h1 class="notion-page-title" id="pageTitleText">北京 7 天 6 夜・頂級美食與皇家精華 🇨🇳</h1>
+                <h1 class="notion-page-title" id="pageTitleText">我的旅行手帳 ✈️</h1>
                 <div class="notion-page-subtitle" id="pageSubtitleText">
                     2026.05.05 - 05.11 ‧ 3 人同行 ‧ 美食與紫禁城長城文化漫遊
                 </div>
@@ -3972,8 +3984,8 @@
                             <span id="fIsTransferCheckboxSpan">🔄 本次大交通包含「轉機 / 中轉換乘」航段 (開啟第 2 段與中轉停留欄位)</span>
                         </label>
                         <div style="display: flex; gap: 6px;">
-                            <button type="button" class="n-btn" style="font-size: 0.74rem; padding: 2px 7px;" onclick="fillTransferExampleChongqing()">重慶轉機範例</button>
-                            <button type="button" class="n-btn" style="font-size: 0.74rem; padding: 2px 7px;" onclick="fillDirectExampleBeijing()">北京直飛範例</button>
+                            <button type="button" class="n-btn" style="font-size: 0.74rem; padding: 2px 7px;" onclick="fillTransferExample()">轉機航段範例</button>
+                            <button type="button" class="n-btn" style="font-size: 0.74rem; padding: 2px 7px;" onclick="fillDirectExample()">直飛航段範例</button>
                         </div>
                     </div>
 
@@ -4035,7 +4047,7 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label" id="labelOutArrLoc2">最終目的地機場 / 航廈</label>
-                                <input type="text" id="fOutArrLoc2" class="form-input" placeholder="重慶江北 (CKG) T3">
+                                <input type="text" id="fOutArrLoc2" class="form-input" placeholder="東京成田 (NRT) T3">
                             </div>
                         </div>
 
@@ -4072,7 +4084,7 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label" id="labelInDepLoc">回程起飛機場 / 航廈</label>
-                                <input type="text" id="fInDepLoc" class="form-input" placeholder="重慶江北 (CKG) T3">
+                                <input type="text" id="fInDepLoc" class="form-input" placeholder="東京成田 (NRT) T3">
                             </div>
                             <div class="form-group">
                                 <label class="form-label" id="fInArrLabel1">抵達機場 (直飛目的地或轉機地)</label>
@@ -4255,7 +4267,7 @@
                         <span style="font-size: 0.72rem; color: #475569; background: #f1f5f9; padding: 1px 7px; border-radius: 4px; font-weight: 700;">全新空白</span>
                     </div>
                     <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 6px;">
-                        發給朋友一張乾淨未填寫的空白旅行範本，讓朋友從頭開始自由規劃！
+                        發給朋友一張完全空白的旅行手帳範本，讓朋友從頭開始自由規劃！
                     </div>
                     <div style="display: flex; gap: 6px;">
                         <input type="text" id="shareCleanTemplateUrlInput" class="form-input" readonly style="font-size: 0.78rem; background: #fff;" onclick="this.select()">
@@ -4294,12 +4306,12 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="form-label">飯店名稱</label>
-                        <input type="text" id="hName" class="form-input" placeholder="例如：重慶解放碑 Moxy 酒店 或 重慶來福士洲際酒店">
+                        <input type="text" id="hName" class="form-input" placeholder="例如：下榻飯店 A 或 目的地來福士洲際酒店">
                     </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">所在城市 / 商圈地區</label>
-                            <input type="text" id="hCity" class="form-input" placeholder="例如：重慶 ‧ 解放碑商圈">
+                            <input type="text" id="hCity" class="form-input" placeholder="例如：東京 ‧ 新宿商圈">
                         </div>
                         <div class="form-group">
                             <label class="form-label">階段標籤 (選填)</label>
@@ -4363,7 +4375,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label"><i class="fa-solid fa-location-dot" style="color: #ea580c;"></i> 中文詳細地址 (司機導航、叫車與步行指引)</label>
-                        <input type="text" id="hAddr" class="form-input" placeholder="例如：重慶市渝中區青年路77號 (解放碑國泰優活城市廣場旁)">
+                        <input type="text" id="hAddr" class="form-input" placeholder="例如：市中心青年路77號 (解放碑國泰優活城市廣場旁)">
                     </div>
                     <div class="form-group">
                         <label class="form-label">飯店聯絡電話 (選填)</label>
@@ -4408,7 +4420,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">預約平台 / 管道</label>
-                        <input type="text" id="bPlatform" class="form-input" placeholder="例如：重慶索道官方微信 或 KKday / 飛豬 / 本地專車">
+                        <input type="text" id="bPlatform" class="form-input" placeholder="例如：目的地索道官方微信 或 KKday / 飛豬 / 本地專車">
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -4537,7 +4549,7 @@
                             <span>🔑 旅遊計畫共編房間碼 (Room ID)</span>
                             <span style="color: #0284c7; cursor: pointer; font-weight: 700;" onclick="copySyncShareLink()">📋 複製專屬分享連結</span>
                         </label>
-                        <input type="text" id="cloudRoomIdInput" class="form-input" value="chongqing-2026" placeholder="例如：chongqing-2026" oninput="renderCloudQrCode()">
+                        <input type="text" id="cloudRoomIdInput" class="form-input" value="" placeholder="請自訂房間代號，例如：trip-2026" oninput="renderCloudQrCode()">
                         <div style="font-size: 0.76rem; color: var(--notion-text-sub); margin-top: 4px;">
                             💡 只要旅伴在手機或電腦輸入相同房間碼（或打開分享連結），所有人即可同步共同編輯同一份行程！
                         </div>
@@ -4608,23 +4620,23 @@ const firebaseConfig = {
          ==================================================== -->
     <script>
                 // ==========================================
-        // 預設乾淨空白規劃範本 (不含私人資訊，方便分享他人)
+        // 純淨完全空白規劃範本 (不帶任何個人行程，100% 完全空白)
         // ==========================================
         const BLANK_PLAN = {
-            id: 'plan-blank-new',
-            title: '我的新旅行規劃 ✈️',
-            subtitle: '點擊此處自訂出發日期、同行夥伴與旅行主題',
+            id: 'plan-blank',
+            title: '我的旅行手帳 ✈️',
+            subtitle: '尚未設定日期 ‧ 點擊自訂行程主題與夥伴',
             emoji: '🗺️',
             coverUrl: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1600&q=80',
-            dateRange: '尚未設定日期 (3天)',
-            memberCount: 2,
-            members: '2 人同行',
-            currencyCode: 'JPY',
-            currencyName: '日圓',
-            currencySymbol: '¥',
-            exchangeRate: 0.21,
+            dateRange: '尚未設定日期 (1天)',
+            memberCount: 1,
+            members: '1 人同行',
+            currencyCode: 'TWD',
+            currencyName: '新台幣',
+            currencySymbol: 'NT$',
+            exchangeRate: 1.0,
             budgetNote: '尚未設定預算',
-            tags: ['自由行', '景點巡禮', '美食漫遊'],
+            tags: ['自由行'],
             hotels: [],
             flights: {
                 transportType: 'flight',
@@ -4637,45 +4649,15 @@ const firebaseConfig = {
             days: [
                 {
                     dayNum: 1,
-                    title: '出發抵達與城市初探',
+                    title: 'Day 1 啟程出發',
                     date: '',
-                    summary: '第一天啟程，抵達目的地辦理入住並展開探索',
+                    summary: '啟程出發，展開美好旅程',
                     breakfast: '', breakfastCost: 0,
                     lunch: '', lunchCost: 0,
                     dinner: '', dinnerCost: 0,
                     snack: '', snackCost: 0,
                     events: [
-                        { time: '09:00', title: '出發前往目的地', loc: '機場 / 出發車站', tag: '交通', cost: 0, notes: '點擊右側鉛筆按鈕即可自訂活動內容、時間與費用' },
-                        { time: '14:30', title: '下榻飯店辦理入住', loc: '飯店大廳', tag: '住宿', cost: 0, notes: '寄放行李或 Check-in 入住' },
-                        { time: '18:00', title: '享用晚餐與周邊散策', loc: '在地美食商圈', tag: '美食', cost: 0, notes: '品嚐當地特色料理' }
-                    ]
-                },
-                {
-                    dayNum: 2,
-                    title: '精華景點深度一日遊',
-                    date: '',
-                    summary: '全天探索核心景點、拍照打卡與逛街放鬆',
-                    breakfast: '', breakfastCost: 0,
-                    lunch: '', lunchCost: 0,
-                    dinner: '', dinnerCost: 0,
-                    snack: '', snackCost: 0,
-                    events: [
-                        { time: '09:30', title: '核心經典地標參訪', loc: '知名景點', tag: '景點', cost: 0, notes: '熱門景點建議提前預約' },
-                        { time: '14:00', title: '午後文創散策與咖啡小憩', loc: '特色街區', tag: '放鬆', cost: 0, notes: '漫步街道、採購特色紀念品' }
-                    ]
-                },
-                {
-                    dayNum: 3,
-                    title: '紀念採買與平安返程',
-                    date: '',
-                    summary: '最後巡禮，採買伴手禮並踏上返程',
-                    breakfast: '', breakfastCost: 0,
-                    lunch: '', lunchCost: 0,
-                    dinner: '', dinnerCost: 0,
-                    snack: '', snackCost: 0,
-                    events: [
-                        { time: '10:30', title: '退房與最後伴手禮採購', loc: '購物商場 / 免稅店', tag: '購物', cost: 0, notes: '整理行李準備前往返程站點' },
-                        { time: '16:00', title: '啟程平安返家', loc: '機場 / 返程車站', tag: '交通', cost: 0, notes: '結束豐富美好旅程！' }
+                        { time: '09:00', title: '啟程出發', loc: '出發地點', tag: '交通', cost: 0, notes: '點擊右方鉛筆圖示可自由修改此項目或調整時間與費用' }
                     ]
                 }
             ],
@@ -4684,47 +4666,31 @@ const firebaseConfig = {
                     name: '重要證件與金流',
                     icon: 'fa-passport',
                     items: [
-                        { text: '護照 / 身分證 (有效期限 6 個月以上)', checked: false },
-                        { text: '機票 / 車票電子憑證或車票', checked: false },
-                        { text: '海外刷卡回饋信用卡與現金', checked: false }
+                        { text: '身分證 / 護照 (有效期限 6 個月以上)', checked: false },
+                        { text: '機票 / 車票憑證', checked: false },
+                        { text: '信用卡與現金', checked: false }
                     ]
                 },
                 {
-                    name: '隨身衣物與穿搭',
-                    icon: 'fa-shirt',
+                    name: '個人隨身物品',
+                    icon: 'fa-bag-shopping',
                     items: [
-                        { text: '每日換洗衣物與輕便外套', checked: false },
-                        { text: '好走防滑球鞋 / 慢跑鞋', checked: false },
-                        { text: '晴雨兩用摺疊傘 / 防曬用品', checked: false }
-                    ]
-                },
-                {
-                    name: '3C 數位配件',
-                    icon: 'fa-plug',
-                    items: [
-                        { text: '智慧手機與大容量行動電源', checked: false },
-                        { text: '充電線與充電頭 (或萬國轉接頭)', checked: false }
-                    ]
-                },
-                {
-                    name: '個人隨身常備藥',
-                    icon: 'fa-kit-medical',
-                    items: [
-                        { text: '腸胃藥、止痛藥、過敏藥與 OK 繃', checked: false },
-                        { text: '隨身面紙與消毒濕紙巾', checked: false }
+                        { text: '換洗衣物與外套', checked: false },
+                        { text: '手機充電器與行動電源', checked: false },
+                        { text: '個人常備藥品與衛生用品', checked: false }
                     ]
                 }
             ],
             spotTips: [],
-            notes: '💡 這是全新的空白旅行範本，點擊標題即可更改名稱，隨心填寫您的專屬行程！'
+            notes: '💡 這是完全空白的旅行範本，點擊任何區塊即可開始規劃您的專屬旅程！'
         };
 
-        // Application State
+        // 初始純淨狀態 (預設只有 BLANK_PLAN，絕不帶入任何私人行程)
         let appState = {
-            activePlanId: 'plan-chongqing',
-            activeView: 'timeline',
-            activeDayTab: 1,
-            plans: {}
+            activePlanId: 'plan-blank',
+            plans: {
+                'plan-blank': JSON.parse(JSON.stringify(BLANK_PLAN))
+            }
         };
 
         // ==========================================
@@ -4737,7 +4703,7 @@ const firebaseConfig = {
 
         const CLOUD_CONFIG_STORAGE_KEY = 'notion_travel_planner_firebase_config';
         const CLOUD_ROOM_STORAGE_KEY = 'notion_travel_planner_firebase_room';
-        const DEFAULT_CLOUD_ROOM = 'chongqing-2026';
+        const DEFAULT_CLOUD_ROOM = '';
 
         // 您的專屬 Firebase 專案設定 (已自動內建配置)
         const DEFAULT_FIREBASE_CONFIG = {
@@ -4766,91 +4732,11 @@ const firebaseConfig = {
             }
         }
 
-        function initFirebaseCloudSync() {
-            let configObj = null;
-            const rawConfig = localStorage.getItem(CLOUD_CONFIG_STORAGE_KEY);
-            if (rawConfig) {
-                try {
-                    configObj = JSON.parse(rawConfig);
-                } catch(e) {}
-            }
-
-            // 若本機尚未設定過，自動套用內建的專屬 Firebase 設定
-            if (!configObj || !configObj.apiKey) {
-                configObj = DEFAULT_FIREBASE_CONFIG;
-                localStorage.setItem(CLOUD_CONFIG_STORAGE_KEY, JSON.stringify(DEFAULT_FIREBASE_CONFIG));
-            }
-
-            try {
-                if (!firebaseAppInstance) {
-                    if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
-                        firebaseAppInstance = firebase.apps[0];
-                    } else if (typeof firebase !== 'undefined') {
-                        firebaseAppInstance = firebase.initializeApp(configObj);
-                    }
-                }
-
-                if (typeof firebase !== 'undefined') {
-                    firestoreDb = firebase.firestore();
-                    startListeningCloudRoom();
-                }
-            } catch (err) {
-                console.error("初始化 Firebase 失敗", err);
-                updateCloudStatusUI('error', '⚠️ 雲端設定有誤');
-            }
-        }
-
-        function startListeningCloudRoom() {
-            if (!firestoreDb) return;
-            if (cloudUnsubscribe) {
-                cloudUnsubscribe();
-                cloudUnsubscribe = null;
-            }
-
-            const roomId = getCloudRoomId();
-            updateCloudStatusUI('syncing', '🔄 連線雲端中...');
-
-            const docRef = firestoreDb.collection('travel_planners').doc(roomId);
-
-            cloudUnsubscribe = docRef.onSnapshot(doc => {
-                if (doc.exists) {
-                    const data = doc.data();
-                    if (data && data.appState) {
-                        isReceivingCloudUpdate = true;
-                        appState = data.appState;
-                        saveState(true); // 備份至本機 localStorage，但不重複推播雲端
-                        renderAll();
-                        isReceivingCloudUpdate = false;
-
-                        const timeStr = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                        updateCloudStatusUI('connected', `🟢 雲端已即時同步 (${timeStr})`);
-                    }
-                } else {
-                    // 若雲端該房間尚無資料，自動將當前本機行程上傳初始化
-                    pushStateToCloud();
-                }
-            }, err => {
-                console.error("Firestore 監聽失敗", err);
-                updateCloudStatusUI('error', '⚠️ 雲端連線失敗 (檢查權限)');
-            });
-        }
-
-        function pushStateToCloud() {
-            if (!firestoreDb || isReceivingCloudUpdate) return;
-            const roomId = getCloudRoomId();
-            updateCloudStatusUI('syncing', '🔄 同步中...');
-
-            firestoreDb.collection('travel_planners').doc(roomId).set({
-                appState: appState,
-                lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-                device: navigator.userAgent
-            }, { merge: true }).then(() => {
-                const timeStr = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                updateCloudStatusUI('connected', `🟢 雲端已即時同步 (${timeStr})`);
-            }).catch(err => {
-                console.error("推播至雲端失敗", err);
-                updateCloudStatusUI('error', '⚠️ 雲端儲存失敗');
-            });
+                function initFirebaseCloudSync() {
+            // 空白範本預設為完全離線模式，絕不自動連接任何預設房間或拉取私人行程
+            const roomInput = document.getElementById('cloudRoomIdInput');
+            if (roomInput) roomInput.value = '';
+            updateCloudStatusUI('local', '☁️ 雲端同步 (未連線)');
         }
 
         function updateCloudStatusUI(status, labelText) {
@@ -5069,7 +4955,7 @@ const firebaseConfig = {
         window.addEventListener('DOMContentLoaded', () => {
             loadState();
 
-            // 支援從 URL 參數帶入指定的 planId (例如 ?planId=plan-beijing)
+            // 支援從 URL 參數帶入指定的 planId (例如 ?planId=plan-template)
             const urlParams = new URLSearchParams(window.location.search);
             const targetPlanId = urlParams.get('planId');
             if (targetPlanId && appState.plans[targetPlanId]) {
@@ -5082,13 +4968,19 @@ const firebaseConfig = {
             initFirebaseCloudSync();
         });
 
-                function loadState() {
-            // 優先嘗試從 URL 解析載入他人分享的行程
+                        function loadState() {
+            // 1. 若網址帶有分享的行程資料 (#plan= 或 ?plan=)，優先解密載入
             if (checkAndLoadUrlShare()) {
                 return;
             }
 
-            const saved = localStorage.getItem('notion_travel_planner_shareable_blank_v1');
+            // 2. 讀取獨立的空白範本 LocalStorage
+            let saved = localStorage.getItem('notion_travel_pure_blank_v3');
+            // 防禦性清理：若先前存有包含重慶或北京之舊快取，強制一秒清除重置為全新空白
+            if (saved && (saved.includes('\u91cd\u6176') || saved.includes('\u5317\u4eac') || saved.includes('chongqing') || saved.includes('beijing'))) {
+                localStorage.removeItem('notion_travel_pure_blank_v3');
+                saved = null;
+            }
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
@@ -5100,14 +4992,20 @@ const firebaseConfig = {
                 }
             }
 
-            if (!appState.plans || Object.keys(appState.plans).length === 0) {
+            // 3. 確保預設為純淨的 BLANK_PLAN
+            if (!appState.plans || Object.keys(appState.plans).length === 0 || !appState.plans[appState.activePlanId]) {
                 appState.plans = {
-                    'plan-blank-new': JSON.parse(JSON.stringify(BLANK_PLAN))
+                    'plan-blank': JSON.parse(JSON.stringify(BLANK_PLAN))
                 };
-                appState.activePlanId = 'plan-blank-new';
+                appState.activePlanId = 'plan-blank';
                 saveState();
-            } else if (!appState.plans[appState.activePlanId]) {
-                appState.activePlanId = Object.keys(appState.plans)[0];
+            }
+        }
+
+        function saveState(skipCloud) {
+            localStorage.setItem('notion_travel_pure_blank_v3', JSON.stringify(appState));
+            if (firestoreDb && !skipCloud && !isReceivingCloudUpdate) {
+                pushStateToCloud();
             }
         }
 
@@ -5141,14 +5039,6 @@ const firebaseConfig = {
                 console.warn('解析分享 URL 時發生問題:', err);
             }
             return false;
-        }
-
-
-        function saveState(skipCloud) {
-            localStorage.setItem('notion_travel_planner_shareable_blank_v1', JSON.stringify(appState));
-            if (firestoreDb && !skipCloud && !isReceivingCloudUpdate) {
-                pushStateToCloud();
-            }
         }
 
         function getCurrentPlan() {
@@ -5622,29 +5512,29 @@ const firebaseConfig = {
             const container = document.getElementById('sideHotelCardsContainer');
             if (!plan || !container) return;
 
-            // 自動相容拆分：若為重慶行程且飯店為合併字串，自動拆為兩間獨立飯店
-            const isCq = (plan.id === 'plan-chongqing' || (plan.title && plan.title.includes('重慶')));
+            // 自動相容拆分：若為目的地行程且飯店為合併字串，自動拆為兩間獨立飯店
+            const isCq = (false || (plan.title && false));
             if (isCq && plan.hotels && plan.hotels.some(h => h.name && (h.name.includes('/') || (h.name.includes('Moxy') && h.name.includes('洲際'))))) {
                 plan.hotels = [
                     {
-                        name: '重慶解放碑 Moxy 酒店',
-                        city: '重慶 ‧ 解放碑商圈',
+                        name: '下榻飯店 A',
+                        city: '市中心商圈',
                         stayLabel: '前 4 晚 (10/23 - 10/27)',
                         checkIn: '2026-10-23',
                         checkOut: '2026-10-27',
                         nights: 4,
-                        addr: '重慶市渝中區青年路77號 (解放碑國泰優活城市廣場旁)',
+                        addr: '市中心青年路77號 (解放碑國泰優活城市廣場旁)',
                         phone: '+86 23 8888 6666',
                         notes: '步行即達解放碑中心、八一路好吃街，地鐵 2 號線臨江門站旁'
                     },
                     {
-                        name: '重慶來福士洲際酒店',
-                        city: '重慶 ‧ 朝天門/來福士',
+                        name: '目的地來福士洲際酒店',
+                        city: '精華景點商圈',
                         stayLabel: '後 2 晚 (10/27 - 10/29)',
                         checkIn: '2026-10-27',
                         checkOut: '2026-10-29',
                         nights: 2,
-                        addr: '重慶市渝中區接聖街8號 (朝天門來福士廣場 T4N 棟)',
+                        addr: '市中心接聖街8號 (朝天門來福士廣場 T4N 棟)',
                         phone: '+86 23 6666 8888',
                         notes: '水晶連廊 250 公尺高空大廳，高空客房俯瞰兩江交匯百萬夜景'
                     }
@@ -8665,7 +8555,7 @@ const firebaseConfig = {
             const stats = calculatePlanBudgetStats(plan);
             const days = plan.days || [];
             const memberCount = stats.memberCount || 1;
-            const cityName = plan.title.includes('北京') ? '北京' : (plan.title.includes('重慶') ? '重慶' : '目的地');
+            const cityName = false ? '目的地' : (false ? '目的地' : '目的地');
 
             // 1. 必備工具與重要提醒清單 (已勾選的已完成項目自動排除，不印入小冊中)
             let toolsList = [];
@@ -9078,7 +8968,7 @@ const firebaseConfig = {
                     <html lang="zh-TW">
                     <head>
                         <meta charset="utf-8">
-                        <title>隨身旅遊手冊</title>
+                        <title>空白旅行手帳・自由行行程規劃範本 (可分享與共編) ✈️</title>
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
                         ${styles}
                         <style>
@@ -9161,7 +9051,7 @@ const firebaseConfig = {
                 <html lang="zh-TW">
                 <head>
                     <meta charset="utf-8">
-                    <title>隨身旅遊手冊 - 列印版</title>
+                    <title>空白旅行手帳・自由行行程規劃範本 (可分享與共編) ✈️</title>
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     ${styles}
                     <style>
@@ -9743,29 +9633,29 @@ const firebaseConfig = {
                 plan.hotels = plan.hotel ? [plan.hotel] : [];
             }
 
-            // 自動相容拆分：若重慶行程中的飯店名稱包含合併字串「/」或同時有 Moxy 與 洲際，自動拆分為兩間獨立飯店
-            const isCq = (plan.id === 'plan-chongqing' || (plan.title && plan.title.includes('重慶')));
+            // 自動相容拆分：若目的地行程中的飯店名稱包含合併字串「/」或同時有 Moxy 與 洲際，自動拆分為兩間獨立飯店
+            const isCq = (false || (plan.title && false));
             if (isCq && plan.hotels.some(h => h.name && (h.name.includes('/') || (h.name.includes('Moxy') && h.name.includes('洲際'))))) {
                 plan.hotels = [
                     {
-                        name: '重慶解放碑 Moxy 酒店',
-                        city: '重慶 ‧ 解放碑商圈',
+                        name: '下榻飯店 A',
+                        city: '市中心商圈',
                         stayLabel: '前 4 晚 (10/23 - 10/27)',
                         checkIn: '2026-10-23',
                         checkOut: '2026-10-27',
                         nights: 4,
-                        addr: '重慶市渝中區青年路77號 (解放碑國泰優活城市廣場旁)',
+                        addr: '市中心青年路77號 (解放碑國泰優活城市廣場旁)',
                         phone: '+86 23 8888 6666',
                         notes: '步行即達解放碑中心、八一路好吃街，地鐵 2 號線臨江門站旁'
                     },
                     {
-                        name: '重慶來福士洲際酒店',
-                        city: '重慶 ‧ 朝天門/來福士',
+                        name: '目的地來福士洲際酒店',
+                        city: '精華景點商圈',
                         stayLabel: '後 2 晚 (10/27 - 10/29)',
                         checkIn: '2026-10-27',
                         checkOut: '2026-10-29',
                         nights: 2,
-                        addr: '重慶市渝中區接聖街8號 (朝天門來福士廣場 T4N 棟)',
+                        addr: '市中心接聖街8號 (朝天門來福士廣場 T4N 棟)',
                         phone: '+86 23 6666 8888',
                         notes: '水晶連廊 250 公尺高空大廳，高空客房俯瞰兩江交匯百萬夜景'
                     }
@@ -9779,7 +9669,7 @@ const firebaseConfig = {
             const isEdit = (editIdx !== null && editIdx !== undefined && editIdx >= 0 && plan.hotels[editIdx]);
             const ht = isEdit ? plan.hotels[editIdx] : {
                 name: '',
-                city: plan.title?.includes('北京') ? '北京' : '重慶',
+                city: '目的地城市',
                 stayLabel: '',
                 checkIn: '',
                 checkOut: '',
@@ -9853,11 +9743,11 @@ const firebaseConfig = {
                     } else if (plan.hotel?.name) {
                         name = plan.hotel.name;
                     } else {
-                        name = '重慶市區優質飯店';
+                        name = '目的地市區優質飯店';
                     }
                 }
 
-                const city = getVal('hCity') || (plan.title?.includes('北京') ? '北京' : '重慶');
+                const city = getVal('hCity') || (plan.title?.includes('目的地') ? '目的地' : '目的地');
                 const addr = getVal('hAddr') || '尚未填寫詳細地址';
                 const checkInVal = getVal('hCheckIn');
                 const checkOutVal = getVal('hCheckOut');
@@ -9978,13 +9868,13 @@ const firebaseConfig = {
                 no2Label: '第 2 段班機代號',
                 no2Placeholder: 'CX 928',
                 arrLoc2Label: '最終目的地機場 / 航廈',
-                arrLoc2Placeholder: '重慶江北 (CKG) T3',
+                arrLoc2Placeholder: '東京成田 (NRT) T3',
                 inAirlineLabel: '航空公司',
                 inAirlinePlaceholder: '國泰航空 / 中華航空',
                 inNoLabel: '班機代號',
                 inNoPlaceholder: 'CX 945',
                 inDepLocLabel: '回程起飛機場 / 航廈',
-                inDepLocPlaceholder: '重慶江北 (CKG) T3',
+                inDepLocPlaceholder: '東京成田 (NRT) T3',
                 inArrLocLabel: '抵達機場 (直飛目的地或轉機地)',
                 inArrLocPlaceholder: '香港 (HKG) T1',
                 inTransferInfoLabel: '🔄 回程轉機地點與停留時間說明',
@@ -10276,115 +10166,93 @@ const firebaseConfig = {
             if (inArrLabel) inArrLabel.innerText = isTrans ? (transportType === 'flight' ? '中轉機場 (轉機地)' : '中轉站點 (轉乘地)') : cfg.inArrLocLabel;
         }
 
-        function fillTransferExampleChongqing() {
+                function fillTransferExample() {
             setTransportType('flight');
             const cb = document.getElementById('fIsTransferCheckbox');
             if (cb) cb.checked = true;
             toggleFlightTransferFields();
 
-            // 去程
-            document.getElementById('fOutAirline').value = '國泰航空';
-            document.getElementById('fOutNo').value = 'CX 407';
+            document.getElementById('fOutAirline').value = '國際航空';
+            document.getElementById('fOutNo').value = 'TR 101';
             document.getElementById('fOutDepTime').value = '08:00';
-            document.getElementById('fOutArrTime1').value = '10:00';
+            document.getElementById('fOutArrTime1').value = '10:30';
             document.getElementById('fOutDepLoc').value = '台北桃園 (TPE) T1';
-            document.getElementById('fOutArrLoc1').value = '香港 (HKG) T1';
-            document.getElementById('fTransferInfoOut').value = '香港國際機場 (HKG) 轉機停留 3 小時 35 分鐘';
-            document.getElementById('fOutNo2').value = 'CX 928';
-            document.getElementById('fOutDepTime2').value = '13:35';
-            document.getElementById('fOutArrTime2').value = '16:10';
-            document.getElementById('fOutArrLoc2').value = '重慶江北 (CKG) T3';
-            document.getElementById('fOutDuration').value = '8 hrs 10 mins (經香港轉機)';
+            document.getElementById('fOutArrLoc1').value = '轉機樞紐 (HKG) T1';
+            document.getElementById('fTransferInfoOut').value = '轉機停留 2 小時 30 分鐘';
+            document.getElementById('fOutNo2').value = 'TR 202';
+            document.getElementById('fOutDepTime2').value = '13:00';
+            document.getElementById('fOutArrTime2').value = '16:00';
+            document.getElementById('fOutArrLoc2').value = '目的地機場 (NRT) T1';
+            document.getElementById('fOutDuration').value = '8 hrs (經轉機)';
 
-            // 回程
-            document.getElementById('fInAirline').value = '國泰航空';
-            document.getElementById('fInNo').value = 'CX 945';
-            document.getElementById('fInDepTime').value = '10:50';
-            document.getElementById('fInArrTime1').value = '14:25';
-            document.getElementById('fInDepLoc').value = '重慶江北 (CKG) T3';
-            document.getElementById('fInArrLoc1').value = '香港 (HKG) T1';
-            document.getElementById('fTransferInfoIn').value = '香港國際機場 (HKG) 轉機停留 4 小時 50 分鐘';
-            document.getElementById('fInNo2').value = 'CX 464';
-            document.getElementById('fInDepTime2').value = '19:35';
-            document.getElementById('fInArrTime2').value = '21:20';
+            document.getElementById('fInAirline').value = '國際航空';
+            document.getElementById('fInNo').value = 'TR 303';
+            document.getElementById('fInDepTime').value = '11:00';
+            document.getElementById('fInArrTime1').value = '14:00';
+            document.getElementById('fInDepLoc').value = '目的地機場 (NRT) T1';
+            document.getElementById('fInArrLoc1').value = '轉機樞紐 (HKG) T1';
+            document.getElementById('fTransferInfoIn').value = '轉機停留 3 小時';
+            document.getElementById('fInNo2').value = 'TR 404';
+            document.getElementById('fInDepTime2').value = '17:00';
+            document.getElementById('fInArrTime2').value = '19:30';
             document.getElementById('fInArrLoc2').value = '台北桃園 (TPE) T1';
-            document.getElementById('fInDuration').value = '10 hrs 30 mins (經香港轉機)';
+            document.getElementById('fInDuration').value = '8 hrs 30 mins (經轉機)';
 
             document.getElementById('fCategoryTag').value = 'International';
-            document.getElementById('fPnr').value = 'EJ3HIM / CX8888';
+            document.getElementById('fPnr').value = 'TR-EXAMPLE';
 
-            // 帶入分開計價示範費用
             const rSep = document.getElementById('fPricingSeparate');
             if (rSep) rSep.checked = true;
             toggleFlightPricingMode();
-
-            const outCostEl = document.getElementById('fOutCost');
-            if (outCostEl) outCostEl.value = '6250';
-            const inCostEl = document.getElementById('fInCost');
-            if (inCostEl) inCostEl.value = '6250';
-            const modeEl = document.getElementById('fCostMode');
-            if (modeEl) modeEl.value = 'single';
-            const currEl = document.getElementById('fCostCurr');
-            if (currEl) currEl.value = 'TWD';
+            document.getElementById('fOutCost').value = '6000';
+            document.getElementById('fInCost').value = '6000';
             calcFlightModalCost();
-
-            showToast('info', '已帶入重慶轉機示範資料與分開計價費用！');
+            showToast('info', '已帶入轉機範例資料！');
         }
 
-        function fillDirectExampleBeijing() {
+        function fillDirectExample() {
             setTransportType('flight');
             const cb = document.getElementById('fIsTransferCheckbox');
             if (cb) cb.checked = false;
             toggleFlightTransferFields();
 
-            // 去程
-            document.getElementById('fOutAirline').value = '中華航空';
-            document.getElementById('fOutNo').value = 'CI 0517';
-            document.getElementById('fOutDepTime').value = '15:35';
-            document.getElementById('fOutArrTime1').value = '18:55';
+            document.getElementById('fOutAirline').value = '直飛航空';
+            document.getElementById('fOutNo').value = 'DR 501';
+            document.getElementById('fOutDepTime').value = '09:00';
+            document.getElementById('fOutArrTime1').value = '12:30';
             document.getElementById('fOutDepLoc').value = '台北桃園 (TPE) T2';
-            document.getElementById('fOutArrLoc1').value = '北京首都 (PEK) T3';
+            document.getElementById('fOutArrLoc1').value = '目的地機場 (KIX) T1';
             document.getElementById('fTransferInfoOut').value = '';
             document.getElementById('fOutNo2').value = '';
             document.getElementById('fOutDepTime2').value = '';
             document.getElementById('fOutArrTime2').value = '';
             document.getElementById('fOutArrLoc2').value = '';
-            document.getElementById('fOutDuration').value = '3 hrs 25 mins (直飛)';
+            document.getElementById('fOutDuration').value = '3 hrs 30 mins (直飛)';
 
-            // 回程
-            document.getElementById('fInAirline').value = '中華航空';
-            document.getElementById('fInNo').value = 'CI 0512';
-            document.getElementById('fInDepTime').value = '12:25';
-            document.getElementById('fInArrTime1').value = '15:45';
-            document.getElementById('fInDepLoc').value = '北京首都 (PEK) T3';
+            document.getElementById('fInAirline').value = '直飛航空';
+            document.getElementById('fInNo').value = 'DR 502';
+            document.getElementById('fInDepTime').value = '14:00';
+            document.getElementById('fInArrTime1').value = '16:30';
+            document.getElementById('fInDepLoc').value = '目的地機場 (KIX) T1';
             document.getElementById('fInArrLoc1').value = '台北桃園 (TPE) T2';
             document.getElementById('fTransferInfoIn').value = '';
             document.getElementById('fInNo2').value = '';
             document.getElementById('fInDepTime2').value = '';
             document.getElementById('fInArrTime2').value = '';
             document.getElementById('fInArrLoc2').value = '';
-            document.getElementById('fInDuration').value = '3 hrs 15 mins (直飛)';
+            document.getElementById('fInDuration').value = '3 hrs 30 mins (直飛)';
 
             document.getElementById('fCategoryTag').value = 'International';
-            document.getElementById('fPnr').value = 'CI-PEK2026';
+            document.getElementById('fPnr').value = 'DR-EXAMPLE';
 
-            // 帶入來回合併計價示範費用
             const rRound = document.getElementById('fPricingRoundtrip');
             if (rRound) rRound.checked = true;
             toggleFlightPricingMode();
-
-            const totCostEl = document.getElementById('fTotalCost');
-            if (totCostEl) totCostEl.value = '15000';
-            const modeEl = document.getElementById('fCostMode');
-            if (modeEl) modeEl.value = 'single';
-            const currEl = document.getElementById('fCostCurr');
-            if (currEl) currEl.value = 'TWD';
+            document.getElementById('fTotalCost').value = '12000';
             calcFlightModalCost();
-
-            showToast('info', '已帶入北京直飛示範資料與來回合併票價！');
+            showToast('info', '已帶入直飛範例資料！');
         }
 
-        // 打開交通編輯彈窗
         function openEditFlightModal() {
             const plan = getCurrentPlan();
             if (!plan) return;
@@ -10456,7 +10324,7 @@ const firebaseConfig = {
                 document.getElementById('fInNo').value = isTrans ? 'CX 945' : 'CI 0512';
                 document.getElementById('fInDepTime').value = isTrans ? '10:50' : '12:25';
                 document.getElementById('fInArrTime1').value = isTrans ? '14:25' : '15:45';
-                document.getElementById('fInDepLoc').value = isTrans ? '重慶江北 (CKG) T3' : '北京首都 (PEK) T3';
+                document.getElementById('fInDepLoc').value = isTrans ? '東京成田 (NRT) T3' : '大阪關西 (KIX) T3';
                 document.getElementById('fInArrLoc1').value = isTrans ? '香港 (HKG) T1' : '台北桃園 (TPE) T2';
             }
 
@@ -13206,7 +13074,7 @@ const firebaseConfig = {
                                 <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 3px;">
                                     景點詳細地址 (選填，用於導航定位)
                                 </label>
-                                <input id="swalSpotAddress" class="form-input" placeholder="例如：北京市東城區景山前街4號" value="${curItem.address ? curItem.address.replace(/"/g, '&quot;') : ''}" style="width: 100%; font-size: 0.88rem; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;">
+                                <input id="swalSpotAddress" class="form-input" placeholder="例如：市中心景山前街4號" value="${curItem.address ? curItem.address.replace(/"/g, '&quot;') : ''}" style="width: 100%; font-size: 0.88rem; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;">
                             </div>
                             <div>
                                 <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 3px;">
@@ -13367,7 +13235,7 @@ const firebaseConfig = {
         // ==========================================
         const PRESET_COVERS = [
             {
-                title: '重慶山城夜色 (兩江交匯與千廝門)',
+                title: '目的地山城夜色 (兩江交匯與千廝門)',
                 url: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=80'
             },
             {
@@ -13644,16 +13512,15 @@ const firebaseConfig = {
         }
 
         function resetToCleanBlank() {
-            if (confirm('確定要建立一份全新的空白旅行範本嗎？現有填寫內容將保留在側邊欄清單中。')) {
-                const newId = 'plan-blank-' + Date.now();
-                const newPlan = JSON.parse(JSON.stringify(BLANK_PLAN));
-                newPlan.id = newId;
-                newPlan.title = '我的全新旅行計劃 🗺️';
-                appState.plans[newId] = newPlan;
-                appState.activePlanId = newId;
+            if (confirm('確定要清空並重設為完全空白範本嗎？現有填寫內容將被清除。')) {
+                localStorage.removeItem('notion_travel_pure_blank_v3');
+                appState.plans = {
+                    'plan-blank': JSON.parse(JSON.stringify(BLANK_PLAN))
+                };
+                appState.activePlanId = 'plan-blank';
                 saveState();
                 renderAll();
-                showToast('success', '已成功建立全新空白旅行手帳！');
+                showToast('success', '已成功重設為完全空白旅行手帳！');
             }
         }
 
