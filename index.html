@@ -4156,7 +4156,7 @@
                 <div class="modal-title" id="hotelModalTitle"><i class="fa-solid fa-bed"></i> 編輯飯店住宿資訊</div>
                 <button type="button" class="modal-close-btn" onclick="closeModal('editHotelModal')"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <form id="editHotelForm" onsubmit="handleSaveHotelSubmit(event); return false;">
+            <form id="editHotelForm" onsubmit="handleSaveHotelSubmit(event); return false;" novalidate>
                 <input type="hidden" id="hEditIndex" value="-1">
                 <div class="modal-body">
                     <div class="form-group">
@@ -10159,50 +10159,56 @@ const firebaseConfig = {
                 const plan = getCurrentPlan();
                 if (!plan) {
                     showToast('danger', '找不到當前旅行計畫！');
+                    closeModal('editHotelModal');
                     return false;
                 }
                 if (!plan.hotels) {
                     plan.hotels = plan.hotel ? [plan.hotel] : [];
                 }
 
-                const nameInput = document.getElementById('hName');
-                const cityInput = document.getElementById('hCity');
-                const addrInput = document.getElementById('hAddr');
-
-                const name = nameInput ? nameInput.value.trim() : '';
-                const city = cityInput ? cityInput.value.trim() : '';
-                const addr = addrInput ? addrInput.value.trim() : '';
-
-                if (!name) {
-                    showToast('danger', '請填寫飯店名稱！');
-                    if (nameInput) nameInput.focus();
-                    return false;
-                }
-
-                const editIdxVal = document.getElementById('hEditIndex')?.value;
-                const editIdx = (editIdxVal !== undefined && editIdxVal !== '') ? parseInt(editIdxVal) : -1;
-
-                const checkInVal = document.getElementById('hCheckIn')?.value || '';
-                const checkOutVal = document.getElementById('hCheckOut')?.value || '';
-
-                const rawActVal = document.getElementById('hActualCost')?.value;
-                const hotelData = {
-                    name: name,
-                    city: city || (plan.title?.includes('北京') ? '北京' : '重慶'),
-                    stayLabel: document.getElementById('hStayLabel')?.value.trim() || '',
-                    checkIn: checkInVal,
-                    checkOut: checkOutVal,
-                    priceType: document.getElementById('hPriceType')?.value || 'perNight',
-                    price: parseFloat(document.getElementById('hPrice')?.value) || 0,
-                    rooms: Math.max(1, parseInt(document.getElementById('hRooms')?.value) || 1),
-                    costCurr: document.getElementById('hCostCurr')?.value || 'LOCAL',
-                    actualCost: (rawActVal !== '' && rawActVal !== undefined) ? (parseFloat(rawActVal) || 0) : undefined,
-                    addr: addr || '尚未填寫詳細地址',
-                    phone: document.getElementById('hPhone')?.value.trim() || '',
-                    notes: document.getElementById('hNotes')?.value.trim() || ''
+                const getVal = (id, def = '') => {
+                    const el = document.getElementById(id);
+                    return el ? (el.value !== undefined && el.value !== null ? String(el.value).trim() : def) : def;
                 };
 
-                // 自動計算晚數
+                const editIdxVal = getVal('hEditIndex', '-1');
+                const editIdx = (editIdxVal !== '' && !isNaN(parseInt(editIdxVal))) ? parseInt(editIdxVal) : -1;
+
+                let name = getVal('hName');
+                // 若名稱空白，優先嘗試 fallback 回原飯店名稱或給予預設名稱，絕不卡死彈窗
+                if (!name) {
+                    if (editIdx >= 0 && plan.hotels[editIdx]?.name) {
+                        name = plan.hotels[editIdx].name;
+                    } else if (plan.hotel?.name) {
+                        name = plan.hotel.name;
+                    } else {
+                        name = '重慶市區優質飯店';
+                    }
+                }
+
+                const city = getVal('hCity') || (plan.title?.includes('北京') ? '北京' : '重慶');
+                const addr = getVal('hAddr') || '尚未填寫詳細地址';
+                const checkInVal = getVal('hCheckIn');
+                const checkOutVal = getVal('hCheckOut');
+                const rawActVal = getVal('hActualCost');
+
+                const hotelData = {
+                    name: name,
+                    city: city,
+                    stayLabel: getVal('hStayLabel'),
+                    checkIn: checkInVal,
+                    checkOut: checkOutVal,
+                    priceType: getVal('hPriceType', 'perNight'),
+                    price: parseFloat(getVal('hPrice', '0')) || 0,
+                    rooms: Math.max(1, parseInt(getVal('hRooms', '1')) || 1),
+                    costCurr: getVal('hCostCurr', 'LOCAL'),
+                    actualCost: (rawActVal !== '' && !isNaN(parseFloat(rawActVal))) ? parseFloat(rawActVal) : undefined,
+                    addr: addr,
+                    phone: getVal('hPhone'),
+                    notes: getVal('hNotes')
+                };
+
+                // 自動計算晚數 (若有設定起訖日)
                 if (hotelData.checkIn && hotelData.checkOut) {
                     try {
                         const d1 = new Date(hotelData.checkIn);
@@ -10213,29 +10219,52 @@ const firebaseConfig = {
                     } catch (dateErr) {
                         console.warn('計算住宿天數時發生非致命問題:', dateErr);
                     }
+                } else if (editIdx >= 0 && plan.hotels[editIdx]?.nights) {
+                    hotelData.nights = plan.hotels[editIdx].nights;
                 }
 
+                // 更新資料庫陣列
                 if (editIdx >= 0 && editIdx < plan.hotels.length) {
                     plan.hotels[editIdx] = hotelData;
                 } else {
                     plan.hotels.push(hotelData);
                 }
-
                 plan.hotel = plan.hotels[0]; // 向下相容
-                saveState();
+
+                // 【最優先保證】立即關閉彈窗，絕不拖延！
                 closeModal('editHotelModal');
-                renderSidebarHotel();
-                renderTripSummary();
-                renderBudgetWidget();
-                renderBudgetView();
-                if (typeof renderActualExpensesView === 'function') renderActualExpensesView();
+                const modalEl = document.getElementById('editHotelModal');
+                if (modalEl) modalEl.classList.remove('active');
+
+                // 資料持久化
+                try {
+                    saveState();
+                } catch (saveErr) {
+                    console.warn('儲存旅行狀態時發生非致命警告:', saveErr);
+                }
+
+                // 刷新相依 UI 視圖
+                try {
+                    if (typeof renderSidebarHotel === 'function') renderSidebarHotel();
+                    if (typeof renderTripSummary === 'function') renderTripSummary();
+                    if (typeof renderBudgetWidget === 'function') renderBudgetWidget();
+                    if (typeof renderBudgetView === 'function') renderBudgetView();
+                    if (typeof renderActualExpensesView === 'function') renderActualExpensesView();
+                } catch (uiErr) {
+                    console.warn('更新住宿相關視圖時發生警告:', uiErr);
+                }
+
                 showToast('success', editIdx >= 0 ? `已成功更新「${hotelData.name}」住宿資訊！` : `已成功新增「${hotelData.name}」住宿卡片！`);
+                return false;
             } catch (err) {
                 console.error('儲存住宿發生例外錯誤:', err);
+                // 即使發生未預期例外，也強制關閉彈窗以維持使用者體驗
+                closeModal('editHotelModal');
+                const modalEl = document.getElementById('editHotelModal');
+                if (modalEl) modalEl.classList.remove('active');
                 showToast('danger', '儲存失敗：' + (err.message || '未知錯誤'));
+                return false;
             }
-
-            return false;
         }
 
         function deleteHotelItem(idx) {
