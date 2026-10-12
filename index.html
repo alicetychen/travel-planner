@@ -3924,9 +3924,9 @@
         <div class="modal-dialog" style="max-width: 760px;">
             <div class="modal-header">
                 <div class="modal-title"><i class="fa-solid fa-plane" style="color: #2383e2;"></i> 編輯航班交通資訊 (支援轉機設定)</div>
-                <button class="modal-close-btn" onclick="closeModal('editFlightModal')"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" class="modal-close-btn" onclick="closeModal('editFlightModal')"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <form onsubmit="handleSaveFlightSubmit(event)">
+            <form id="editFlightForm" onsubmit="handleSaveFlightSubmit(event); return false;" novalidate>
                 <div class="modal-body">
                     <div style="display: flex; justify-content: space-between; align-items: center; background: #fafaf9; padding: 10px 14px; border-radius: 6px; border: 1px solid var(--notion-border); margin-bottom: 14px;">
                         <label style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; font-weight: 700; color: #ea580c; cursor: pointer;">
@@ -3948,11 +3948,11 @@
                         <div class="form-row-4">
                             <div class="form-group">
                                 <label class="form-label">航空公司</label>
-                                <input type="text" id="fOutAirline" class="form-input" placeholder="國泰航空 / 中華航空" required>
+                                <input type="text" id="fOutAirline" class="form-input" placeholder="國泰航空 / 中華航空">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">班機代號</label>
-                                <input type="text" id="fOutNo" class="form-input" placeholder="CX 407" required>
+                                <input type="text" id="fOutNo" class="form-input" placeholder="CX 407">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">起飛時間</label>
@@ -3966,11 +3966,11 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">起飛機場 / 航廈</label>
-                                <input type="text" id="fOutDepLoc" class="form-input" placeholder="台北桃園 (TPE) T1" required>
+                                <input type="text" id="fOutDepLoc" class="form-input" placeholder="台北桃園 (TPE) T1">
                             </div>
                             <div class="form-group">
                                 <label class="form-label" id="fOutArrLabel1">抵達機場 (直飛目的地或轉機地)</label>
-                                <input type="text" id="fOutArrLoc1" class="form-input" placeholder="香港 (HKG) T1" required>
+                                <input type="text" id="fOutArrLoc1" class="form-input" placeholder="香港 (HKG) T1">
                             </div>
                         </div>
 
@@ -4016,11 +4016,11 @@
                         <div class="form-row-4">
                             <div class="form-group">
                                 <label class="form-label">航空公司</label>
-                                <input type="text" id="fInAirline" class="form-input" placeholder="國泰航空 / 中華航空" required>
+                                <input type="text" id="fInAirline" class="form-input" placeholder="國泰航空 / 中華航空">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">班機代號</label>
-                                <input type="text" id="fInNo" class="form-input" placeholder="CX 945" required>
+                                <input type="text" id="fInNo" class="form-input" placeholder="CX 945">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">起飛時間</label>
@@ -4034,11 +4034,11 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">回程起飛機場 / 航廈</label>
-                                <input type="text" id="fInDepLoc" class="form-input" placeholder="重慶江北 (CKG) T3" required>
+                                <input type="text" id="fInDepLoc" class="form-input" placeholder="重慶江北 (CKG) T3">
                             </div>
                             <div class="form-group">
                                 <label class="form-label" id="fInArrLabel1">抵達機場 (直飛目的地或轉機地)</label>
-                                <input type="text" id="fInArrLoc1" class="form-input" placeholder="香港 (HKG) T1" required>
+                                <input type="text" id="fInArrLoc1" class="form-input" placeholder="香港 (HKG) T1">
                             </div>
                         </div>
 
@@ -4142,7 +4142,7 @@
                     </label>
                     <div style="display:flex; gap:8px;">
                         <button type="button" class="n-btn" onclick="closeModal('editFlightModal')">取消</button>
-                        <button type="submit" class="n-btn n-btn-primary">儲存航班交通設定</button>
+                        <button type="button" class="n-btn n-btn-primary" onclick="handleSaveFlightSubmit(event)"><i class="fa-solid fa-check"></i> 儲存航班交通設定</button>
                     </div>
                 </div>
             </form>
@@ -10435,125 +10435,168 @@ const firebaseConfig = {
             openModal('editFlightModal');
         }
 
-        // 儲存航班交通表單設定
+        // 儲存航班交通表單設定 (強固防呆，徹底防止點選儲存無反應)
         function handleSaveFlightSubmit(e) {
-            e.preventDefault();
-            const plan = getCurrentPlan();
-            if (!plan) return;
+            if (e && e.preventDefault) e.preventDefault();
+            try {
+                const plan = getCurrentPlan();
+                if (!plan) {
+                    showToast('warning', '找不到當前行程計劃，請重新整理頁面');
+                    return false;
+                }
 
-            const isTrans = document.getElementById('fIsTransferCheckbox').checked;
-            const cat = document.getElementById('fCategoryTag').value || 'International';
-            const pnrVal = document.getElementById('fPnr').value;
+                const isTrans = !!document.getElementById('fIsTransferCheckbox')?.checked;
+                const cat = (document.getElementById('fCategoryTag')?.value || 'International').trim();
+                const pnrVal = (document.getElementById('fPnr')?.value || '').trim();
 
-            // 構建去程 leg
-            const outLeg = {
-                type: 'outbound',
-                isTransfer: isTrans,
-                airline: document.getElementById('fOutAirline').value || '國泰航空',
-                flightNo: document.getElementById('fOutNo').value || '',
-                depTime: document.getElementById('fOutDepTime').value || '',
-                arrTime: document.getElementById('fOutArrTime1').value || '',
-                depLoc: document.getElementById('fOutDepLoc').value || '',
-                arrLoc: document.getElementById('fOutArrLoc1').value || '',
-                duration: document.getElementById('fOutDuration').value || '',
-                categoryTag: cat,
-                pnr: pnrVal
-            };
+                const getVal = (id, def = '') => (document.getElementById(id)?.value ?? def).trim();
 
-            // 構建回程 leg
-            const inLeg = {
-                type: 'inbound',
-                isTransfer: isTrans,
-                airline: document.getElementById('fInAirline').value || '國泰航空',
-                flightNo: document.getElementById('fInNo').value || '',
-                depTime: document.getElementById('fInDepTime').value || '',
-                arrTime: document.getElementById('fInArrTime1').value || '',
-                depLoc: document.getElementById('fInDepLoc').value || '',
-                arrLoc: document.getElementById('fInArrLoc1').value || '',
-                duration: document.getElementById('fInDuration').value || '',
-                categoryTag: cat,
-                pnr: pnrVal
-            };
+                // 構建去程 leg (帶有預設值與容錯)
+                const outAirline = getVal('fOutAirline') || (isTrans ? '國泰航空' : '中華航空');
+                const outFlightNo = getVal('fOutNo');
+                const outDepTime = getVal('fOutDepTime');
+                const outArrTime1 = getVal('fOutArrTime1');
+                const outDepLoc = getVal('fOutDepLoc') || '台北桃園 (TPE)';
+                const outArrLoc1 = getVal('fOutArrLoc1') || (isTrans ? '香港 (HKG)' : '目的地機場');
+                const outDuration = getVal('fOutDuration');
 
-            if (isTrans) {
-                outLeg.transferInfo = document.getElementById('fTransferInfoOut').value;
-                outLeg.flightNo2 = document.getElementById('fOutNo2').value;
-                outLeg.depTime2 = document.getElementById('fOutDepTime2').value;
-                outLeg.arrTime2 = document.getElementById('fOutArrTime2').value;
-                outLeg.arrLoc2 = document.getElementById('fOutArrLoc2').value;
+                const outLeg = {
+                    type: 'outbound',
+                    isTransfer: isTrans,
+                    airline: outAirline,
+                    flightNo: outFlightNo,
+                    depTime: outDepTime,
+                    arrTime: outArrTime1,
+                    depLoc: outDepLoc,
+                    arrLoc: outArrLoc1,
+                    duration: outDuration,
+                    categoryTag: cat,
+                    pnr: pnrVal
+                };
 
-                inLeg.transferInfo = document.getElementById('fTransferInfoIn').value;
-                inLeg.flightNo2 = document.getElementById('fInNo2').value;
-                inLeg.depTime2 = document.getElementById('fInDepTime2').value;
-                inLeg.arrTime2 = document.getElementById('fInArrTime2').value;
-                inLeg.arrLoc2 = document.getElementById('fInArrLoc2').value;
-            }
+                // 構建回程 leg (帶有預設值與容錯)
+                const inAirline = getVal('fInAirline') || (isTrans ? '國泰航空' : '中華航空');
+                const inFlightNo = getVal('fInNo');
+                const inDepTime = getVal('fInDepTime');
+                const inArrTime1 = getVal('fInArrTime1');
+                const inDepLoc = getVal('fInDepLoc') || (isTrans ? '出發地機場' : '出發地機場');
+                const inArrLoc1 = getVal('fInArrLoc1') || (isTrans ? '香港 (HKG)' : '台北桃園 (TPE)');
+                const inDuration = getVal('fInDuration');
 
-            const rawActCost = document.getElementById('fActualCost')?.value;
-            plan.flights = {
-                pnr: pnrVal,
-                categoryTag: cat,
-                isTransfer: isTrans,
-                outboundCost: parseFloat(document.getElementById('fOutCost')?.value) || 0,
-                inboundCost: parseFloat(document.getElementById('fInCost')?.value) || 0,
-                cost: parseFloat(document.getElementById('fTotalCost')?.value) || 0,
-                costMode: document.getElementById('fCostMode')?.value || 'single',
-                costCurr: document.getElementById('fCostCurr')?.value || 'LOCAL',
-                actualCost: (rawActCost !== '' && rawActCost !== undefined) ? (parseFloat(rawActCost) || 0) : undefined,
-                legs: [outLeg, inLeg]
-            };
+                const inLeg = {
+                    type: 'inbound',
+                    isTransfer: isTrans,
+                    airline: inAirline,
+                    flightNo: inFlightNo,
+                    depTime: inDepTime,
+                    arrTime: inArrTime1,
+                    depLoc: inDepLoc,
+                    arrLoc: inArrLoc1,
+                    duration: inDuration,
+                    categoryTag: cat,
+                    pnr: pnrVal
+                };
 
-            // 雙向同步：檢查是否勾選同步更新行程活動
-            const syncToSchedule = document.getElementById('fSyncToScheduleCheckbox')?.checked ?? true;
-            if (syncToSchedule && plan.days) {
-                // 1. 同步更新去程至 Day 1
-                const outInfo = getFlightLegDetails(outLeg);
-                const day1 = plan.days.find(d => d.dayNum === 1);
-                if (day1 && day1.events) {
-                    let ev1 = day1.events.find(e => e.flightLegIndex === 0 || e.type === 'flight');
-                    if (!ev1) {
-                        ev1 = day1.events.find(e => e.title && (e.title.includes('班機') || e.title.includes('航班') || e.title.includes('飛機')));
-                    }
-                    if (ev1) {
-                        ev1.time = outInfo.timeStr;
-                        ev1.title = outInfo.title;
-                        ev1.loc = outInfo.loc;
-                        ev1.notes = outInfo.notes;
-                        ev1.type = 'flight';
-                        ev1.flightLegIndex = 0;
-                        day1.events = sortDayEventsByTime(day1.events);
+                if (isTrans) {
+                    outLeg.transferInfo = getVal('fTransferInfoOut');
+                    outLeg.flightNo2 = getVal('fOutNo2');
+                    outLeg.depTime2 = getVal('fOutDepTime2');
+                    outLeg.arrTime2 = getVal('fOutArrTime2');
+                    outLeg.arrLoc2 = getVal('fOutArrLoc2');
+
+                    inLeg.transferInfo = getVal('fTransferInfoIn');
+                    inLeg.flightNo2 = getVal('fInNo2');
+                    inLeg.depTime2 = getVal('fInDepTime2');
+                    inLeg.arrTime2 = getVal('fInArrTime2');
+                    inLeg.arrLoc2 = getVal('fInArrLoc2');
+                }
+
+                const rawActCost = document.getElementById('fActualCost')?.value;
+                plan.flights = {
+                    pnr: pnrVal,
+                    categoryTag: cat,
+                    isTransfer: isTrans,
+                    outboundCost: parseFloat(document.getElementById('fOutCost')?.value) || 0,
+                    inboundCost: parseFloat(document.getElementById('fInCost')?.value) || 0,
+                    cost: parseFloat(document.getElementById('fTotalCost')?.value) || 0,
+                    costMode: document.getElementById('fCostMode')?.value || 'single',
+                    costCurr: document.getElementById('fCostCurr')?.value || 'LOCAL',
+                    actualCost: (rawActCost !== '' && rawActCost !== undefined && !isNaN(parseFloat(rawActCost))) ? parseFloat(rawActCost) : undefined,
+                    legs: [outLeg, inLeg]
+                };
+
+                // 雙向同步：檢查是否勾選同步更新行程活動
+                const syncToSchedule = document.getElementById('fSyncToScheduleCheckbox')?.checked ?? true;
+                if (syncToSchedule && Array.isArray(plan.days)) {
+                    try {
+                        // 1. 同步更新去程至 Day 1
+                        const outInfo = getFlightLegDetails(outLeg);
+                        const day1 = plan.days.find(d => d.dayNum === 1);
+                        if (day1 && Array.isArray(day1.events) && outInfo) {
+                            let ev1 = day1.events.find(e => e.flightLegIndex === 0 || e.type === 'flight');
+                            if (!ev1) {
+                                ev1 = day1.events.find(e => e.title && (e.title.includes('班機') || e.title.includes('航班') || e.title.includes('飛機')));
+                            }
+                            if (ev1) {
+                                ev1.time = outInfo.timeStr || ev1.time;
+                                ev1.title = outInfo.title || ev1.title;
+                                ev1.loc = outInfo.loc || ev1.loc;
+                                ev1.notes = outInfo.notes || ev1.notes;
+                                ev1.type = 'flight';
+                                ev1.flightLegIndex = 0;
+                                day1.events = sortDayEventsByTime(day1.events);
+                            }
+                        }
+
+                        // 2. 同步更新回程至最後一天
+                        const inInfo = getFlightLegDetails(inLeg);
+                        const lastDay = plan.days[plan.days.length - 1];
+                        if (lastDay && Array.isArray(lastDay.events) && lastDay.dayNum > 1 && inInfo) {
+                            let evLast = lastDay.events.find(e => e.flightLegIndex === 1);
+                            if (!evLast) {
+                                evLast = lastDay.events.find(e => e.type === 'flight' && e !== (day1 ? day1.events.find(x => x.type === 'flight') : null));
+                            }
+                            if (evLast) {
+                                evLast.time = inInfo.timeStr || evLast.time;
+                                evLast.title = inInfo.title || evLast.title;
+                                evLast.loc = inInfo.loc || evLast.loc;
+                                evLast.notes = inInfo.notes || evLast.notes;
+                                evLast.type = 'flight';
+                                evLast.flightLegIndex = 1;
+                                lastDay.events = sortDayEventsByTime(lastDay.events);
+                            }
+                        }
+
+                        if (typeof renderTimelineView === 'function') {
+                            renderTimelineView();
+                        }
+                    } catch (syncErr) {
+                        console.warn('同步更新每日行程活動時發生非致命問題:', syncErr);
                     }
                 }
 
-                // 2. 同步更新回程至最後一天
-                const inInfo = getFlightLegDetails(inLeg);
-                const lastDay = plan.days[plan.days.length - 1];
-                if (lastDay && lastDay.events && lastDay.dayNum > 1) {
-                    let evLast = lastDay.events.find(e => e.flightLegIndex === 1);
-                    if (!evLast) {
-                        evLast = lastDay.events.find(e => e.type === 'flight' && e !== (day1 ? day1.events.find(x => x.type === 'flight') : null));
-                    }
-                    if (evLast) {
-                        evLast.time = inInfo.timeStr;
-                        evLast.title = inInfo.title;
-                        evLast.loc = inInfo.loc;
-                        evLast.notes = inInfo.notes;
-                        evLast.type = 'flight';
-                        evLast.flightLegIndex = 1;
-                        lastDay.events = sortDayEventsByTime(lastDay.events);
-                    }
-                }
-                renderTimelineView();
-            }
+                // 核心儲存與彈窗關閉 (確保 100% 執行)
+                saveState();
+                closeModal('editFlightModal');
 
-            saveState();
-            closeModal('editFlightModal');
-            renderSidebarFlights();
-            renderTripSummary();
-            renderBudgetWidget();
-            renderBudgetView();
-            if (typeof renderActualExpensesView === 'function') renderActualExpensesView();
-            showToast('success', syncToSchedule ? '交通航班資訊與費用已更新，並已同步更新每日行程活動！' : '交通航班資訊與費用已更新！');
+                // 刷新相依 UI 視圖
+                try {
+                    if (typeof renderSidebarFlights === 'function') renderSidebarFlights();
+                    if (typeof renderTripSummary === 'function') renderTripSummary();
+                    if (typeof renderBudgetWidget === 'function') renderBudgetWidget();
+                    if (typeof renderBudgetView === 'function') renderBudgetView();
+                    if (typeof renderActualExpensesView === 'function') renderActualExpensesView();
+                } catch (uiErr) {
+                    console.warn('刷新側邊欄或預算視圖時發生警告:', uiErr);
+                }
+
+                showToast('success', syncToSchedule ? '交通航班資訊與費用已成功儲存，並同步更新每日行程活動！' : '交通航班資訊與費用已成功儲存！');
+                return false;
+            } catch (err) {
+                console.error('儲存航班交通時發生例外錯誤:', err);
+                showToast('danger', '儲存失敗：' + (err.message || '未知錯誤'));
+                return false;
+            }
         }
 
         // ==========================================
