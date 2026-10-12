@@ -992,15 +992,28 @@
             align-items: center;
             border-bottom: 1px solid var(--notion-border);
             margin-top: 10px;
+            gap: 12px;
+            flex-wrap: wrap;
         }
 
-        .view-tabs-list { display: flex; gap: 4px; overflow-x: auto; }
+        .view-tabs-list {
+            display: flex;
+            gap: 2px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            align-items: center;
+        }
+        .view-tabs-list::-webkit-scrollbar {
+            display: none;
+        }
         .view-tab-btn {
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            padding: 9px 14px;
-            font-size: 0.86rem;
+            gap: 6px;
+            padding: 8px 12px;
+            font-size: 0.85rem;
             font-weight: 600;
             color: var(--notion-text-sub);
             border: none;
@@ -1009,15 +1022,77 @@
             position: relative;
             transition: var(--transition);
             white-space: nowrap;
+            border-radius: 4px;
         }
         .view-tab-btn:hover { color: var(--notion-text); background: var(--notion-hover); }
-        .view-tab-btn.active { color: var(--notion-text); font-weight: 800; }
+        .view-tab-btn.active { color: var(--notion-text); font-weight: 800; background: rgba(0,0,0,0.03); }
         .view-tab-btn.active::after {
             content: '';
             position: absolute;
             bottom: -1px; left: 0; right: 0;
             height: 2px;
             background: var(--notion-text);
+        }
+
+        /* 統一導覽下拉選取器 */
+        .unified-nav-selector-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #ffffff;
+            border: 1px solid var(--notion-border);
+            border-radius: 6px;
+            padding: 3px 8px;
+            transition: var(--transition);
+        }
+        .unified-nav-selector-box:hover, .unified-nav-selector-box:focus-within {
+            border-color: #0284c7;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.12);
+        }
+        .unified-nav-select {
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--notion-text);
+            cursor: pointer;
+            padding: 2px 0;
+        }
+
+        /* 費用與記帳模組內部次級選取標籤 (Sub-tabs) */
+        .expenses-subtabs-bar {
+            display: inline-flex;
+            gap: 4px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .expenses-subtab-btn {
+            padding: 6px 14px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #64748b;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .expenses-subtab-btn:hover {
+            color: #1e293b;
+            background: rgba(255,255,255,0.6);
+        }
+        .expenses-subtab-btn.active {
+            color: #0f172a;
+            background: #ffffff;
+            font-weight: 800;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         }
 
         /* View Content Pane */
@@ -2656,7 +2731,7 @@
     <div class="notion-topbar">
         <div class="notion-breadcrumbs">
             <span style="font-weight: 700; color: var(--notion-text); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.18</span>
+                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.19</span>
             </span>
         </div>
         <div class="topbar-actions">
@@ -2764,8 +2839,13 @@
                         <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('hotel')"><i class="fa-solid fa-bed"></i> 住宿</a></li>
                         <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('timeline')"><i class="fa-solid fa-timeline"></i> 行程表</a></li>
                         <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('spots')"><i class="fa-solid fa-location-dot"></i> 觀光景點</a></li>
-                        <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('budget')"><i class="fa-solid fa-chart-pie"></i> 預算統計</a></li>
-                        <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('actual-expenses')"><i class="fa-solid fa-receipt"></i> 實際花費記帳</a></li>
+                        <li class="quick-nav-item">
+                            <a href="javascript:void(0)" onclick="quickNavTo('expenses')"><i class="fa-solid fa-coins"></i> 費用與記帳</a>
+                            <span style="font-size:0.72rem; color:#94a3b8; margin-left:3px;">
+                                (<a href="javascript:void(0)" onclick="quickNavTo('budget')" style="color:#0284c7; text-decoration:none;">預算</a>/ 
+                                 <a href="javascript:void(0)" onclick="quickNavTo('actual-expenses')" style="color:#16a34a; text-decoration:none;">實付</a>)
+                            </span>
+                        </li>
                         <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('booking')"><i class="fa-solid fa-book-bookmark"></i> 旅遊資源</a></li>
                     </ul>
                 </div>
@@ -2871,23 +2951,39 @@
             <!-- Notion View Switcher Bar -->
             <div class="notion-views-bar">
                 <div class="view-tabs-list">
-                    <button class="view-tab-btn active" onclick="switchView('timeline')">
-                        <i class="fa-solid fa-timeline"></i> 每日行程時間軸 (Timeline)
+                    <button class="view-tab-btn active" id="tabBtn-timeline" onclick="switchView('timeline')">
+                        <i class="fa-solid fa-timeline"></i> 行程時間軸
                     </button>
-                    <button class="view-tab-btn" onclick="switchView('booking')">
-                        <i class="fa-regular fa-clock"></i> 搶票與時程總表 (Booking Schedule)
+                    <button class="view-tab-btn" id="tabBtn-booking" onclick="switchView('booking')">
+                        <i class="fa-regular fa-clock"></i> 搶票時程
                     </button>
-                    <button class="view-tab-btn" onclick="switchView('spots')">
-                        <i class="fa-solid fa-landmark-dome"></i> 核心景點速通攻略 (Spot Guides)
+                    <button class="view-tab-btn" id="tabBtn-spots" onclick="switchView('spots')">
+                        <i class="fa-solid fa-landmark-dome"></i> 景點攻略
                     </button>
-                    <button class="view-tab-btn" onclick="switchView('budget')">
-                        <i class="fa-solid fa-chart-pie"></i> 消費預算分析 (Budget Tracker)
-                    </button>
-                    <button class="view-tab-btn" onclick="switchView('actual-expenses')">
-                        <i class="fa-solid fa-receipt"></i> 實際花費與行程記帳 (Actual Expenses)
+                    <button class="view-tab-btn" id="tabBtn-expenses" onclick="switchView('expenses')">
+                        <i class="fa-solid fa-coins"></i> 費用與記帳
                     </button>
                 </div>
-                <div style="display: flex; gap: 8px;">
+
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <!-- 統一導覽下拉選取器 (可直接切換各主要視圖或快捷前往) -->
+                    <div class="unified-nav-selector-box" title="統一導覽：點擊直接選取切換所有主要功能與視圖">
+                        <i class="fa-solid fa-compass" style="color: #0284c7; font-size: 0.82rem;"></i>
+                        <select id="unifiedNavSelect" class="unified-nav-select" onchange="handleUnifiedNavSelect(this.value)">
+                            <optgroup label="📋 主要功能視圖">
+                                <option value="timeline">📅 每日行程時間軸 (Timeline)</option>
+                                <option value="booking">🎫 搶票與時程總表 (Booking Schedule)</option>
+                                <option value="spots">🏯 核心景點速通攻略 (Spot Guides)</option>
+                                <option value="budget">📊 費用規劃：預算統計分析 (Budget)</option>
+                                <option value="actual-expenses">🧾 費用核銷：實際花費記帳 (Actual Expenses)</option>
+                            </optgroup>
+                            <optgroup label="🚀 快捷跳轉">
+                                <option value="transport">✈️ 航班大交通設定</option>
+                                <option value="hotel">🏨 住宿飯店資訊</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
                     <button class="n-btn" style="font-size: 0.8rem;" onclick="openAddEventModal()">
                         <i class="fa-solid fa-plus"></i> 新增行程項目
                     </button>
@@ -2953,56 +3049,78 @@
                 </div>
             </div>
 
-            <!-- VIEW 4: BUDGET TRACKER (獨立預算統計與明細分頁) -->
-            <div class="view-content-pane" id="view-budget">
-                <!-- 1. 旅行預算統計總覽儀表板 (KPI 卡片、每天支出長條圖、每人/全團切換) -->
-                <div class="notion-budget-widget" id="main-budget-widget" style="margin-top:0; margin-bottom:16px;">
-                    <div class="budget-widget-header">
-                        <div class="budget-widget-title">
-                            <span class="budget-icon">💰</span>
-                            <div>
-                                <div style="font-weight: 700; font-size: 0.95rem; color: var(--notion-text);">旅行預算統計總覽 (Budget Statistics)</div>
-                                <div style="font-size: 0.76rem; color: var(--notion-text-sub);">獨立統計分析 ‧ 自動彙整各日預算、每日平均與重點花費</div>
+            <!-- VIEW 4: EXPENSES & BUDGET (費用與記帳統一整合視圖) -->
+            <div class="view-content-pane" id="view-expenses">
+                <!-- 次級分頁切換導覽 (Sub-tabs) -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+                    <div class="expenses-subtabs-bar">
+                        <button type="button" class="expenses-subtab-btn active" id="subtabBtn-budget" onclick="switchExpensesSubtab('budget')">
+                            <i class="fa-solid fa-chart-pie"></i> 📊 預算規劃與統計分析
+                        </button>
+                        <button type="button" class="expenses-subtab-btn" id="subtabBtn-actual" onclick="switchExpensesSubtab('actual-expenses')">
+                            <i class="fa-solid fa-receipt"></i> 🧾 實際花費與行程核銷記帳
+                        </button>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #64748b;">
+                        切換檢視：行程預算規劃 ｜ 實付開銷核銷
+                    </div>
+                </div>
+
+                <!-- 子視圖 1: 預算分析 -->
+                <div id="subpane-budget" class="expenses-subpane" style="display: block;">
+                    <!-- 1. 旅行預算統計總覽儀表板 (KPI 卡片、每天支出長條圖、每人/全團切換) -->
+                    <div class="notion-budget-widget" id="main-budget-widget" style="margin-top:0; margin-bottom:16px;">
+                        <div class="budget-widget-header">
+                            <div class="budget-widget-title">
+                                <span class="budget-icon">💰</span>
+                                <div>
+                                    <div style="font-weight: 700; font-size: 0.95rem; color: var(--notion-text);">旅行預算統計總覽 (Budget Statistics)</div>
+                                    <div style="font-size: 0.76rem; color: var(--notion-text-sub);">獨立統計分析 ‧ 自動彙整各日預算、每日平均與重點花費</div>
+                                </div>
+                            </div>
+                            <div class="budget-widget-actions">
+                                <button type="button" class="n-btn" style="padding: 4px 10px; font-size: 0.78rem;" onclick="openQuickEditBudgetModal()" title="快速調整每日預算">
+                                    <i class="fa-solid fa-pen-to-square"></i> 調整每日預算
+                                </button>
+                                <button type="button" class="n-btn n-btn-primary" style="padding: 4px 10px; font-size: 0.78rem; font-weight:700; cursor:pointer;" onclick="scrollToBudgetDetails()" title="捲動至下方查看每日各項支出詳細明細">
+                                    <i class="fa-solid fa-list-check"></i> 詳細明細 <i class="fa-solid fa-arrow-down" style="font-size:0.7rem; margin-left:2px;"></i>
+                                </button>
                             </div>
                         </div>
-                        <div class="budget-widget-actions">
-                            <button type="button" class="n-btn" style="padding: 4px 10px; font-size: 0.78rem;" onclick="openQuickEditBudgetModal()" title="快速調整每日預算">
-                                <i class="fa-solid fa-pen-to-square"></i> 調整每日預算
-                            </button>
-                            <button type="button" class="n-btn n-btn-primary" style="padding: 4px 10px; font-size: 0.78rem; font-weight:700; cursor:pointer;" onclick="scrollToBudgetDetails()" title="捲動至下方查看每日各項支出詳細明細">
-                                <i class="fa-solid fa-list-check"></i> 詳細明細 <i class="fa-solid fa-arrow-down" style="font-size:0.7rem; margin-left:2px;"></i>
-                            </button>
+
+                        <div class="budget-widget-body" id="budgetWidgetBody">
+                            <!-- Populated dynamically by JS -->
                         </div>
                     </div>
 
-                    <div class="budget-widget-body" id="budgetWidgetBody">
-                        <!-- Populated dynamically by JS -->
+                    <!-- 2. 每日支出詳細拆解與編輯 (Day 1 - Day 7 各項明細卡片) -->
+                    <div class="day-card-container" id="budgetBreakdownSection">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap:wrap; gap:8px;">
+                            <div>
+                                <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--notion-text); margin:0;">
+                                    📋 每日支出預算詳細拆解 (點擊任一日可直接編輯)
+                                </h3>
+                                <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">包含早中晚餐飲、多趟交通安排、景點門票與自訂其他花費之單人與全團支出</div>
+                            </div>
+                            <strong style="font-size: 1.05rem; color: #ea580c;" id="budgetSummaryHeader">總計: NT$ 0 / 人</strong>
+                        </div>
+                        <div id="budgetBreakdownContainer">
+                            <!-- Populated dynamically -->
+                        </div>
                     </div>
                 </div>
 
-                <!-- 2. 每日支出詳細拆解與編輯 (Day 1 - Day 7 各項明細卡片) -->
-                <div class="day-card-container" id="budgetBreakdownSection">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap:wrap; gap:8px;">
-                        <div>
-                            <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--notion-text); margin:0;">
-                                📋 每日支出預算詳細拆解 (點擊任一日可直接編輯)
-                            </h3>
-                            <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">包含早中晚餐飲、多趟交通安排、景點門票與自訂其他花費之單人與全團支出</div>
-                        </div>
-                        <strong style="font-size: 1.05rem; color: #ea580c;" id="budgetSummaryHeader">總計: NT$ 0 / 人</strong>
-                    </div>
-                    <div id="budgetBreakdownContainer">
-                        <!-- Populated dynamically -->
+                <!-- 子視圖 2: 實際花費記帳 -->
+                <div id="subpane-actual" class="expenses-subpane" style="display: none;">
+                    <div id="actualExpensesContainer">
+                        <!-- Populated dynamically by renderActualExpensesView() -->
                     </div>
                 </div>
             </div>
 
-            <!-- VIEW 5: ACTUAL EXPENSES TRACKER (實際花費與行程記帳) -->
-            <div class="view-content-pane" id="view-actual-expenses">
-                <div id="actualExpensesContainer">
-                    <!-- Populated dynamically by renderActualExpensesView() -->
-                </div>
-            </div>
+            <!-- 向下相容容器錨點 (防止外部歷史呼叫報錯) -->
+            <div id="view-budget" style="display:none;" aria-hidden="true"></div>
+            <div id="view-actual-expenses" style="display:none;" aria-hidden="true"></div>
 
         </section>
     </main>
@@ -5769,6 +5887,16 @@ const firebaseConfig = {
             renderBudgetView();
             if (typeof renderActualExpensesView === 'function') renderActualExpensesView();
             renderPlanSelectDropdown();
+
+            // 同步統一導覽下拉選單狀態
+            const selectNav = document.getElementById('unifiedNavSelect');
+            if (selectNav) {
+                if (appState.activeView === 'expenses') {
+                    selectNav.value = (typeof currentExpensesSubtab !== 'undefined' && currentExpensesSubtab === 'actual-expenses') ? 'actual-expenses' : 'budget';
+                } else {
+                    selectNav.value = appState.activeView || 'timeline';
+                }
+            }
         }
 
         function renderPlanSelectDropdown() {
@@ -6596,8 +6724,6 @@ const firebaseConfig = {
                         highlightElement(el);
                     }
                 }, 60);
-            } else if (target === 'budget') {
-                scrollToBudgetWidget();
             } else if (target === 'booking') {
                 switchView('booking');
                 setTimeout(() => {
@@ -6607,10 +6733,26 @@ const firebaseConfig = {
                         highlightElement(el);
                     }
                 }, 60);
-            } else if (target === 'actual-expenses') {
-                switchView('actual-expenses');
+            } else if (target === 'expenses') {
+                switchView('expenses');
                 setTimeout(() => {
-                    const el = document.getElementById('view-actual-expenses');
+                    const el = document.getElementById('view-expenses');
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        highlightElement(el);
+                    }
+                }, 60);
+            } else if (target === 'budget') {
+                switchView('expenses');
+                switchExpensesSubtab('budget');
+                setTimeout(() => {
+                    scrollToBudgetWidget();
+                }, 60);
+            } else if (target === 'actual-expenses') {
+                switchView('expenses');
+                switchExpensesSubtab('actual-expenses');
+                setTimeout(() => {
+                    const el = document.getElementById('actualExpensesContainer') || document.getElementById('view-expenses');
                     if (el) {
                         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         highlightElement(el);
@@ -8686,31 +8828,115 @@ const firebaseConfig = {
 
 
         // ==========================
-        // SWITCH VIEWS
+        // 費用與記帳模組次級分頁切換 (Sub-tabs)
+        // ==========================
+        let currentExpensesSubtab = 'budget'; // 'budget' 或 'actual-expenses'
+
+        function switchExpensesSubtab(subtabName) {
+            currentExpensesSubtab = subtabName;
+            const isActual = (subtabName === 'actual-expenses');
+
+            // 切換子面板顯示
+            const paneBudget = document.getElementById('subpane-budget');
+            const paneActual = document.getElementById('subpane-actual');
+            if (paneBudget) paneBudget.style.display = isActual ? 'none' : 'block';
+            if (paneActual) paneActual.style.display = isActual ? 'block' : 'none';
+
+            // 切換子按鈕狀態
+            const btnBudget = document.getElementById('subtabBtn-budget');
+            const btnActual = document.getElementById('subtabBtn-actual');
+            if (btnBudget) btnBudget.classList.toggle('active', !isActual);
+            if (btnActual) btnActual.classList.toggle('active', isActual);
+
+            // 渲染對應視圖
+            if (isActual) {
+                if (typeof renderActualExpensesView === 'function') renderActualExpensesView();
+            } else {
+                renderBudgetWidget();
+                renderBudgetView();
+            }
+
+            // 同步下拉選單選取值
+            const selectEl = document.getElementById('unifiedNavSelect');
+            if (selectEl) {
+                selectEl.value = isActual ? 'actual-expenses' : 'budget';
+            }
+        }
+
+        // ==========================
+        // 統一導覽下拉選單選取處理 (Unified Navigation Select)
+        // ==========================
+        function handleUnifiedNavSelect(val) {
+            if (!val) return;
+            if (val === 'transport' || val === 'hotel') {
+                quickNavTo(val);
+            } else if (val === 'budget') {
+                switchView('expenses');
+                switchExpensesSubtab('budget');
+            } else if (val === 'actual-expenses') {
+                switchView('expenses');
+                switchExpensesSubtab('actual-expenses');
+            } else {
+                switchView(val);
+            }
+        }
+
+        // ==========================
+        // SWITCH VIEWS (支援統一費用模組，並向下相容 switchView('budget') 與 switchView('actual-expenses'))
         // ==========================
         function switchView(viewName) {
+            // 向下相容：若傳入 budget 或 actual-expenses，自動切換至 expenses 視圖並選中相應子標籤
+            let targetSubtab = null;
+            if (viewName === 'budget') {
+                targetSubtab = 'budget';
+                viewName = 'expenses';
+            } else if (viewName === 'actual-expenses') {
+                targetSubtab = 'actual-expenses';
+                viewName = 'expenses';
+            }
+
             appState.activeView = viewName;
+
+            // 4 大主標籤按鈕高亮狀態
+            const mainViewNames = ['timeline', 'booking', 'spots', 'expenses'];
             document.querySelectorAll('.view-tab-btn').forEach((btn, idx) => {
-                const names = ['timeline', 'booking', 'spots', 'budget', 'actual-expenses'];
-                btn.classList.toggle('active', names[idx] === viewName);
+                if (idx < mainViewNames.length) {
+                    btn.classList.toggle('active', mainViewNames[idx] === viewName);
+                }
             });
+
+            // 隱藏所有主要面板
             document.querySelectorAll('.view-content-pane').forEach(pane => {
                 pane.classList.remove('active');
             });
+
+            // 顯示目標主要面板
             const target = document.getElementById('view-' + viewName);
             if (target) target.classList.add('active');
 
-            if (viewName === 'budget') {
-                renderBudgetWidget();
-                renderBudgetView();
-            } else if (viewName === 'timeline') {
+            // 執行目標視圖渲染
+            if (viewName === 'timeline') {
                 renderTimelineView();
             } else if (viewName === 'booking') {
                 renderBookingView();
             } else if (viewName === 'spots') {
                 renderSpotGuidesView();
-            } else if (viewName === 'actual-expenses') {
-                if (typeof renderActualExpensesView === 'function') renderActualExpensesView();
+            } else if (viewName === 'expenses') {
+                if (targetSubtab) {
+                    switchExpensesSubtab(targetSubtab);
+                } else {
+                    switchExpensesSubtab(currentExpensesSubtab || 'budget');
+                }
+            }
+
+            // 同步統一導覽下拉選單狀態
+            const selectEl = document.getElementById('unifiedNavSelect');
+            if (selectEl) {
+                if (viewName === 'expenses') {
+                    selectEl.value = (currentExpensesSubtab === 'actual-expenses') ? 'actual-expenses' : 'budget';
+                } else {
+                    selectEl.value = viewName;
+                }
             }
         }
 
