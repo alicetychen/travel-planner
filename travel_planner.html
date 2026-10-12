@@ -2656,7 +2656,7 @@
     <div class="notion-topbar">
         <div class="notion-breadcrumbs">
             <span style="font-weight: 700; color: var(--notion-text); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.17</span>
+                ✈️ 旅遊規劃 <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:1px 6px; border-radius:4px;">v2.18</span>
             </span>
         </div>
         <div class="topbar-actions">
@@ -2765,6 +2765,7 @@
                         <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('timeline')"><i class="fa-solid fa-timeline"></i> 行程表</a></li>
                         <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('spots')"><i class="fa-solid fa-location-dot"></i> 觀光景點</a></li>
                         <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('budget')"><i class="fa-solid fa-chart-pie"></i> 預算統計</a></li>
+                        <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('actual-expenses')"><i class="fa-solid fa-receipt"></i> 實際花費記帳</a></li>
                         <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('booking')"><i class="fa-solid fa-book-bookmark"></i> 旅遊資源</a></li>
                     </ul>
                 </div>
@@ -2882,6 +2883,9 @@
                     <button class="view-tab-btn" onclick="switchView('budget')">
                         <i class="fa-solid fa-chart-pie"></i> 消費預算分析 (Budget Tracker)
                     </button>
+                    <button class="view-tab-btn" onclick="switchView('actual-expenses')">
+                        <i class="fa-solid fa-receipt"></i> 實際花費與行程記帳 (Actual Expenses)
+                    </button>
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <button class="n-btn" style="font-size: 0.8rem;" onclick="openAddEventModal()">
@@ -2990,6 +2994,13 @@
                     <div id="budgetBreakdownContainer">
                         <!-- Populated dynamically -->
                     </div>
+                </div>
+            </div>
+
+            <!-- VIEW 5: ACTUAL EXPENSES TRACKER (實際花費與行程記帳) -->
+            <div class="view-content-pane" id="view-actual-expenses">
+                <div id="actualExpensesContainer">
+                    <!-- Populated dynamically by renderActualExpensesView() -->
                 </div>
             </div>
 
@@ -3339,6 +3350,18 @@
                             <label class="form-label" id="eventCostLabel">預估單人費用 (當地幣)</label>
                             <input type="number" id="eventCostNum" class="form-input" placeholder="0" oninput="updateEventCostTwdHint()">
                             <div id="eventCostTwdHint" style="font-size:0.75rem; color:#0284c7; margin-top:2px;"></div>
+                        </div>
+                    </div>
+                    <div class="form-row" style="background:#f8fafc; padding:8px 10px; border-radius:6px; border:1px solid #e2e8f0; margin-bottom:12px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label" style="color:#0f766e;"><i class="fa-solid fa-receipt"></i> 實際花費 (實付單人金額，選填)</label>
+                            <input type="number" id="eventActualCostNum" class="form-input" min="0" step="any" placeholder="選填：實際支付金額">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0; display:flex; align-items:flex-end;">
+                            <label style="display:flex; align-items:center; gap:6px; font-size:0.82rem; font-weight:700; color:#15803d; cursor:pointer; padding-bottom:6px;">
+                                <input type="checkbox" id="eventIsPaid">
+                                <span><i class="fa-solid fa-circle-check"></i> 此項目已付款 / 已結帳</span>
+                            </label>
                         </div>
                     </div>
                     <div class="form-group">
@@ -3944,6 +3967,55 @@
                             <input type="text" id="fPnr" class="form-input" placeholder="例如：EJ3HIM / CX8888">
                         </div>
                     </div>
+
+                    <!-- 💰 機票 / 大交通費用計算設定區塊 -->
+                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 14px; margin-top: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <h4 style="font-size: 0.92rem; font-weight: 800; color: #166534; margin: 0; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-coins" style="color: #15803d;"></i> 機票 / 大交通費用計算
+                            </h4>
+                            <span style="font-size: 0.72rem; color: #15803d; background: #dcfce7; padding: 2px 8px; border-radius: 12px; font-weight: 700;">
+                                自動連動旅行總預算與記帳
+                            </span>
+                        </div>
+                        <div class="form-row-3" style="margin-bottom: 8px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label">去程機票費用</label>
+                                <input type="number" id="fOutCost" class="form-input" min="0" step="any" placeholder="例如：1250" oninput="calcFlightModalCost()">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label">回程機票費用</label>
+                                <input type="number" id="fInCost" class="form-input" min="0" step="any" placeholder="例如：1250" oninput="calcFlightModalCost()">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label">往返總機票費用</label>
+                                <input type="number" id="fTotalCost" class="form-input" min="0" step="any" placeholder="例如：2500" oninput="calcFlightModalCost(true)">
+                            </div>
+                        </div>
+                        <div class="form-row" style="margin-bottom: 6px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label">計費模式</label>
+                                <select id="fCostMode" class="form-input" onchange="calcFlightModalCost()">
+                                    <option value="single">每人單價 (乘以同行人數)</option>
+                                    <option value="total">全團總計 (由同行人數均攤)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label">幣別</label>
+                                <select id="fCostCurr" class="form-input" onchange="calcFlightModalCost()">
+                                    <option value="LOCAL">當地幣別 (登記幣別)</option>
+                                    <option value="TWD">新台幣 (NT$)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 6px;">
+                            <label class="form-label" style="color:#0f766e;"><i class="fa-solid fa-receipt"></i> 實際支付金額 (Actual Paid，選填，用於實付記帳對比)</label>
+                            <input type="number" id="fActualCost" class="form-input" min="0" step="any" placeholder="選填：實際刷卡付款總額" oninput="calcFlightModalCost()">
+                        </div>
+                        <div id="flightCostCalcHint" style="font-size: 0.78rem; color: #166534; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px dashed #86efac; margin-top: 6px;">
+                            <!-- 動態試算預覽 -->
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                     <label style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#0369a1; cursor:pointer; user-select:none; font-weight:600;">
@@ -3986,11 +4058,56 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">入住日期</label>
-                            <input type="date" id="hCheckIn" class="form-input">
+                            <input type="date" id="hCheckIn" class="form-input" onchange="calcHotelModalCost()">
                         </div>
                         <div class="form-group">
                             <label class="form-label">退房日期</label>
-                            <input type="date" id="hCheckOut" class="form-input">
+                            <input type="date" id="hCheckOut" class="form-input" onchange="calcHotelModalCost()">
+                        </div>
+                    </div>
+
+                    <!-- 💰 住宿房費與費用計算設定區塊 -->
+                    <div style="background: #fefce8; border: 1px solid #fef08a; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <h4 style="font-size: 0.92rem; font-weight: 800; color: #854d0e; margin: 0; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-coins" style="color: #ca8a04;"></i> 住宿房費與費用計算
+                            </h4>
+                            <span style="font-size: 0.72rem; color: #854d0e; background: #fef9c3; padding: 2px 8px; border-radius: 12px; font-weight: 700;">
+                                自動連動旅行總預算與記帳
+                            </span>
+                        </div>
+                        <div class="form-row-3" style="margin-bottom: 8px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label">計費模式</label>
+                                <select id="hPriceType" class="form-input" onchange="calcHotelModalCost()">
+                                    <option value="perNight">每晚單價 (每晚房費)</option>
+                                    <option value="total">整段總價 (此飯店總房費)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" id="hPriceLabel">每晚房價</label>
+                                <input type="number" id="hPrice" class="form-input" min="0" step="any" placeholder="例如：680" oninput="calcHotelModalCost()">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label">房間間數</label>
+                                <input type="number" id="hRooms" class="form-input" min="1" step="1" value="1" placeholder="1" oninput="calcHotelModalCost()">
+                            </div>
+                        </div>
+                        <div class="form-row" style="margin-bottom: 6px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label">幣別</label>
+                                <select id="hCostCurr" class="form-input" onchange="calcHotelModalCost()">
+                                    <option value="LOCAL">當地幣別 (登記幣別)</option>
+                                    <option value="TWD">新台幣 (NT$)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="color:#0f766e;"><i class="fa-solid fa-receipt"></i> 實際支付房費 (選填，實付記帳)</label>
+                                <input type="number" id="hActualCost" class="form-input" min="0" step="any" placeholder="選填：實際刷卡付款總額" oninput="calcHotelModalCost()">
+                            </div>
+                        </div>
+                        <div id="hotelCostCalcHint" style="font-size: 0.78rem; color: #854d0e; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px dashed #fde047; margin-top: 6px;">
+                            <!-- 動態試算預覽 -->
                         </div>
                     </div>
                     <div class="form-group">
@@ -5108,10 +5225,13 @@ const firebaseConfig = {
                 if (!appState.plans['plan-beijing']) {
                     appState.plans['plan-beijing'] = JSON.parse(JSON.stringify(PRESET_BEIJING));
                 }
-                // 若重慶行程缺少、天數不足 7 天、或版本尚未更新至 2026100503，強制更新為最新 7 天行程
-                if (!appState.plans['plan-chongqing'] || !appState.plans['plan-chongqing'].days || appState.plans['plan-chongqing'].days.length < 7 || appState.plans['plan-chongqing'].version !== 2026100503) {
+                // 僅在尚未有重慶計畫時初始化範本，絕不覆蓋使用者的自訂修改（如同行人數、自訂標題、行程等）
+                if (!appState.plans['plan-chongqing']) {
                     appState.plans['plan-chongqing'] = JSON.parse(JSON.stringify(PRESET_CHONGQING));
-                    appState.activePlanId = 'plan-chongqing';
+                    saveState();
+                } else if (!appState.plans['plan-chongqing'].days || appState.plans['plan-chongqing'].days.length === 0) {
+                    // 若有計畫但天數為空，僅補齊天數結構，保留使用者的標題、人數與設定
+                    appState.plans['plan-chongqing'].days = JSON.parse(JSON.stringify(PRESET_CHONGQING.days));
                     saveState();
                 }
             }
@@ -5398,6 +5518,241 @@ const firebaseConfig = {
             };
         }
 
+        // ==========================================
+        // FLIGHT & HOTEL EXPENSE CALCULATION HELPERS
+        // ==========================================
+        function calcPlanFlightStats(plan) {
+            const curr = getPlanCurrency(plan);
+            const m = Math.max(1, parseInt(plan?.memberCount || 1));
+            const fl = plan?.flights || {};
+            const cost = Number(fl.cost || 0);
+            const outCost = Number(fl.outboundCost || 0);
+            const inCost = Number(fl.inboundCost || 0);
+            const effectiveCost = cost > 0 ? cost : (outCost + inCost);
+            const mode = fl.costMode || 'single';
+            const currType = fl.costCurr || 'LOCAL';
+            const b = calcCostItemBreakdown(effectiveCost, currType, mode, m, curr, curr.rate);
+            
+            const actualVal = (fl.actualCost !== undefined && fl.actualCost !== null) ? Number(fl.actualCost) : 0;
+            const bActual = calcCostItemBreakdown(actualVal, currType, mode, m, curr, curr.rate);
+
+            return {
+                isSet: (effectiveCost > 0 || actualVal > 0),
+                cost: effectiveCost,
+                outCost,
+                inCost,
+                mode,
+                currType,
+                personLocal: b.personLocal,
+                groupLocal: b.groupLocal,
+                personTwd: b.personTwd,
+                groupTwd: b.groupTwd,
+                actualVal,
+                hasActual: (fl.actualCost !== undefined && fl.actualCost !== null),
+                actualPersonLocal: bActual.personLocal,
+                actualGroupLocal: bActual.groupLocal,
+                actualPersonTwd: bActual.personTwd,
+                actualGroupTwd: bActual.groupTwd
+            };
+        }
+
+        function calcPlanHotelStats(plan) {
+            const curr = getPlanCurrency(plan);
+            const m = Math.max(1, parseInt(plan?.memberCount || 1));
+            const hotels = (plan?.hotels && plan.hotels.length > 0) ? plan.hotels : (plan?.hotel ? [plan.hotel] : []);
+            
+            let totalGroupLocal = 0;
+            let totalGroupTwd = 0;
+            let totalActualGroupLocal = 0;
+            let totalActualGroupTwd = 0;
+            let hasActualCount = 0;
+            let isSetCount = 0;
+
+            const list = hotels.map(ht => {
+                const price = Number(ht.price || 0);
+                const nights = Number(ht.nights || 1);
+                const rooms = Number(ht.rooms || 1);
+                const priceType = ht.priceType || 'perNight';
+                const currType = ht.costCurr || 'LOCAL';
+                const rawTotal = (priceType === 'perNight') ? (price * nights * rooms) : (price * rooms);
+                
+                const b = calcCostItemBreakdown(rawTotal, currType, 'total', m, curr, curr.rate);
+                
+                const actualVal = (ht.actualCost !== undefined && ht.actualCost !== null) ? Number(ht.actualCost) : 0;
+                const bActual = calcCostItemBreakdown(actualVal, currType, 'total', m, curr, curr.rate);
+
+                if (rawTotal > 0) isSetCount++;
+                if (ht.actualCost !== undefined && ht.actualCost !== null) hasActualCount++;
+
+                totalGroupLocal += b.groupLocal;
+                totalGroupTwd += b.groupTwd;
+                totalActualGroupLocal += bActual.groupLocal;
+                totalActualGroupTwd += bActual.groupTwd;
+
+                return {
+                    hotel: ht,
+                    price,
+                    nights,
+                    rooms,
+                    priceType,
+                    currType,
+                    rawTotal,
+                    personLocal: b.personLocal,
+                    groupLocal: b.groupLocal,
+                    personTwd: b.personTwd,
+                    groupTwd: b.groupTwd,
+                    hasActual: (ht.actualCost !== undefined && ht.actualCost !== null),
+                    actualVal,
+                    actualPersonLocal: bActual.personLocal,
+                    actualGroupLocal: bActual.groupLocal,
+                    actualPersonTwd: bActual.personTwd,
+                    actualGroupTwd: bActual.groupTwd
+                };
+            });
+
+            return {
+                count: hotels.length,
+                isSet: (isSetCount > 0 || hasActualCount > 0),
+                list,
+                totalGroupLocal,
+                totalGroupTwd,
+                totalPersonLocal: Math.round(totalGroupLocal / m),
+                totalPersonTwd: Math.round(totalGroupTwd / m),
+                hasActual: hasActualCount > 0,
+                totalActualGroupLocal,
+                totalActualGroupTwd,
+                totalActualPersonLocal: Math.round(totalActualGroupLocal / m),
+                totalActualPersonTwd: Math.round(totalActualGroupTwd / m)
+            };
+        }
+
+        // 交通彈窗費用即時試算
+        function calcFlightModalCost(isTotalInput = false) {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const curr = getPlanCurrency(plan);
+            const m = Math.max(1, parseInt(plan.memberCount || 1));
+
+            const outEl = document.getElementById('fOutCost');
+            const inEl = document.getElementById('fInCost');
+            const totEl = document.getElementById('fTotalCost');
+            const modeEl = document.getElementById('fCostMode');
+            const currEl = document.getElementById('fCostCurr');
+            const actEl = document.getElementById('fActualCost');
+            const hintEl = document.getElementById('flightCostCalcHint');
+            if (!hintEl) return;
+
+            let outVal = parseFloat(outEl?.value) || 0;
+            let inVal = parseFloat(inEl?.value) || 0;
+            let totVal = parseFloat(totEl?.value) || 0;
+
+            if (!isTotalInput && (outEl?.value || inEl?.value)) {
+                totVal = outVal + inVal;
+                if (totEl) totEl.value = totVal > 0 ? totVal : '';
+            }
+
+            const mode = modeEl?.value || 'single';
+            const currType = currEl?.value || 'LOCAL';
+            const actVal = parseFloat(actEl?.value) || 0;
+
+            const b = calcCostItemBreakdown(totVal, currType, mode, m, curr, curr.rate);
+            const bAct = calcCostItemBreakdown(actVal, currType, mode, m, curr, curr.rate);
+
+            if (totVal === 0 && actVal === 0) {
+                hintEl.innerHTML = `<span style="color:#64748b;">尚未填寫機票交通費用，可選填每人或全團金額。</span>`;
+                return;
+            }
+
+            let html = `
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+                    <span><strong>預估機票開銷：</strong>每人 <strong>${curr.symbol} ${b.personLocal.toLocaleString()}</strong> (≈ NT$ ${b.personTwd.toLocaleString()})</span>
+                    <span style="font-weight:700; color:#15803d;">全團 (${m}人) 總計：${curr.symbol} ${b.groupLocal.toLocaleString()} (≈ NT$ ${b.groupTwd.toLocaleString()})</span>
+                </div>
+            `;
+            if (actVal > 0) {
+                const diff = b.groupLocal - bAct.groupLocal;
+                const diffTwd = b.groupTwd - bAct.groupTwd;
+                const isSaved = diff >= 0;
+                html += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; padding-top:4px; border-top:1px dashed #86efac; font-size:0.75rem;">
+                        <span style="color:#0f766e;"><i class="fa-solid fa-receipt"></i> <strong>實付金額：</strong>全團 ${curr.symbol} ${bAct.groupLocal.toLocaleString()} (每人約 NT$ ${bAct.personTwd.toLocaleString()})</span>
+                        <span style="font-weight:700; color:${isSaved ? '#15803d' : '#ef4444'};">
+                            ${isSaved ? `🎉 結餘 ${curr.symbol} ${diff.toLocaleString()} (省 NT$ ${diffTwd.toLocaleString()})` : `⚠️ 超支 ${curr.symbol} ${Math.abs(diff).toLocaleString()} (多花 NT$ ${Math.abs(diffTwd).toLocaleString()})`}
+                        </span>
+                    </div>
+                `;
+            }
+            hintEl.innerHTML = html;
+        }
+
+        // 住宿彈窗房費即時試算
+        function calcHotelModalCost() {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const curr = getPlanCurrency(plan);
+            const m = Math.max(1, parseInt(plan.memberCount || 1));
+
+            const checkInVal = document.getElementById('hCheckIn')?.value;
+            const checkOutVal = document.getElementById('hCheckOut')?.value;
+            const typeEl = document.getElementById('hPriceType');
+            const priceEl = document.getElementById('hPrice');
+            const roomsEl = document.getElementById('hRooms');
+            const currEl = document.getElementById('hCostCurr');
+            const actEl = document.getElementById('hActualCost');
+            const labelEl = document.getElementById('hPriceLabel');
+            const hintEl = document.getElementById('hotelCostCalcHint');
+            if (!hintEl) return;
+
+            let nights = 1;
+            if (checkInVal && checkOutVal) {
+                try {
+                    const d1 = new Date(checkInVal);
+                    const d2 = new Date(checkOutVal);
+                    const diffTime = d2.getTime() - d1.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    if (!isNaN(diffDays) && diffDays > 0) nights = diffDays;
+                } catch (e) {}
+            }
+
+            const pType = typeEl?.value || 'perNight';
+            if (labelEl) labelEl.innerText = (pType === 'perNight') ? '每晚房價' : '整段住宿總價';
+
+            const price = parseFloat(priceEl?.value) || 0;
+            const rooms = Math.max(1, parseInt(roomsEl?.value) || 1);
+            const rawTotal = (pType === 'perNight') ? (price * nights * rooms) : (price * rooms);
+            const currType = currEl?.value || 'LOCAL';
+            const actVal = parseFloat(actEl?.value) || 0;
+
+            const b = calcCostItemBreakdown(rawTotal, currType, 'total', m, curr, curr.rate);
+            const bAct = calcCostItemBreakdown(actVal, currType, 'total', m, curr, curr.rate);
+
+            if (price === 0 && actVal === 0) {
+                hintEl.innerHTML = `<span style="color:#854d0e;">填寫房價後將自動依照晚數 (${nights}晚) 與同行人數 (${m}人) 計算總房費與均攤。</span>`;
+                return;
+            }
+
+            let html = `
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+                    <span><strong>房費試算：</strong>${pType === 'perNight' ? `${curr.symbol} ${price.toLocaleString()}/晚 × ${nights}晚${rooms > 1 ? ` × ${rooms}間` : ''}` : `整段總價`} ➔ 總計 <strong>${curr.symbol} ${b.groupLocal.toLocaleString()}</strong> (≈ NT$ ${b.groupTwd.toLocaleString()})</span>
+                    <span style="font-weight:700; color:#ca8a04;">每人均攤 (${m}人)：${curr.symbol} ${b.personLocal.toLocaleString()} (≈ NT$ ${b.personTwd.toLocaleString()})</span>
+                </div>
+            `;
+            if (actVal > 0) {
+                const diff = b.groupLocal - bAct.groupLocal;
+                const diffTwd = b.groupTwd - bAct.groupTwd;
+                const isSaved = diff >= 0;
+                html += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; padding-top:4px; border-top:1px dashed #fde047; font-size:0.75rem;">
+                        <span style="color:#0f766e;"><i class="fa-solid fa-receipt"></i> <strong>實付房費：</strong>${curr.symbol} ${bAct.groupLocal.toLocaleString()} (每人約 NT$ ${bAct.personTwd.toLocaleString()})</span>
+                        <span style="font-weight:700; color:${isSaved ? '#15803d' : '#ef4444'};">
+                            ${isSaved ? `🎉 結餘 ${curr.symbol} ${diff.toLocaleString()} (省 NT$ ${diffTwd.toLocaleString()})` : `⚠️ 超支 ${curr.symbol} ${Math.abs(diff).toLocaleString()} (多花 NT$ ${Math.abs(diffTwd).toLocaleString()})`}
+                        </span>
+                    </div>
+                `;
+            }
+            hintEl.innerHTML = html;
+        }
+
         // ==========================
         // RENDER MASTER
         // ==========================
@@ -5412,6 +5767,7 @@ const firebaseConfig = {
             renderBookingView();
             renderSpotGuidesView();
             renderBudgetView();
+            if (typeof renderActualExpensesView === 'function') renderActualExpensesView();
             renderPlanSelectDropdown();
         }
 
@@ -5562,6 +5918,40 @@ const firebaseConfig = {
                             <span>${ht.checkIn || ''} ➔ ${ht.checkOut || ''} ${ht.nights ? `(${ht.nights} 晚)` : ''}</span>
                         </div>` : ''}
 
+                        <!-- 💰 房費計算展示卡塊 -->
+                        ${(() => {
+                            if (!ht.price || Number(ht.price) <= 0) return '';
+                            const pType = ht.priceType || 'perNight';
+                            const nights = Number(ht.nights) || 1;
+                            const rooms = Number(ht.rooms) || 1;
+                            const m = Math.max(1, Number(plan.memberCount) || 1);
+                            const currInfo = getPlanCurrency(plan);
+                            const isTwd = (ht.costCurr === 'TWD');
+                            const rawTot = (pType === 'perNight') ? (Number(ht.price) * nights * rooms) : (Number(ht.price) * rooms);
+                            const totLocal = isTwd ? (currInfo.code === 'TWD' ? rawTot : Math.round(rawTot / currInfo.rate)) : rawTot;
+                            const totTwd = isTwd ? rawTot : Math.round(rawTot * currInfo.rate);
+                            const perPersonLocal = Math.round(totLocal / m);
+                            const perPersonTwd = Math.round(totTwd / m);
+
+                            return `
+                                <div style="background: #fefce8; border: 1px solid #fef08a; border-radius: 6px; padding: 6px 9px; margin-bottom: 6px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:#854d0e; font-weight:700;">
+                                        <span><i class="fa-solid fa-coins" style="color:#ca8a04;"></i> 房費：${pType === 'perNight' ? `${currInfo.symbol} ${Number(ht.price).toLocaleString()}/晚 × ${nights}晚${rooms > 1 ? ` × ${rooms}間` : ''}` : `整段總價`}</span>
+                                        <span style="font-size:0.8rem; color:#ca8a04;">總計 ${currInfo.symbol} ${totLocal.toLocaleString()}</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.71rem; color:#a16207; margin-top:2px;">
+                                        <span>每人均攤 (${m}人)：<strong>${currInfo.symbol} ${perPersonLocal.toLocaleString()}</strong></span>
+                                        <span style="color:#0284c7; font-weight:600;">≈ NT$ ${perPersonTwd.toLocaleString()}</span>
+                                    </div>
+                                    ${(ht.actualCost !== undefined && ht.actualCost !== null && Number(ht.actualCost) > 0) ? `
+                                    <div style="margin-top:3px; padding-top:3px; border-top:1px dashed #fde047; font-size:0.7rem; color:#15803d; display:flex; justify-content:space-between;">
+                                        <span><i class="fa-solid fa-receipt"></i> 實付: ${currInfo.symbol} ${Number(ht.actualCost).toLocaleString()}</span>
+                                        <span>${Number(ht.actualCost) <= totLocal ? `省 ${currInfo.symbol} ${(totLocal - Number(ht.actualCost)).toLocaleString()}` : `超支 ${currInfo.symbol} ${(Number(ht.actualCost) - totLocal).toLocaleString()}`}</span>
+                                    </div>` : ''}
+                                </div>
+                            `;
+                        })()}
+
                         <!-- 詳細地址展示卡塊 (司機導航、叫車與步行指引) -->
                         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 7px 9px; margin-top: 4px;" onclick="event.stopPropagation();">
                             <div style="display: flex; align-items: flex-start; gap: 5px; font-size: 0.8rem; color: #334155;">
@@ -5633,7 +6023,7 @@ const firebaseConfig = {
                 return;
             }
 
-            container.innerHTML = legs.map((leg, idx) => {
+            const cardsHtml = legs.map((leg, idx) => {
                 const isTrans = leg.isTransfer || !!leg.transferInfo || (leg.flightNo2 && leg.flightNo2.trim().length > 0);
                 const isOutbound = idx === 0 || leg.type === 'outbound';
                 const pillLabel = isOutbound ? (isTrans ? '🛫 去程 ‧ 轉機' : '🛫 去程 ‧ 直飛') : (isTrans ? '🛬 回程 ‧ 轉機' : '🛬 回程 ‧ 直飛');
@@ -5727,6 +6117,32 @@ const firebaseConfig = {
                     `;
                 }
             }).join('');
+
+            const fStats = calcPlanFlightStats(plan);
+            let costSummaryHtml = '';
+            if (fStats.isSet) {
+                const currInfo = getPlanCurrency(plan);
+                costSummaryHtml = `
+                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 7px 10px; margin-top: 6px; font-size: 0.75rem; color: #166534; cursor:pointer;" onclick="openEditFlightModal()" title="點擊修改機票與交通費用">
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-weight:700;">
+                            <span><i class="fa-solid fa-coins" style="color:#15803d;"></i> 機票大交通費用</span>
+                            <span style="color:#15803d; font-size:0.8rem;">全團 ${currInfo.symbol} ${fStats.groupLocal.toLocaleString()}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.71rem; color:#166534; margin-top:2px;">
+                            <span>每人平均 (${fStats.mode === 'single' ? '單人計費' : '均攤'})：<strong>${currInfo.symbol} ${fStats.personLocal.toLocaleString()}</strong></span>
+                            <span style="color:#0284c7; font-weight:600;">≈ NT$ ${fStats.personTwd.toLocaleString()}</span>
+                        </div>
+                        ${fStats.hasActual ? `
+                        <div style="margin-top:3px; padding-top:3px; border-top:1px dashed #86efac; font-size:0.7rem; color:#0f766e; display:flex; justify-content:space-between;">
+                            <span><i class="fa-solid fa-receipt"></i> 實付: ${currInfo.symbol} ${fStats.actualGroupLocal.toLocaleString()}</span>
+                            <span style="font-weight:700; color:${fStats.actualGroupLocal <= fStats.groupLocal ? '#15803d' : '#ef4444'};">
+                                ${fStats.actualGroupLocal <= fStats.groupLocal ? `省 ${currInfo.symbol} ${(fStats.groupLocal - fStats.actualGroupLocal).toLocaleString()}` : `超支 ${currInfo.symbol} ${(fStats.actualGroupLocal - fStats.groupLocal).toLocaleString()}`}
+                            </span>
+                        </div>` : ''}
+                    </div>
+                `;
+            }
+            container.innerHTML = cardsHtml + costSummaryHtml;
         }
 
         // 在交通卡片上一鍵將指定航班 (去程或回程) 同步更新至每日行程中
@@ -6049,19 +6465,27 @@ const firebaseConfig = {
                                 <strong class="val">${plan.memberCount || 1} 人</strong>
                             </div>
                             <div class="summary-kpi-chip">
-                                <span class="label">💰 單人預估支出</span>
-                                <strong class="val" style="color:#ea580c;">${curr.symbol} ${stats.totalBudget.toLocaleString()} <small style="font-size:0.72rem; color:#64748b;">(≈NT$${stats.twdTotalBudget.toLocaleString()})</small></strong>
+                                <span class="label">💰 單人全程總預估</span>
+                                <strong class="val" style="color:#ea580c;">
+                                    ${(stats.flightStats.isSet || stats.hotelStats.isSet)
+                                        ? `≈ NT$ ${stats.grandTwdTotalBudget.toLocaleString()} <small style="font-size:0.7rem; color:#64748b;">(含機酒)</small>`
+                                        : `${curr.symbol} ${stats.totalBudget.toLocaleString()} <small style="font-size:0.72rem; color:#64748b;">(≈NT$${stats.twdTotalBudget.toLocaleString()})</small>`}
+                                </strong>
                             </div>
                             <div class="summary-kpi-chip">
-                                <span class="label">👥 全團預估總額</span>
-                                <strong class="val" style="color:#0284c7;">${curr.symbol} ${stats.groupTotalBudget.toLocaleString()} <small style="font-size:0.72rem; color:#64748b;">(≈NT$${stats.twdGroupTotalBudget.toLocaleString()})</small></strong>
+                                <span class="label">👥 全團全程總預估</span>
+                                <strong class="val" style="color:#0284c7;">
+                                    ${(stats.flightStats.isSet || stats.hotelStats.isSet)
+                                        ? `≈ NT$ ${stats.grandTwdGroupTotalBudget.toLocaleString()} <small style="font-size:0.7rem; color:#64748b;">(含機酒)</small>`
+                                        : `${curr.symbol} ${stats.groupTotalBudget.toLocaleString()} <small style="font-size:0.72rem; color:#64748b;">(≈NT$${stats.twdGroupTotalBudget.toLocaleString()})</small>`}
+                                </strong>
                             </div>
                         </div>
 
                         <!-- 航班與住宿快速資訊 -->
                         <div class="trip-summary-logistics">
-                            ${flightSummary ? `<div><i class="fa-solid fa-plane-departure" style="color:#0284c7;"></i> <strong>交通航班：</strong><span>${flightSummary}</span></div>` : ''}
-                            <div><i class="fa-solid fa-hotel" style="color:#0f766e;"></i> <strong>入住飯店：</strong><span>${hotelSummaryHtml || '尚未填寫'}</span></div>
+                            ${flightSummary ? `<div><i class="fa-solid fa-plane-departure" style="color:#0284c7;"></i> <strong>交通航班：</strong><span>${flightSummary}</span> ${stats.flightStats.isSet ? `<span style="color:#0369a1; font-size:0.75rem; font-weight:700; margin-left:4px;">(機票每人 ≈ NT$ ${stats.flightStats.personTwd.toLocaleString()})</span>` : ''}</div>` : ''}
+                            <div><i class="fa-solid fa-hotel" style="color:#0f766e;"></i> <strong>入住飯店：</strong><span>${hotelSummaryHtml || '尚未填寫'}</span> ${stats.hotelStats.isSet ? `<span style="color:#0f766e; font-size:0.75rem; font-weight:700; margin-left:4px;">(住宿每人 ≈ NT$ ${stats.hotelStats.totalPersonTwd.toLocaleString()})</span>` : ''}</div>
                         </div>
 
                         <!-- 逐日精華動線（一天一行呈現） -->
@@ -6085,7 +6509,15 @@ const firebaseConfig = {
             let text = `【${plan.title} 行程總結大綱 (Trip Summary)】\n`;
             text += `📅 日期範圍：${plan.dateRange || '未定'} (共 ${days.length} 天)\n`;
             text += `👥 同行成員：${plan.memberCount || 1} 人\n`;
-            text += `💰 預估花費：每人 ${curr.symbol} ${stats.totalBudget.toLocaleString()} (約 NT$ ${stats.twdTotalBudget.toLocaleString()}) ｜ 全團約 NT$ ${stats.twdGroupTotalBudget.toLocaleString()}\n`;
+            text += `💰 預估花費：\n`;
+            if (stats.flightStats.isSet || stats.hotelStats.isSet) {
+                text += `  • 全程總預估 (含機票與飯店)：每人約 NT$ ${stats.grandTwdTotalBudget.toLocaleString()} ｜ 全團約 NT$ ${stats.grandTwdGroupTotalBudget.toLocaleString()}\n`;
+                text += `  • 每日行程當地支出：每人 ${curr.symbol} ${stats.totalBudget.toLocaleString()} (約 NT$ ${stats.twdTotalBudget.toLocaleString()}) ｜ 全團約 NT$ ${stats.twdGroupTotalBudget.toLocaleString()}\n`;
+                if (stats.flightStats.isSet) text += `  • 機票交通費用：每人約 NT$ ${stats.flightStats.personTwd.toLocaleString()} ｜ 全團約 NT$ ${stats.flightStats.groupTwd.toLocaleString()}\n`;
+                if (stats.hotelStats.isSet) text += `  • 飯店住宿房費：每人約 NT$ ${stats.hotelStats.totalPersonTwd.toLocaleString()} ｜ 全團約 NT$ ${stats.hotelStats.totalGroupTwd.toLocaleString()}\n`;
+            } else {
+                text += `  • 每人 ${curr.symbol} ${stats.totalBudget.toLocaleString()} (約 NT$ ${stats.twdTotalBudget.toLocaleString()}) ｜ 全團約 NT$ ${stats.twdGroupTotalBudget.toLocaleString()}\n`;
+            }
             if (hotelList.length > 0) {
                 text += `🏨 入住飯店：\n`;
                 hotelList.forEach((h, idx) => {
@@ -6170,6 +6602,15 @@ const firebaseConfig = {
                 switchView('booking');
                 setTimeout(() => {
                     const el = document.getElementById('view-booking');
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        highlightElement(el);
+                    }
+                }, 60);
+            } else if (target === 'actual-expenses') {
+                switchView('actual-expenses');
+                setTimeout(() => {
+                    const el = document.getElementById('view-actual-expenses');
                     if (el) {
                         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         highlightElement(el);
@@ -6368,6 +6809,12 @@ const firebaseConfig = {
                                 <div class="timeline-event-meta">
                                     ${ev.loc ? `<span><i class="fa-solid fa-location-dot" style="color:#ea580c;"></i> ${escapeHtml(ev.loc)}</span>` : ''}
                                     ${ev.cost ? `<span><i class="fa-solid fa-coins" style="color:#0f766e;"></i> ${curr.symbol} ${Number(ev.cost).toLocaleString()} <span style="font-size:0.72rem; color:#64748b;">(≈ NT$ ${Math.round(Number(ev.cost) * curr.rate).toLocaleString()})</span></span>` : ''}
+                                    ${(ev.actualCost !== undefined && ev.actualCost !== null) ? `
+                                        <span style="background:#f0fdf4; border:1px solid #bbf7d0; color:#15803d; padding:1px 6px; border-radius:4px; font-weight:700; font-size:0.72rem;" title="實付金額">
+                                            <i class="fa-solid fa-receipt"></i> 實付: ${curr.symbol} ${Number(ev.actualCost).toLocaleString()}
+                                            ${ev.isPaid ? ' <i class="fa-solid fa-circle-check" style="color:#16a34a;" title="已結帳付款"></i>' : ''}
+                                        </span>
+                                    ` : (ev.isPaid ? `<span style="color:#16a34a; font-size:0.72rem; font-weight:700;"><i class="fa-solid fa-circle-check"></i> 已付款</span>` : '')}
                                     ${ev.notes ? `<span style="color:#64748b;"><i class="fa-regular fa-note-sticky"></i> ${escapeHtml(ev.notes)}</span>` : ''}
                                 </div>
                             </div>
@@ -7170,9 +7617,25 @@ const firebaseConfig = {
 
             const twdGroupMealsTotal = twdMealsTotal * memberCount;
 
+            // 大交通（機票）與住宿（飯店）統計整合
+            const flightStats = calcPlanFlightStats(plan);
+            const hotelStats = calcPlanHotelStats(plan);
+
+            // 全程旅行總開銷（包含每日當地支出 + 機票 + 飯店）
+            const grandTotalBudget = totalBudget + flightStats.personLocal + hotelStats.totalPersonLocal;
+            const grandGroupTotalBudget = groupTotalBudget + flightStats.groupLocal + hotelStats.totalGroupLocal;
+            const grandTwdTotalBudget = twdTotalBudget + flightStats.personTwd + hotelStats.totalPersonTwd;
+            const grandTwdGroupTotalBudget = twdGroupTotalBudget + flightStats.groupTwd + hotelStats.totalGroupTwd;
+
             return { 
                 curr,
                 memberCount,
+                flightStats,
+                hotelStats,
+                grandTotalBudget,
+                grandGroupTotalBudget,
+                grandTwdTotalBudget,
+                grandTwdGroupTotalBudget,
                 totalBudget, groupTotalBudget,
                 twdTotalBudget, twdGroupTotalBudget,
                 avgBudget, groupAvgBudget,
@@ -7641,13 +8104,594 @@ const firebaseConfig = {
             }
         }
 
+                // ==========================================
+        // VIEW 5: ACTUAL EXPENSES TRACKER (實際花費與行程記帳)
+        // ==========================================
+
+        function renderActualExpensesView() {
+            const container = document.getElementById('actualExpensesContainer');
+            const plan = getCurrentPlan();
+            if (!container || !plan) return;
+
+            const curr = getPlanCurrency(plan);
+            const m = Math.max(1, parseInt(plan.memberCount || 1));
+            const days = plan.days || [];
+            const flightStats = calcPlanFlightStats(plan);
+            const hotelStats = calcPlanHotelStats(plan);
+
+            // 1. 逐項統計行程活動與每日餐費
+            let totalEstEventsLocal = 0;
+            let totalActEventsLocal = 0;
+            let totalPaidEventsLocal = 0;
+            let totalUnpaidEventsLocal = 0;
+            let totalEventsCount = 0;
+            let paidEventsCount = 0;
+            let filledActualCount = 0;
+
+            let totalEstMealsLocal = 0;
+            let totalActMealsLocal = 0;
+
+            days.forEach(d => {
+                // 餐飲預估與實付
+                const bfEst = Number(d.breakfastCost || 0);
+                const lcEst = Number(d.lunchCost || 0);
+                const dnEst = Number(d.dinnerCost || 0);
+                const snEst = Number(d.snackCost || 0);
+                const dayMealEst = bfEst + lcEst + dnEst + snEst;
+                totalEstMealsLocal += (dayMealEst * m);
+
+                const bfAct = (d.actualBreakfastCost !== undefined && d.actualBreakfastCost !== null) ? Number(d.actualBreakfastCost) : bfEst;
+                const lcAct = (d.actualLunchCost !== undefined && d.actualLunchCost !== null) ? Number(d.actualLunchCost) : lcEst;
+                const dnAct = (d.actualDinnerCost !== undefined && d.actualDinnerCost !== null) ? Number(d.actualDinnerCost) : dnEst;
+                const snAct = (d.actualSnackCost !== undefined && d.actualSnackCost !== null) ? Number(d.actualSnackCost) : snEst;
+                const dayMealAct = bfAct + lcAct + dnAct + snAct;
+                totalActMealsLocal += (dayMealAct * m);
+
+                // 活動項目
+                (d.events || []).forEach(ev => {
+                    totalEventsCount++;
+                    const estSingle = Number(ev.cost || 0);
+                    const estGroup = estSingle * m;
+                    totalEstEventsLocal += estGroup;
+
+                    const hasAct = (ev.actualCost !== undefined && ev.actualCost !== null);
+                    const actSingle = hasAct ? Number(ev.actualCost) : estSingle;
+                    const actGroup = actSingle * m;
+                    totalActEventsLocal += actGroup;
+
+                    if (hasAct) filledActualCount++;
+                    if (ev.isPaid) {
+                        paidEventsCount++;
+                        totalPaidEventsLocal += actGroup;
+                    } else {
+                        totalUnpaidEventsLocal += actGroup;
+                    }
+                });
+            });
+
+            // 大交通（機票）實付與預估
+            const flEstGroup = flightStats.groupLocal;
+            const flActGroup = flightStats.hasActual ? flightStats.actualGroupLocal : flEstGroup;
+            const flIsPaid = flightStats.hasActual;
+
+            // 住宿（飯店）實付與預估
+            const htEstGroup = hotelStats.totalGroupLocal;
+            const htActGroup = hotelStats.hasActual ? hotelStats.totalActualGroupLocal : htEstGroup;
+
+            // 全程旅行總估算 vs 總實付（全團）
+            const grandEstGroupLocal = flEstGroup + htEstGroup + totalEstMealsLocal + totalEstEventsLocal;
+            const grandEstGroupTwd = Math.round(grandEstGroupLocal * curr.rate);
+            const grandEstPersonTwd = Math.round(grandEstGroupTwd / m);
+
+            const grandActGroupLocal = flActGroup + htActGroup + totalActMealsLocal + totalActEventsLocal;
+            const grandActGroupTwd = Math.round(grandActGroupLocal * curr.rate);
+            const grandActPersonTwd = Math.round(grandActGroupTwd / m);
+
+            // 結餘或超支分析
+            const diffGroupLocal = grandEstGroupLocal - grandActGroupLocal;
+            const diffGroupTwd = grandEstGroupTwd - grandActGroupTwd;
+            const isSaved = diffGroupLocal >= 0;
+
+            // 已支付與待付款金額
+            let grandPaidGroupLocal = totalPaidEventsLocal;
+            if (flIsPaid) grandPaidGroupLocal += flActGroup;
+            if (hotelStats.hasActual) grandPaidGroupLocal += htActGroup;
+            const grandPaidGroupTwd = Math.round(grandPaidGroupLocal * curr.rate);
+            const paidPct = (grandActGroupLocal > 0) ? Math.min(100, Math.round((grandPaidGroupLocal / grandActGroupLocal) * 100)) : 0;
+
+            // 構建逐日行程活動記帳表 HTML
+            let daysHtml = days.map(d => {
+                const bfEst = Number(d.breakfastCost || 0);
+                const lcEst = Number(d.lunchCost || 0);
+                const dnEst = Number(d.dinnerCost || 0);
+                const snEst = Number(d.snackCost || 0);
+                const dayMealEst = bfEst + lcEst + dnEst + snEst;
+
+                const bfAct = (d.actualBreakfastCost !== undefined && d.actualBreakfastCost !== null) ? Number(d.actualBreakfastCost) : bfEst;
+                const lcAct = (d.actualLunchCost !== undefined && d.actualLunchCost !== null) ? Number(d.actualLunchCost) : lcEst;
+                const dnAct = (d.actualDinnerCost !== undefined && d.actualDinnerCost !== null) ? Number(d.actualDinnerCost) : dnEst;
+                const snAct = (d.actualSnackCost !== undefined && d.actualSnackCost !== null) ? Number(d.actualSnackCost) : snEst;
+                const dayMealAct = bfAct + lcAct + dnAct + snAct;
+
+                let dayEstSum = dayMealEst * m;
+                let dayActSum = dayMealAct * m;
+
+                const events = d.events || [];
+                const rowsHtml = events.map((ev, eIdx) => {
+                    const estSingle = Number(ev.cost || 0);
+                    const estGroup = estSingle * m;
+                    const hasAct = (ev.actualCost !== undefined && ev.actualCost !== null);
+                    const actSingle = hasAct ? Number(ev.actualCost) : estSingle;
+                    const actGroup = actSingle * m;
+
+                    dayEstSum += estGroup;
+                    dayActSum += actGroup;
+
+                    const diffItem = estSingle - actSingle;
+                    const isItemSaved = diffItem >= 0;
+                    const catInfo = getEventCategoryInfo(ev.type);
+
+                    return `
+                        <tr style="border-bottom:1px solid #f1f5f9; transition:background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#ffffff'">
+                            <td style="padding:10px 12px; font-size:0.8rem; color:#64748b; white-space:nowrap;">
+                                ${escapeHtml(ev.time || '全天')}
+                            </td>
+                            <td style="padding:10px 12px;">
+                                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                                    <span class="event-cat-badge ${catInfo.class}" style="font-size:0.68rem; padding:1px 6px;">
+                                        <i class="fa-solid ${catInfo.icon}"></i> ${catInfo.label}
+                                    </span>
+                                    <strong style="color:#1e293b; font-size:0.88rem;">${escapeHtml(ev.title)}</strong>
+                                    ${ev.loc ? `<span style="font-size:0.74rem; color:#64748b;"><i class="fa-solid fa-location-dot" style="color:#ea580c;"></i> ${escapeHtml(ev.loc)}</span>` : ''}
+                                </div>
+                                ${ev.notes ? `<div style="font-size:0.74rem; color:#94a3b8; margin-top:2px;"><i class="fa-regular fa-note-sticky"></i> ${escapeHtml(ev.notes)}</div>` : ''}
+                            </td>
+                            <td style="padding:10px 12px; text-align:right; white-space:nowrap;">
+                                <div style="font-weight:700; color:#475569; font-size:0.86rem;">
+                                    ${curr.symbol} ${estSingle.toLocaleString()}
+                                </div>
+                                <div style="font-size:0.72rem; color:#94a3b8;">
+                                    全團 ${curr.symbol} ${estGroup.toLocaleString()} (≈NT$${Math.round(estGroup * curr.rate).toLocaleString()})
+                                </div>
+                            </td>
+                            <td style="padding:10px 12px; text-align:right;">
+                                <div style="display:flex; align-items:center; justify-content:flex-end; gap:4px;">
+                                    <span style="font-size:0.8rem; color:#0f766e; font-weight:700;">${curr.symbol}</span>
+                                    <input type="number" min="0" step="any" class="form-input" 
+                                           style="width:90px; padding:3px 6px; font-size:0.84rem; text-align:right; font-weight:700; color:#0f766e; border-color:${hasAct ? '#0f766e' : '#cbd5e1'}; background:${hasAct ? '#f0fdf4' : '#fff'};" 
+                                           value="${hasAct ? ev.actualCost : ''}" 
+                                           placeholder="${estSingle}" 
+                                           onchange="updateEventActualCost(${d.dayNum}, ${eIdx}, this.value)"
+                                           title="輸入實際單人花費 (按 Enter 或點離開即自動儲存)">
+                                    <button class="n-btn" style="padding:2px 6px; font-size:0.68rem;" onclick="copyEventEstimatedToActual(${d.dayNum}, ${eIdx})" title="一鍵將預估金額填入實付">
+                                        ⚡同預估
+                                    </button>
+                                </div>
+                                <div style="font-size:0.72rem; color:#0f766e; margin-top:2px;">
+                                    全團實付 ${curr.symbol} ${actGroup.toLocaleString()}
+                                </div>
+                            </td>
+                            <td style="padding:10px 12px; text-align:center; white-space:nowrap;">
+                                ${hasAct ? `
+                                    <span style="display:inline-block; padding:2px 6px; border-radius:4px; font-size:0.74rem; font-weight:700; background:${isItemSaved ? '#dcfce7' : '#fee2e2'}; color:${isItemSaved ? '#15803d' : '#b91c1c'};">
+                                        ${isItemSaved ? `🎉 省 ${curr.symbol}${diffItem.toLocaleString()}` : `⚠️ 超支 ${curr.symbol}${Math.abs(diffItem).toLocaleString()}`}
+                                    </span>
+                                ` : `
+                                    <span style="font-size:0.72rem; color:#94a3b8;">待核銷</span>
+                                `}
+                            </td>
+                            <td style="padding:10px 12px; text-align:center; white-space:nowrap;">
+                                <label style="display:inline-flex; align-items:center; gap:4px; cursor:pointer; font-size:0.76rem; font-weight:600; color:${ev.isPaid ? '#15803d' : '#64748b'};">
+                                    <input type="checkbox" style="width:15px; height:15px; accent-color:#16a34a; cursor:pointer;" ${ev.isPaid ? 'checked' : ''} onchange="toggleEventPaid(${d.dayNum}, ${eIdx}, this.checked)">
+                                    ${ev.isPaid ? '<span style="color:#16a34a;"><i class="fa-solid fa-circle-check"></i> 已付</span>' : '待付'}
+                                </label>
+                            </td>
+                            <td style="padding:10px 12px; text-align:right; white-space:nowrap;">
+                                <div style="display:flex; justify-content:flex-end; gap:4px;">
+                                    <button class="n-btn" style="padding:2px 6px; font-size:0.72rem;" onclick="openEditEventModal(${d.dayNum}, ${eIdx})" title="編輯項目詳情">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                    <button class="n-btn n-btn-danger" style="padding:2px 6px; font-size:0.72rem;" onclick="deleteEventItem(${d.dayNum}, ${eIdx})" title="刪除此項目">
+                                        <i class="fa-regular fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                const dayDiff = dayEstSum - dayActSum;
+                const isDaySaved = dayDiff >= 0;
+
+                return `
+                    <div class="actual-day-section" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:18px; box-shadow:0 1px 3px rgba(0,0,0,0.03); overflow:hidden;">
+                        <!-- 天數標題橫條 -->
+                        <div style="background:#f8fafc; padding:12px 16px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="background:#0284c7; color:#ffffff; font-weight:800; font-size:0.78rem; padding:2px 8px; border-radius:4px;">Day ${d.dayNum}</span>
+                                <strong style="font-size:0.96rem; color:#0f172a;">${escapeHtml(d.title)}</strong>
+                                <span style="font-size:0.78rem; color:#64748b;">(${d.date || ''})</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:12px; font-size:0.82rem;">
+                                <span>當日預估：<strong style="color:#475569;">${curr.symbol} ${dayEstSum.toLocaleString()}</strong></span>
+                                <span>當日實付：<strong style="color:#0f766e;">${curr.symbol} ${dayActSum.toLocaleString()}</strong></span>
+                                <span style="font-weight:700; color:${isDaySaved ? '#15803d' : '#b91c1c'}; background:${isDaySaved ? '#dcfce7' : '#fee2e2'}; padding:1px 7px; border-radius:4px; font-size:0.74rem;">
+                                    ${isDaySaved ? `🎉 結餘 ${curr.symbol} ${dayDiff.toLocaleString()}` : `⚠️ 超支 ${curr.symbol} ${Math.abs(dayDiff).toLocaleString()}`}
+                                </span>
+                                <button class="n-btn" style="padding:2px 8px; font-size:0.74rem;" onclick="openAddEventModal(${d.dayNum})">
+                                    <i class="fa-solid fa-plus"></i> 新增花費
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 當日餐飲快速對帳列 -->
+                        <div style="background:#fffbeb; border-bottom:1px solid #fef3c7; padding:8px 16px; font-size:0.78rem; color:#92400e; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                                <span><i class="fa-solid fa-utensils"></i> <strong>當日餐飲花費：</strong></span>
+                                <span>早: <strong>${curr.symbol}${bfAct}</strong></span>
+                                <span>午: <strong>${curr.symbol}${lcAct}</strong></span>
+                                <span>晚: <strong>${curr.symbol}${dnAct}</strong></span>
+                                ${snAct > 0 ? `<span>點心: <strong>${curr.symbol}${snAct}</strong></span>` : ''}
+                                <span style="color:#b45309;">(全團餐飲合算 ≈ NT$ ${Math.round(dayMealAct * m * curr.rate).toLocaleString()})</span>
+                            </div>
+                            <button class="n-btn" style="padding:1px 7px; font-size:0.72rem; background:#ffffff;" onclick="openEditDayMetaModal(${d.dayNum})" title="修改當日餐食與自訂雜支花費">
+                                <i class="fa-solid fa-pen-to-square"></i> 調整餐食
+                            </button>
+                        </div>
+
+                        <!-- 活動明細表格 -->
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; text-align:left;">
+                                <thead>
+                                    <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0; font-size:0.74rem; color:#64748b; text-transform:uppercase;">
+                                        <th style="padding:8px 12px; width:70px;">時間</th>
+                                        <th style="padding:8px 12px;">行程項目 / 地點</th>
+                                        <th style="padding:8px 12px; text-align:right; width:130px;">預估費用 (單人)</th>
+                                        <th style="padding:8px 12px; text-align:right; width:200px;">實際花費 (單人)</th>
+                                        <th style="padding:8px 12px; text-align:center; width:100px;">差額對比</th>
+                                        <th style="padding:8px 12px; text-align:center; width:80px;">狀態</th>
+                                        <th style="padding:8px 12px; text-align:right; width:70px;">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsHtml.length > 0 ? rowsHtml : `
+                                        <tr>
+                                            <td colspan="7" style="text-align:center; padding:20px; color:#94a3b8; font-size:0.84rem;">
+                                                本日尚無活動花費項目，點選右上角「+ 新增花費」即可記錄！
+                                            </td>
+                                        </tr>
+                                    `}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 渲染整個視圖
+            container.innerHTML = `
+                <div style="padding:6px 0;">
+                    <!-- 頂部頁頭與操作按鈕 -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+                        <div>
+                            <h2 style="font-size:1.24rem; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
+                                <span>🧾</span> 實際費用與行程核銷中心 (Actual Expenses Tracker)
+                            </h2>
+                            <div style="font-size:0.82rem; color:#64748b; margin-top:3px;">
+                                追蹤全程交通、住宿、餐飲與行程各項目的實付開銷，即時對比預估預算、計算超支結餘與付款狀態。
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <button class="n-btn" style="font-size:0.78rem; padding:5px 12px;" onclick="copyAllEventsEstimatedToActual()" title="將所有尚未填寫實際金額的活動項目，自動填入預估金額">
+                                <i class="fa-solid fa-wand-magic-sparkles" style="color:#0284c7;"></i> 一鍵帶入預估
+                            </button>
+                            <button class="n-btn" style="font-size:0.78rem; padding:5px 12px;" onclick="markAllEventsPaid()" title="將所有活動項目一鍵標記為已付款">
+                                <i class="fa-solid fa-check-double" style="color:#16a34a;"></i> 全部標記已付
+                            </button>
+                            <button class="n-btn" style="font-size:0.78rem; padding:5px 12px;" onclick="copyActualExpensesSummaryText()" title="一鍵複製整份實付費用對帳單文字至剪貼簿">
+                                <i class="fa-regular fa-copy"></i> 複製對帳清單
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 核心 KPI 四大統計看板 -->
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-bottom:18px;">
+                        <!-- 看板 1: 全程實付總額 -->
+                        <div style="background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border:1px solid #bbf7d0; border-radius:10px; padding:14px 16px;">
+                            <div style="font-size:0.78rem; font-weight:700; color:#15803d; text-transform:uppercase; display:flex; align-items:center; gap:6px;">
+                                <i class="fa-solid fa-receipt"></i> 全程實際花費總額
+                            </div>
+                            <div style="font-size:1.45rem; font-weight:800; color:#166534; margin:6px 0 2px;">
+                                NT$ ${grandActGroupTwd.toLocaleString()}
+                            </div>
+                            <div style="font-size:0.78rem; color:#15803d;">
+                                每人平均 ≈ <strong>NT$ ${grandActPersonTwd.toLocaleString()}</strong> ｜ 全團 ${curr.symbol} ${grandActGroupLocal.toLocaleString()}
+                            </div>
+                        </div>
+
+                        <!-- 看板 2: 預估總預算 -->
+                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px 16px;">
+                            <div style="font-size:0.78rem; font-weight:700; color:#475569; text-transform:uppercase; display:flex; align-items:center; gap:6px;">
+                                <i class="fa-solid fa-calculator"></i> 原定全程預估總預算
+                            </div>
+                            <div style="font-size:1.45rem; font-weight:800; color:#334155; margin:6px 0 2px;">
+                                NT$ ${grandEstGroupTwd.toLocaleString()}
+                            </div>
+                            <div style="font-size:0.78rem; color:#64748b;">
+                                每人預估 ≈ <strong>NT$ ${grandEstPersonTwd.toLocaleString()}</strong> ｜ 全團 ${curr.symbol} ${grandEstGroupLocal.toLocaleString()}
+                            </div>
+                        </div>
+
+                        <!-- 看板 3: 結餘 / 超支狀態 -->
+                        <div style="background:${isSaved ? '#eff6ff' : '#fef2f2'}; border:1px solid ${isSaved ? '#bfdbfe' : '#fecaca'}; border-radius:10px; padding:14px 16px;">
+                            <div style="font-size:0.78rem; font-weight:700; color:${isSaved ? '#1d4ed8' : '#b91c1c'}; text-transform:uppercase; display:flex; align-items:center; gap:6px;">
+                                <i class="fa-solid ${isSaved ? 'fa-piggy-bank' : 'fa-triangle-exclamation'}"></i> 總體收支差額對比
+                            </div>
+                            <div style="font-size:1.45rem; font-weight:800; color:${isSaved ? '#1e40af' : '#991b1b'}; margin:6px 0 2px;">
+                                ${isSaved ? `🎉 結餘 NT$ ${diffGroupTwd.toLocaleString()}` : `⚠️ 超支 NT$ ${Math.abs(diffGroupTwd).toLocaleString()}`}
+                            </div>
+                            <div style="font-size:0.78rem; color:${isSaved ? '#2563eb' : '#dc2626'};">
+                                ${isSaved ? `比原預算節省 ${curr.symbol} ${diffGroupLocal.toLocaleString()} (每人省 NT$ ${Math.round(diffGroupTwd / m).toLocaleString()})` : `超出原預算 ${curr.symbol} ${Math.abs(diffGroupLocal).toLocaleString()} (每人多 NT$ ${Math.round(Math.abs(diffGroupTwd) / m).toLocaleString()})`}
+                            </div>
+                        </div>
+
+                        <!-- 看板 4: 支付核銷進度 -->
+                        <div style="background:#fafaf9; border:1px solid #e7e5e4; border-radius:10px; padding:14px 16px;">
+                            <div style="font-size:0.78rem; font-weight:700; color:#44403c; text-transform:uppercase; display:flex; justify-content:space-between; align-items:center;">
+                                <span><i class="fa-solid fa-credit-card"></i> 已支付付款進度</span>
+                                <span style="font-weight:800; color:#15803d;">${paidPct}%</span>
+                            </div>
+                            <div style="background:#e7e5e4; border-radius:999px; height:8px; margin:10px 0 6px; overflow:hidden;">
+                                <div style="background:#16a34a; height:100%; width:${paidPct}%; transition:width 0.3s ease;"></div>
+                            </div>
+                            <div style="font-size:0.76rem; color:#78716c; display:flex; justify-content:space-between;">
+                                <span>已付: <strong>NT$ ${grandPaidGroupTwd.toLocaleString()}</strong></span>
+                                <span>未付: <strong>NT$ ${Math.max(0, grandActGroupTwd - grandPaidGroupTwd).toLocaleString()}</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 大交通與住宿兩大核心板塊 -->
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(360px, 1fr)); gap:14px; margin-bottom:20px;">
+                        <!-- 板塊 1: ✈️ 機票大交通核銷卡 -->
+                        <div style="background:#ffffff; border:1px solid #bae6fd; border-radius:10px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span style="font-size:1.15rem; color:#0284c7;"><i class="fa-solid fa-plane-departure"></i></span>
+                                    <div>
+                                        <strong style="color:#0f172a; font-size:0.96rem;">機票 / 大交通費用核銷</strong>
+                                        <div style="font-size:0.75rem; color:#64748b;">同行 ${m} 人 ‧ 往返航班</div>
+                                    </div>
+                                </div>
+                                <button class="n-btn" style="font-size:0.76rem; padding:3px 9px;" onclick="openEditFlightModal()" title="修改機票預估費用與實付金額">
+                                    <i class="fa-solid fa-pen"></i> 編輯機票與費用
+                                </button>
+                            </div>
+
+                            <div style="background:#f0f9ff; border-radius:8px; padding:10px 12px; margin-bottom:10px; font-size:0.82rem;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <span style="color:#0369a1;">預估費用：</span>
+                                    <strong>${flightStats.currType === 'TWD' ? `NT$ ${flightStats.groupTwd.toLocaleString()}` : `${curr.symbol} ${flightStats.groupLocal.toLocaleString()} (≈NT$${flightStats.groupTwd.toLocaleString()})`}</strong>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <span style="color:#0369a1;">實付金額：</span>
+                                    <strong style="color:${flightStats.hasActual ? '#15803d' : '#64748b'};">
+                                        ${flightStats.hasActual 
+                                            ? `${flightStats.currType === 'TWD' ? `NT$ ${flightStats.actualGroupTwd.toLocaleString()}` : `${curr.symbol} ${flightStats.actualGroupLocal.toLocaleString()} (≈NT$${flightStats.actualGroupTwd.toLocaleString()})`}` 
+                                            : '(尚未填寫實付，沿用預估)'}
+                                    </strong>
+                                </div>
+                                ${flightStats.hasActual ? `
+                                    <div style="display:flex; justify-content:space-between; border-top:1px dashed #bae6fd; padding-top:4px; font-size:0.78rem;">
+                                        <span>機票差額：</span>
+                                        <span style="font-weight:700; color:${(flightStats.groupTwd >= flightStats.actualGroupTwd) ? '#15803d' : '#b91c1c'};">
+                                            ${(flightStats.groupTwd >= flightStats.actualGroupTwd) 
+                                                ? `🎉 省 NT$ ${(flightStats.groupTwd - flightStats.actualGroupTwd).toLocaleString()}` 
+                                                : `⚠️ 超支 NT$ ${(flightStats.actualGroupTwd - flightStats.groupTwd).toLocaleString()}`}
+                                        </span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div style="font-size:0.76rem; color:#64748b;">
+                                每人平均機票實付約 <strong>NT$ ${(flightStats.hasActual ? flightStats.actualPersonTwd : flightStats.personTwd).toLocaleString()}</strong>
+                            </div>
+                        </div>
+
+                        <!-- 板塊 2: 🏨 飯店住宿房費核銷卡 -->
+                        <div style="background:#ffffff; border:1px solid #a7f3d0; border-radius:10px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span style="font-size:1.15rem; color:#059669;"><i class="fa-solid fa-hotel"></i></span>
+                                    <div>
+                                        <strong style="color:#0f172a; font-size:0.96rem;">飯店住宿房費核銷</strong>
+                                        <div style="font-size:0.75rem; color:#64748b;">共 ${hotelStats.count} 間住宿設定</div>
+                                    </div>
+                                </div>
+                                <button class="n-btn" style="font-size:0.76rem; padding:3px 9px;" onclick="openEditHotelModal(0)" title="修改飯店住宿房費與實付金額">
+                                    <i class="fa-solid fa-pen"></i> 編輯住宿房費
+                                </button>
+                            </div>
+
+                            <div style="background:#ecfdf5; border-radius:8px; padding:10px 12px; margin-bottom:10px; font-size:0.82rem;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <span style="color:#047857;">預估總房費：</span>
+                                    <strong>${curr.symbol} ${hotelStats.totalGroupLocal.toLocaleString()} (≈NT$${hotelStats.totalGroupTwd.toLocaleString()})</strong>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <span style="color:#047857;">實付房費：</span>
+                                    <strong style="color:${hotelStats.hasActual ? '#15803d' : '#64748b'};">
+                                        ${hotelStats.hasActual 
+                                            ? `${curr.symbol} ${hotelStats.totalActualGroupLocal.toLocaleString()} (≈NT$${hotelStats.totalActualGroupTwd.toLocaleString()})` 
+                                            : '(尚未填寫實付，沿用預估)'}
+                                    </strong>
+                                </div>
+                                ${hotelStats.hasActual ? `
+                                    <div style="display:flex; justify-content:space-between; border-top:1px dashed #a7f3d0; padding-top:4px; font-size:0.78rem;">
+                                        <span>房費差額：</span>
+                                        <span style="font-weight:700; color:${(hotelStats.totalGroupTwd >= hotelStats.totalActualGroupTwd) ? '#15803d' : '#b91c1c'};">
+                                            ${(hotelStats.totalGroupTwd >= hotelStats.totalActualGroupTwd) 
+                                                ? `🎉 省 NT$ ${(hotelStats.totalGroupTwd - hotelStats.totalActualGroupTwd).toLocaleString()}` 
+                                                : `⚠️ 超支 NT$ ${(hotelStats.totalActualGroupTwd - hotelStats.totalGroupTwd).toLocaleString()}`}
+                                        </span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div style="font-size:0.76rem; color:#64748b;">
+                                每人平均住宿實付約 <strong>NT$ ${(hotelStats.hasActual ? hotelStats.totalActualPersonTwd : hotelStats.totalPersonTwd).toLocaleString()}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 逐日行程活動實付記帳明細 -->
+                    <div style="margin-top:10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <h3 style="font-size:1.05rem; font-weight:800; color:#1e293b; margin:0;">
+                                📅 逐日行程項目實付記帳明細
+                            </h3>
+                            <span style="font-size:0.78rem; color:#64748b;">
+                                已核銷 <strong>${filledActualCount}</strong> / <strong>${totalEventsCount}</strong> 筆活動項目 ｜ 已付款 <strong>${paidEventsCount}</strong> 筆
+                            </span>
+                        </div>
+                        ${daysHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 快速更新活動實際費用
+        function updateEventActualCost(dayNum, eventIdx, val) {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
+            if (!day || !day.events || !day.events[eventIdx]) return;
+
+            const trimmed = String(val).trim();
+            if (trimmed === '') {
+                delete day.events[eventIdx].actualCost;
+            } else {
+                day.events[eventIdx].actualCost = parseFloat(trimmed) || 0;
+            }
+
+            saveState();
+            renderActualExpensesView();
+            renderTimelineView();
+            renderBudgetWidget();
+            showToast('success', `已更新「${day.events[eventIdx].title}」之實付金額！`);
+        }
+
+        // 快速切換活動付款狀態
+        function toggleEventPaid(dayNum, eventIdx, isPaid) {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
+            if (!day || !day.events || !day.events[eventIdx]) return;
+
+            day.events[eventIdx].isPaid = !!isPaid;
+            saveState();
+            renderActualExpensesView();
+            renderTimelineView();
+            showToast('info', `已更新「${day.events[eventIdx].title}」付款狀態為：${isPaid ? '已付款' : '待付款'}`);
+        }
+
+        // 將單筆活動預估金額帶入實付
+        function copyEventEstimatedToActual(dayNum, eventIdx) {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
+            if (!day || !day.events || !day.events[eventIdx]) return;
+
+            const ev = day.events[eventIdx];
+            ev.actualCost = Number(ev.cost || 0);
+            saveState();
+            renderActualExpensesView();
+            renderTimelineView();
+            showToast('success', `已將「${ev.title}」預估金額帶入實付！`);
+        }
+
+        // 一鍵將所有未填寫實付的活動項目帶入預估金額
+        function copyAllEventsEstimatedToActual() {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+
+            let updatedCount = 0;
+            (plan.days || []).forEach(d => {
+                (d.events || []).forEach(ev => {
+                    if (ev.actualCost === undefined || ev.actualCost === null) {
+                        ev.actualCost = Number(ev.cost || 0);
+                        updatedCount++;
+                    }
+                });
+            });
+
+            saveState();
+            renderActualExpensesView();
+            renderTimelineView();
+            showToast('success', `已將 ${updatedCount} 筆活動項目之預估金額一鍵帶入實付！`);
+        }
+
+        // 一鍵將所有活動標記為已付款
+        function markAllEventsPaid() {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+
+            let count = 0;
+            (plan.days || []).forEach(d => {
+                (d.events || []).forEach(ev => {
+                    ev.isPaid = true;
+                    count++;
+                });
+            });
+
+            saveState();
+            renderActualExpensesView();
+            renderTimelineView();
+            showToast('success', `已將全部 ${count} 筆活動項目標記為已付款！`);
+        }
+
+        // 複製實際費用對帳清單文字
+        function copyActualExpensesSummaryText() {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const curr = getPlanCurrency(plan);
+            const m = Math.max(1, parseInt(plan.memberCount || 1));
+            const flightStats = calcPlanFlightStats(plan);
+            const hotelStats = calcPlanHotelStats(plan);
+
+            let txt = `【${plan.title} 實際費用與行程核銷對帳表】\n`;
+            txt += `👥 同行成員：${m} 人 ｜ 幣別匯率：1 ${curr.code} ≈ ${curr.rate} TWD\n`;
+            txt += `✈️ 機票大交通：預估 NT$ ${flightStats.groupTwd.toLocaleString()} ｜ 實付 NT$ ${(flightStats.hasActual ? flightStats.actualGroupTwd : flightStats.groupTwd).toLocaleString()}\n`;
+            txt += `🏨 住宿飯店房費：預估 NT$ ${hotelStats.totalGroupTwd.toLocaleString()} ｜ 實付 NT$ ${(hotelStats.hasActual ? hotelStats.totalActualGroupTwd : hotelStats.totalGroupTwd).toLocaleString()}\n`;
+            txt += `\n───────── 每日行程實付明細 ─────────\n`;
+
+            (plan.days || []).forEach(d => {
+                txt += `\n[Day ${d.dayNum} ‧ ${d.title} (${d.date || ''})]\n`;
+                (d.events || []).forEach(ev => {
+                    const est = Number(ev.cost || 0);
+                    const act = (ev.actualCost !== undefined && ev.actualCost !== null) ? Number(ev.actualCost) : est;
+                    const paid = ev.isPaid ? '已付' : '未付';
+                    txt += `  • [${ev.time || '全天'}] ${ev.title}：實付 ${curr.symbol}${act} (預估 ${curr.symbol}${est}) [${paid}]\n`;
+                });
+            });
+
+            if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(txt).then(() => {
+                    showToast('success', '已複製實際費用對帳清單至剪貼簿！');
+                }).catch(() => {
+                    showToast('info', '請手動複製文字');
+                });
+            } else {
+                showToast('info', '請手動複製文字');
+            }
+        }
+
+
         // ==========================
         // SWITCH VIEWS
         // ==========================
         function switchView(viewName) {
             appState.activeView = viewName;
             document.querySelectorAll('.view-tab-btn').forEach((btn, idx) => {
-                const names = ['timeline', 'booking', 'spots', 'budget'];
+                const names = ['timeline', 'booking', 'spots', 'budget', 'actual-expenses'];
                 btn.classList.toggle('active', names[idx] === viewName);
             });
             document.querySelectorAll('.view-content-pane').forEach(pane => {
@@ -7665,6 +8709,8 @@ const firebaseConfig = {
                 renderBookingView();
             } else if (viewName === 'spots') {
                 renderSpotGuidesView();
+            } else if (viewName === 'actual-expenses') {
+                if (typeof renderActualExpensesView === 'function') renderActualExpensesView();
             }
         }
 
@@ -8864,10 +9910,16 @@ const firebaseConfig = {
             setVal('hStayLabel', ht.stayLabel);
             setVal('hCheckIn', ht.checkIn);
             setVal('hCheckOut', ht.checkOut);
+            setVal('hPriceType', ht.priceType || 'perNight');
+            setVal('hPrice', (ht.price !== undefined && ht.price !== null) ? ht.price : '');
+            setVal('hRooms', ht.rooms || 1);
+            setVal('hCostCurr', ht.costCurr || 'LOCAL');
+            setVal('hActualCost', (ht.actualCost !== undefined && ht.actualCost !== null) ? ht.actualCost : '');
             setVal('hAddr', ht.addr);
             setVal('hPhone', ht.phone);
             setVal('hNotes', ht.notes);
 
+            calcHotelModalCost();
             openModal('editHotelModal');
         }
 
@@ -8907,12 +9959,18 @@ const firebaseConfig = {
                 const checkInVal = document.getElementById('hCheckIn')?.value || '';
                 const checkOutVal = document.getElementById('hCheckOut')?.value || '';
 
+                const rawActVal = document.getElementById('hActualCost')?.value;
                 const hotelData = {
                     name: name,
                     city: city || (plan.title?.includes('北京') ? '北京' : '重慶'),
                     stayLabel: document.getElementById('hStayLabel')?.value.trim() || '',
                     checkIn: checkInVal,
                     checkOut: checkOutVal,
+                    priceType: document.getElementById('hPriceType')?.value || 'perNight',
+                    price: parseFloat(document.getElementById('hPrice')?.value) || 0,
+                    rooms: Math.max(1, parseInt(document.getElementById('hRooms')?.value) || 1),
+                    costCurr: document.getElementById('hCostCurr')?.value || 'LOCAL',
+                    actualCost: (rawActVal !== '' && rawActVal !== undefined) ? (parseFloat(rawActVal) || 0) : undefined,
                     addr: addr || '尚未填寫詳細地址',
                     phone: document.getElementById('hPhone')?.value.trim() || '',
                     notes: document.getElementById('hNotes')?.value.trim() || ''
@@ -8942,6 +10000,9 @@ const firebaseConfig = {
                 closeModal('editHotelModal');
                 renderSidebarHotel();
                 renderTripSummary();
+                renderBudgetWidget();
+                renderBudgetView();
+                if (typeof renderActualExpensesView === 'function') renderActualExpensesView();
                 showToast('success', editIdx >= 0 ? `已成功更新「${hotelData.name}」住宿資訊！` : `已成功新增「${hotelData.name}」住宿卡片！`);
             } catch (err) {
                 console.error('儲存住宿發生例外錯誤:', err);
@@ -9017,7 +10078,21 @@ const firebaseConfig = {
 
             document.getElementById('fCategoryTag').value = 'International';
             document.getElementById('fPnr').value = 'EJ3HIM / CX8888';
-            showToast('info', '已帶入重慶轉機示範資料！');
+
+            // 帶入示範費用
+            const outCostEl = document.getElementById('fOutCost');
+            if (outCostEl) outCostEl.value = '6250';
+            const inCostEl = document.getElementById('fInCost');
+            if (inCostEl) inCostEl.value = '6250';
+            const totCostEl = document.getElementById('fTotalCost');
+            if (totCostEl) totCostEl.value = '12500';
+            const modeEl = document.getElementById('fCostMode');
+            if (modeEl) modeEl.value = 'single';
+            const currEl = document.getElementById('fCostCurr');
+            if (currEl) currEl.value = 'TWD';
+            calcFlightModalCost();
+
+            showToast('info', '已帶入重慶轉機示範資料與機票預估費用！');
         }
 
         function fillDirectExampleBeijing() {
@@ -9055,7 +10130,21 @@ const firebaseConfig = {
 
             document.getElementById('fCategoryTag').value = 'International';
             document.getElementById('fPnr').value = 'CI-PEK2026';
-            showToast('info', '已帶入北京直飛示範資料！');
+
+            // 帶入示範費用
+            const outCostEl = document.getElementById('fOutCost');
+            if (outCostEl) outCostEl.value = '7500';
+            const inCostEl = document.getElementById('fInCost');
+            if (inCostEl) inCostEl.value = '7500';
+            const totCostEl = document.getElementById('fTotalCost');
+            if (totCostEl) totCostEl.value = '15000';
+            const modeEl = document.getElementById('fCostMode');
+            if (modeEl) modeEl.value = 'single';
+            const currEl = document.getElementById('fCostCurr');
+            if (currEl) currEl.value = 'TWD';
+            calcFlightModalCost();
+
+            showToast('info', '已帶入北京直飛示範資料與機票預估費用！');
         }
 
         // 打開交通航班編輯彈窗
@@ -9103,6 +10192,20 @@ const firebaseConfig = {
 
             document.getElementById('fCategoryTag').value = fl.categoryTag || 'International';
             document.getElementById('fPnr').value = fl.pnr || (l1.pnr || '');
+
+            // 填入交通/機票費用設定
+            const setCostVal = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = (val !== undefined && val !== null) ? val : '';
+            };
+            setCostVal('fOutCost', fl.outboundCost || '');
+            setCostVal('fInCost', fl.inboundCost || '');
+            setCostVal('fTotalCost', (fl.cost !== undefined && fl.cost !== null) ? fl.cost : '');
+            setCostVal('fCostMode', fl.costMode || 'single');
+            setCostVal('fCostCurr', fl.costCurr || 'LOCAL');
+            setCostVal('fActualCost', (fl.actualCost !== undefined && fl.actualCost !== null) ? fl.actualCost : '');
+            calcFlightModalCost();
+
             openModal('editFlightModal');
         }
 
@@ -9160,10 +10263,17 @@ const firebaseConfig = {
                 inLeg.arrLoc2 = document.getElementById('fInArrLoc2').value;
             }
 
+            const rawActCost = document.getElementById('fActualCost')?.value;
             plan.flights = {
                 pnr: pnrVal,
                 categoryTag: cat,
                 isTransfer: isTrans,
+                outboundCost: parseFloat(document.getElementById('fOutCost')?.value) || 0,
+                inboundCost: parseFloat(document.getElementById('fInCost')?.value) || 0,
+                cost: parseFloat(document.getElementById('fTotalCost')?.value) || 0,
+                costMode: document.getElementById('fCostMode')?.value || 'single',
+                costCurr: document.getElementById('fCostCurr')?.value || 'LOCAL',
+                actualCost: (rawActCost !== '' && rawActCost !== undefined) ? (parseFloat(rawActCost) || 0) : undefined,
                 legs: [outLeg, inLeg]
             };
 
@@ -9213,7 +10323,11 @@ const firebaseConfig = {
             saveState();
             closeModal('editFlightModal');
             renderSidebarFlights();
-            showToast('success', syncToSchedule ? '交通航班資訊已更新，並已同步更新每日行程活動！' : '交通航班資訊已更新！');
+            renderTripSummary();
+            renderBudgetWidget();
+            renderBudgetView();
+            if (typeof renderActualExpensesView === 'function') renderActualExpensesView();
+            showToast('success', syncToSchedule ? '交通航班資訊與費用已更新，並已同步更新每日行程活動！' : '交通航班資訊與費用已更新！');
         }
 
         // ==========================================
@@ -10382,6 +11496,10 @@ const firebaseConfig = {
             if (locInput) locInput.value = '';
             const costInput = document.getElementById('eventCostNum');
             if (costInput) costInput.value = '';
+            const actCostInput = document.getElementById('eventActualCostNum');
+            if (actCostInput) actCostInput.value = '';
+            const isPaidInput = document.getElementById('eventIsPaid');
+            if (isPaidInput) isPaidInput.checked = false;
             const notesInput = document.getElementById('eventNotesStr');
             if (notesInput) notesInput.value = '';
             const typeSelect = document.getElementById('eventTypeSelect');
@@ -10429,6 +11547,10 @@ const firebaseConfig = {
             if (locInput) locInput.value = ev.loc || '';
             const costInput = document.getElementById('eventCostNum');
             if (costInput) costInput.value = (ev.cost !== undefined && ev.cost !== null) ? ev.cost : '';
+            const actCostInput = document.getElementById('eventActualCostNum');
+            if (actCostInput) actCostInput.value = (ev.actualCost !== undefined && ev.actualCost !== null) ? ev.actualCost : '';
+            const isPaidInput = document.getElementById('eventIsPaid');
+            if (isPaidInput) isPaidInput.checked = !!ev.isPaid;
             const notesInput = document.getElementById('eventNotesStr');
             if (notesInput) notesInput.value = ev.notes || '';
             const typeSelect = document.getElementById('eventTypeSelect');
@@ -10512,6 +11634,8 @@ const firebaseConfig = {
                 }
 
                 const costNum = parseFloat(document.getElementById('eventCostNum')?.value) || 0;
+                const rawActVal = document.getElementById('eventActualCostNum')?.value;
+                const isPaidVal = document.getElementById('eventIsPaid')?.checked ?? false;
                 const locVal = document.getElementById('eventLocStr')?.value.trim() || '';
                 const notesVal = document.getElementById('eventNotesStr')?.value.trim() || '';
                 const typeVal = document.getElementById('eventTypeSelect')?.value || 'spot';
@@ -10536,6 +11660,12 @@ const firebaseConfig = {
                     cost: costNum,
                     notes: notesVal
                 };
+                if (rawActVal !== '' && rawActVal !== undefined) {
+                    eventObj.actualCost = parseFloat(rawActVal) || 0;
+                }
+                if (isPaidVal) {
+                    eventObj.isPaid = true;
+                }
                 if (flightLegIdx !== undefined) {
                     eventObj.flightLegIndex = flightLegIdx;
                 }
@@ -10615,6 +11745,7 @@ const firebaseConfig = {
                 renderBudgetWidget();
                 renderBudgetView();
                 if (typeof renderTripSummary === 'function') renderTripSummary();
+                if (typeof renderActualExpensesView === 'function') renderActualExpensesView();
                 const successMsg = editIdx >= 0 
                     ? (shiftedCount > 0 ? `已儲存「${titleVal}」，並已同步連動順延後續 ${shiftedCount} 個行程！` : `已儲存「${titleVal}」之變更 (已自動依時間排序)！`)
                     : `已新增「${titleVal}」至 Day ${targetDayNum} (已自動依時間排序)！`;
@@ -10656,6 +11787,8 @@ const firebaseConfig = {
                 renderTimelineView();
                 renderBudgetWidget();
                 renderBudgetView();
+                if (typeof renderTripSummary === 'function') renderTripSummary();
+                if (typeof renderActualExpensesView === 'function') renderActualExpensesView();
                 showToast('success', '已刪除項目');
             }
         }
