@@ -162,6 +162,26 @@
             color: white;
         }
 
+        .transport-btn {
+            font-size: 0.8rem;
+            padding: 5px 12px;
+            border-radius: 6px;
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            transition: all 0.2s ease;
+        }
+        .transport-btn:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+        .transport-btn.active {
+            background: #0284c7 !important;
+            color: #ffffff !important;
+            border-color: #0369a1 !important;
+            box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+        }
+
         .n-btn-accent {
             background: #ea580c;
             color: white;
@@ -3919,19 +3939,37 @@
         </div>
     </div>
 
-    <!-- 5. 編輯航班資訊 (交通：支援直飛與轉機航段) -->
+    <!-- 5. 編輯航班資訊 (交通：支援飛機/高鐵/巴士/遊輪，直飛/直達與中轉/換乘) -->
     <div class="modal-backdrop" id="editFlightModal" onclick="handleBackdropClick(event, 'editFlightModal')">
         <div class="modal-dialog" style="max-width: 760px;">
             <div class="modal-header">
-                <div class="modal-title"><i class="fa-solid fa-plane" style="color: #2383e2;"></i> 編輯航班交通資訊 (支援轉機設定)</div>
+                <div class="modal-title" id="flightModalHeaderTitle"><i class="fa-solid fa-plane" style="color: #2383e2;"></i> 編輯大交通資訊 (支援多種載具與轉機/換乘)</div>
                 <button type="button" class="modal-close-btn" onclick="closeModal('editFlightModal')"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form id="editFlightForm" onsubmit="handleSaveFlightSubmit(event); return false;" novalidate>
                 <div class="modal-body">
+                    <!-- 載具類型切換列 -->
+                    <div style="background: #f1f5f9; padding: 10px 14px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <label style="font-size: 0.86rem; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 6px; margin: 0;">
+                                <i class="fa-solid fa-route" style="color:#0284c7;"></i> 大交通搭乘方式 / 載具類型
+                            </label>
+                            <span style="font-size: 0.72rem; color: #64748b; font-weight: 600;">點擊切換，表單欄位即時自適應</span>
+                        </div>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="transportTypeButtonGroup">
+                            <button type="button" class="n-btn transport-btn active" id="btnTransportFlight" onclick="setTransportType('flight')" style="font-weight:700; background:#0284c7; color:#fff;">✈️ 飛機 / 航班</button>
+                            <button type="button" class="n-btn transport-btn" id="btnTransportTrain" onclick="setTransportType('train')">🚄 高鐵 / 火車</button>
+                            <button type="button" class="n-btn transport-btn" id="btnTransportBus" onclick="setTransportType('bus')">🚌 長途巴士 / 客運</button>
+                            <button type="button" class="n-btn transport-btn" id="btnTransportCruise" onclick="setTransportType('cruise')">🚢 遊輪 / 輪渡</button>
+                            <button type="button" class="n-btn transport-btn" id="btnTransportCar" onclick="setTransportType('car')">🚗 專車 / 包車接送</button>
+                        </div>
+                        <input type="hidden" id="fTransportType" value="flight">
+                    </div>
+
                     <div style="display: flex; justify-content: space-between; align-items: center; background: #fafaf9; padding: 10px 14px; border-radius: 6px; border: 1px solid var(--notion-border); margin-bottom: 14px;">
                         <label style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; font-weight: 700; color: #ea580c; cursor: pointer;">
                             <input type="checkbox" id="fIsTransferCheckbox" onchange="toggleFlightTransferFields()">
-                            <span>🔄 本次航班包含「轉機 / 接駁」航段 (開啟第 2 段與轉機停留欄位)</span>
+                            <span id="fIsTransferCheckboxSpan">🔄 本次大交通包含「轉機 / 中轉換乘」航段 (開啟第 2 段與中轉停留欄位)</span>
                         </label>
                         <div style="display: flex; gap: 6px;">
                             <button type="button" class="n-btn" style="font-size: 0.74rem; padding: 2px 7px;" onclick="fillTransferExampleChongqing()">重慶轉機範例</button>
@@ -3942,16 +3980,16 @@
                     <!-- 去程航段 -->
                     <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 14px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <h4 style="font-size: 0.94rem; font-weight: 800; color: #0284c7;">🛫 去程航段 (第 1 段或起飛航段)</h4>
+                            <h4 style="font-size: 0.94rem; font-weight: 800; color: #0284c7;" id="labelOutSectionTitle">🛫 去程航段 (第 1 段或起發航段)</h4>
                             <span class="prop-pill pill-blue">去程</span>
                         </div>
                         <div class="form-row-4">
                             <div class="form-group">
-                                <label class="form-label">航空公司</label>
+                                <label class="form-label" id="labelOutAirline">航空公司</label>
                                 <input type="text" id="fOutAirline" class="form-input" placeholder="國泰航空 / 中華航空">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">班機代號</label>
+                                <label class="form-label" id="labelOutNo">班機代號</label>
                                 <input type="text" id="fOutNo" class="form-input" placeholder="CX 407">
                             </div>
                             <div class="form-group">
@@ -3965,7 +4003,7 @@
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label">起飛機場 / 航廈</label>
+                                <label class="form-label" id="labelOutDepLoc">起飛機場 / 航廈</label>
                                 <input type="text" id="fOutDepLoc" class="form-input" placeholder="台北桃園 (TPE) T1">
                             </div>
                             <div class="form-group">
@@ -3977,13 +4015,13 @@
                         <!-- 去程轉機區塊 -->
                         <div id="transferOutboundFields" style="display: none; background: #fff7ed; padding: 12px; border-radius: 6px; border: 1px dashed #fed7aa; margin-top: 10px;">
                             <div class="form-group">
-                                <label class="form-label" style="color: #ea580c;">🔄 去程轉機地點與停留時間說明</label>
+                                <label class="form-label" id="labelOutTransferInfo" style="color: #ea580c;">🔄 去程轉機地點與停留時間說明</label>
                                 <input type="text" id="fTransferInfoOut" class="form-input" placeholder="香港國際機場 (HKG) 轉機停留 3 小時 35 分鐘">
                             </div>
-                            <h5 style="font-size: 0.85rem; font-weight: 800; color: #ea580c; margin-bottom: 6px;">去程第 2 段航班資訊</h5>
+                            <h5 style="font-size: 0.85rem; font-weight: 800; color: #ea580c; margin-bottom: 6px;" id="labelOutNo2Title">去程第 2 段交通資訊</h5>
                             <div class="form-row-3">
                                 <div class="form-group">
-                                    <label class="form-label">第 2 段班機代號</label>
+                                    <label class="form-label" id="labelOutNo2">第 2 段班機代號</label>
                                     <input type="text" id="fOutNo2" class="form-input" placeholder="CX 928">
                                 </div>
                                 <div class="form-group">
@@ -3996,7 +4034,7 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">最終目的地機場 / 航廈</label>
+                                <label class="form-label" id="labelOutArrLoc2">最終目的地機場 / 航廈</label>
                                 <input type="text" id="fOutArrLoc2" class="form-input" placeholder="重慶江北 (CKG) T3">
                             </div>
                         </div>
@@ -4010,16 +4048,16 @@
                     <!-- 回程航段 -->
                     <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 14px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <h4 style="font-size: 0.94rem; font-weight: 800; color: #ea580c;">🛬 回程航段 (第 1 段或返航航段)</h4>
+                            <h4 style="font-size: 0.94rem; font-weight: 800; color: #ea580c;" id="labelInSectionTitle">🛬 回程航段 (第 1 段或返航航段)</h4>
                             <span class="prop-pill pill-orange">回程</span>
                         </div>
                         <div class="form-row-4">
                             <div class="form-group">
-                                <label class="form-label">航空公司</label>
+                                <label class="form-label" id="labelInAirline">航空公司</label>
                                 <input type="text" id="fInAirline" class="form-input" placeholder="國泰航空 / 中華航空">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">班機代號</label>
+                                <label class="form-label" id="labelInNo">班機代號</label>
                                 <input type="text" id="fInNo" class="form-input" placeholder="CX 945">
                             </div>
                             <div class="form-group">
@@ -4033,7 +4071,7 @@
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label">回程起飛機場 / 航廈</label>
+                                <label class="form-label" id="labelInDepLoc">回程起飛機場 / 航廈</label>
                                 <input type="text" id="fInDepLoc" class="form-input" placeholder="重慶江北 (CKG) T3">
                             </div>
                             <div class="form-group">
@@ -4045,13 +4083,13 @@
                         <!-- 回程轉機區塊 -->
                         <div id="transferInboundFields" style="display: none; background: #fff7ed; padding: 12px; border-radius: 6px; border: 1px dashed #fed7aa; margin-top: 10px;">
                             <div class="form-group">
-                                <label class="form-label" style="color: #ea580c;">🔄 回程轉機地點與停留時間說明</label>
+                                <label class="form-label" id="labelInTransferInfo" style="color: #ea580c;">🔄 回程轉機地點與停留時間說明</label>
                                 <input type="text" id="fTransferInfoIn" class="form-input" placeholder="香港國際機場 (HKG) 轉機停留 4 小時 50 分鐘">
                             </div>
-                            <h5 style="font-size: 0.85rem; font-weight: 800; color: #ea580c; margin-bottom: 6px;">回程第 2 段航班資訊 (返抵國門)</h5>
+                            <h5 style="font-size: 0.85rem; font-weight: 800; color: #ea580c; margin-bottom: 6px;" id="labelInNo2Title">回程第 2 段交通資訊 (返抵國門)</h5>
                             <div class="form-row-3">
                                 <div class="form-group">
-                                    <label class="form-label">第 2 段班機代號</label>
+                                    <label class="form-label" id="labelInNo2">第 2 段班機代號</label>
                                     <input type="text" id="fInNo2" class="form-input" placeholder="CX 464">
                                 </div>
                                 <div class="form-group">
@@ -4064,7 +4102,7 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">最終返抵機場 / 航廈</label>
+                                <label class="form-label" id="labelInArrLoc2">最終返抵機場 / 航廈</label>
                                 <input type="text" id="fInArrLoc2" class="form-input" placeholder="台北桃園 (TPE) T1">
                             </div>
                         </div>
@@ -4088,28 +4126,50 @@
 
                     <!-- 💰 機票 / 大交通費用計算設定區塊 -->
                     <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 14px; margin-top: 10px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                             <h4 style="font-size: 0.92rem; font-weight: 800; color: #166534; margin: 0; display: flex; align-items: center; gap: 6px;">
-                                <i class="fa-solid fa-coins" style="color: #15803d;"></i> 機票 / 大交通費用計算
+                                <i class="fa-solid fa-coins" style="color: #15803d;"></i> <span id="labelCostSectionTitle">大交通費用計算</span>
                             </h4>
                             <span style="font-size: 0.72rem; color: #15803d; background: #dcfce7; padding: 2px 8px; border-radius: 12px; font-weight: 700;">
                                 自動連動旅行總預算與記帳
                             </span>
                         </div>
-                        <div class="form-row-3" style="margin-bottom: 8px;">
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label class="form-label">去程機票費用</label>
-                                <input type="number" id="fOutCost" class="form-input" min="0" step="any" placeholder="例如：1250" oninput="calcFlightModalCost()">
+
+                        <!-- 票價計算模式切換 (來回合併票價 vs 去回分開計價) -->
+                        <div style="background: #ffffff; border: 1px solid #86efac; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px;">
+                            <div style="font-size: 0.78rem; font-weight: 700; color: #166534; margin-bottom: 6px;">
+                                <i class="fa-solid fa-tags" style="color:#15803d;"></i> 選擇計價模式：
                             </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label class="form-label">回程機票費用</label>
-                                <input type="number" id="fInCost" class="form-input" min="0" step="any" placeholder="例如：1250" oninput="calcFlightModalCost()">
-                            </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label class="form-label">往返總機票費用</label>
-                                <input type="number" id="fTotalCost" class="form-input" min="0" step="any" placeholder="例如：2500" oninput="calcFlightModalCost(true)">
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <label style="display: flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; color: #15803d; cursor: pointer; background: #f0fdf4; padding: 4px 10px; border-radius: 4px; border: 1px solid #86efac;">
+                                    <input type="radio" name="fPricingType" id="fPricingRoundtrip" value="roundtrip" onchange="toggleFlightPricingMode()" checked>
+                                    <span>🎫 來回合併票價 (總金額維持一筆統計與記帳)</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 700; color: #1e293b; cursor: pointer; background: #f8fafc; padding: 4px 10px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                                    <input type="radio" name="fPricingType" id="fPricingSeparate" value="separate" onchange="toggleFlightPricingMode()">
+                                    <span>↔️ 去程 / 回程 分開計價 (兩筆各別填寫)</span>
+                                </label>
                             </div>
                         </div>
+
+                        <!-- 去回分開計價時顯示的欄位 -->
+                        <div id="pricingSeparateFields" style="display: none; margin-bottom: 8px;" class="form-row">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="color: #0369a1; font-weight: 700;">🛫 去程票價 / 交通費用</label>
+                                <input type="number" id="fOutCost" class="form-input" min="0" step="any" placeholder="例如：6250" oninput="calcFlightModalCost()">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="color: #ea580c; font-weight: 700;">🛬 回程票價 / 交通費用</label>
+                                <input type="number" id="fInCost" class="form-input" min="0" step="any" placeholder="例如：6250" oninput="calcFlightModalCost()">
+                            </div>
+                        </div>
+
+                        <!-- 往返總票價 -->
+                        <div class="form-group" style="margin-bottom: 8px;">
+                            <label class="form-label" id="fTotalCostLabel" style="font-weight: 800; color: #15803d;">🎫 來回總票價 (往返總額一筆)</label>
+                            <input type="number" id="fTotalCost" class="form-input" min="0" step="any" placeholder="例如：12500" oninput="calcFlightModalCost(true)">
+                        </div>
+
                         <div class="form-row" style="margin-bottom: 6px;">
                             <div class="form-group" style="margin-bottom:0;">
                                 <label class="form-label">計費模式</label>
@@ -4138,14 +4198,16 @@
                 <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                     <label style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#0369a1; cursor:pointer; user-select:none; font-weight:600;">
                         <input type="checkbox" id="fSyncToScheduleCheckbox" checked>
-                        <i class="fa-solid fa-rotate"></i> 同步更新每日行程中關聯之航班時間與資訊
+                        <i class="fa-solid fa-rotate"></i> 同步更新每日行程中關聯之交通時間與資訊
                     </label>
                     <div style="display:flex; gap:8px;">
                         <button type="button" class="n-btn" onclick="closeModal('editFlightModal')">取消</button>
-                        <button type="button" class="n-btn n-btn-primary" onclick="handleSaveFlightSubmit(event)"><i class="fa-solid fa-check"></i> 儲存航班交通設定</button>
+                        <button type="button" class="n-btn n-btn-primary" onclick="handleSaveFlightSubmit(event)"><i class="fa-solid fa-check"></i> 儲存交通設定</button>
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
         </div>
     </div>
 
@@ -5643,22 +5705,40 @@ const firebaseConfig = {
             const curr = getPlanCurrency(plan);
             const m = Math.max(1, parseInt(plan?.memberCount || 1));
             const fl = plan?.flights || {};
+            const transportType = fl.transportType || 'flight';
+            const pricingType = fl.pricingType || (fl.cost > 0 && !fl.outboundCost && !fl.inboundCost ? 'roundtrip' : (fl.outboundCost || fl.inboundCost ? 'separate' : 'roundtrip'));
             const cost = Number(fl.cost || 0);
             const outCost = Number(fl.outboundCost || 0);
             const inCost = Number(fl.inboundCost || 0);
-            const effectiveCost = cost > 0 ? cost : (outCost + inCost);
+            
+            // 在 roundtrip 模式下以 cost 為準（維持一筆）；separate 模式下以 outCost + inCost 為準
+            let effectiveCost = 0;
+            if (pricingType === 'separate') {
+                effectiveCost = (outCost + inCost > 0) ? (outCost + inCost) : cost;
+            } else {
+                effectiveCost = cost > 0 ? cost : (outCost + inCost);
+            }
+
             const mode = fl.costMode || 'single';
             const currType = fl.costCurr || 'LOCAL';
             const b = calcCostItemBreakdown(effectiveCost, currType, mode, m, curr, curr.rate);
+            
+            // 計算去程與回程分開時之細部拆解 (用於 separate 模式展示)
+            const bOut = calcCostItemBreakdown(outCost, currType, mode, m, curr, curr.rate);
+            const bIn = calcCostItemBreakdown(inCost, currType, mode, m, curr, curr.rate);
             
             const actualVal = (fl.actualCost !== undefined && fl.actualCost !== null) ? Number(fl.actualCost) : 0;
             const bActual = calcCostItemBreakdown(actualVal, currType, mode, m, curr, curr.rate);
 
             return {
                 isSet: (effectiveCost > 0 || actualVal > 0),
+                transportType,
+                pricingType,
                 cost: effectiveCost,
                 outCost,
                 inCost,
+                outBreakdown: bOut,
+                inBreakdown: bIn,
                 mode,
                 currType,
                 personLocal: b.personLocal,
@@ -5751,6 +5831,10 @@ const firebaseConfig = {
             const curr = getPlanCurrency(plan);
             const m = Math.max(1, parseInt(plan.memberCount || 1));
 
+            const isRoundtrip = document.getElementById('fPricingRoundtrip')?.checked ?? true;
+            const transportType = document.getElementById('fTransportType')?.value || 'flight';
+            const cfg = (typeof TRANSPORT_CONFIG !== 'undefined' && TRANSPORT_CONFIG[transportType]) ? TRANSPORT_CONFIG[transportType] : { name: '大交通', icon: 'fa-plane' };
+
             const outEl = document.getElementById('fOutCost');
             const inEl = document.getElementById('fInCost');
             const totEl = document.getElementById('fTotalCost');
@@ -5764,9 +5848,15 @@ const firebaseConfig = {
             let inVal = parseFloat(inEl?.value) || 0;
             let totVal = parseFloat(totEl?.value) || 0;
 
-            if (!isTotalInput && (outEl?.value || inEl?.value)) {
+            if (!isRoundtrip) {
+                // 分開計價模式：總金額由去程與回程自動加總
                 totVal = outVal + inVal;
                 if (totEl) totEl.value = totVal > 0 ? totVal : '';
+            } else {
+                // 來回合併計價模式：維持以總金額為主 (若直接在總票價輸入)
+                if (isTotalInput) {
+                    totVal = parseFloat(totEl?.value) || 0;
+                }
             }
 
             const mode = modeEl?.value || 'single';
@@ -5777,13 +5867,20 @@ const firebaseConfig = {
             const bAct = calcCostItemBreakdown(actVal, currType, mode, m, curr, curr.rate);
 
             if (totVal === 0 && actVal === 0) {
-                hintEl.innerHTML = `<span style="color:#64748b;">尚未填寫機票交通費用，可選填每人或全團金額。</span>`;
+                hintEl.innerHTML = `<span style="color:#64748b;">尚未填寫${cfg.name}費用，可選填每人或全團金額。</span>`;
                 return;
             }
 
+            let pricingModeBadge = isRoundtrip
+                ? `<span style="background:#dcfce7; color:#15803d; padding:2px 6px; border-radius:4px; font-weight:700;">🎫 來回合併計價 (維持1筆總計)</span>`
+                : `<span style="background:#e0f2fe; color:#0369a1; padding:2px 6px; border-radius:4px; font-weight:700;">↔️ 去回分開計價 (去程 ${curr.symbol} ${outVal.toLocaleString()} + 回程 ${curr.symbol} ${inVal.toLocaleString()})</span>`;
+
             let html = `
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
-                    <span><strong>預估機票開銷：</strong>每人 <strong>${curr.symbol} ${b.personLocal.toLocaleString()}</strong> (≈ NT$ ${b.personTwd.toLocaleString()})</span>
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px; margin-bottom:4px;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        ${pricingModeBadge}
+                        <span><strong>預估${cfg.name}開銷：</strong>每人 <strong>${curr.symbol} ${b.personLocal.toLocaleString()}</strong> (≈ NT$ ${b.personTwd.toLocaleString()})</span>
+                    </div>
                     <span style="font-weight:700; color:#15803d;">全團 (${m}人) 總計：${curr.symbol} ${b.groupLocal.toLocaleString()} (≈ NT$ ${b.groupTwd.toLocaleString()})</span>
                 </div>
             `;
@@ -6141,11 +6238,13 @@ const firebaseConfig = {
 
             const fl = plan.flights || {};
             const legs = fl.legs || [];
+            const transportType = fl.transportType || 'flight';
+            const cfg = (typeof TRANSPORT_CONFIG !== 'undefined' && TRANSPORT_CONFIG[transportType]) ? TRANSPORT_CONFIG[transportType] : { name: '大交通', icon: 'fa-plane' };
 
             if (legs.length === 0) {
                 container.innerHTML = `
                     <div style="font-size: 0.8rem; color: var(--notion-text-muted); text-align: center; padding: 12px; cursor: pointer; border: 1px dashed var(--notion-border); border-radius: 6px;" onclick="openEditFlightModal()">
-                        <i class="fa-solid fa-plane"></i> 尚無交通卡片，點擊新增
+                        <i class="fa-solid ${cfg.icon}"></i> 尚無${cfg.name}卡片，點擊新增
                     </div>
                 `;
                 return;
@@ -6154,93 +6253,94 @@ const firebaseConfig = {
             const cardsHtml = legs.map((leg, idx) => {
                 const isTrans = leg.isTransfer || !!leg.transferInfo || (leg.flightNo2 && leg.flightNo2.trim().length > 0);
                 const isOutbound = idx === 0 || leg.type === 'outbound';
-                const pillLabel = isOutbound ? (isTrans ? '🛫 去程 ‧ 轉機' : '🛫 去程 ‧ 直飛') : (isTrans ? '🛬 回程 ‧ 轉機' : '🛬 回程 ‧ 直飛');
+                const pillLabel = isOutbound ? (isTrans ? '🛫 去程 ‧ 轉乘' : '🛫 去程 ‧ 直達') : (isTrans ? '🛬 回程 ‧ 轉乘' : '🛬 回程 ‧ 直達');
                 const pillClass = isOutbound ? 'pill-blue' : 'pill-orange';
                 const pnrCode = leg.pnr || fl.pnr || '';
+                const legIcon = cfg.icon || 'fa-plane';
 
                 if (isTrans) {
-                    // 轉機卡片模板
+                    // 轉乘卡片模板
                     return `
-                        <div class="flight-side-card" onclick="openEditFlightModal()" title="點擊編輯此航班交通資訊 (支援轉機)">
+                        <div class="flight-side-card" onclick="openEditFlightModal()" title="點擊編輯此交通資訊 (支援中轉)">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                                 <div style="display: flex; align-items: center; gap: 6px;">
                                     <span class="prop-pill ${pillClass}" style="font-size: 0.72rem; padding: 1px 7px;">${pillLabel}</span>
-                                    <button type="button" class="n-btn" style="background:#fff; border-color:${isOutbound ? '#7dd3fc' : '#fed7aa'}; color:${isOutbound ? '#0369a1' : '#c2410c'}; font-size:0.68rem; padding:1px 6px; font-weight:700; border-radius:4px;" onclick="event.stopPropagation(); syncFlightLegToDaySchedule(${idx})" title="點擊將此航班時間 (${leg.depTime} ➔ ${leg.arrTime2 || leg.arrTime}) 同步連動至 Day ${isOutbound ? 1 : '回程'} 行程活動">
+                                    <button type="button" class="n-btn" style="background:#fff; border-color:${isOutbound ? '#7dd3fc' : '#fed7aa'}; color:${isOutbound ? '#0369a1' : '#c2410c'}; font-size:0.68rem; padding:1px 6px; font-weight:700; border-radius:4px;" onclick="event.stopPropagation(); syncFlightLegToDaySchedule(${idx})" title="點擊將此班次時間 (${leg.depTime} ➔ ${leg.arrTime2 || leg.arrTime}) 同步連動至 Day ${isOutbound ? 1 : '回程'} 行程活動">
                                         <i class="fa-solid fa-calendar-check"></i> 同步至行程
                                     </button>
                                 </div>
                                 <span class="flight-card-edit-badge"><i class="fa-solid fa-pen-to-square"></i> 編輯</span>
                             </div>
                             <div class="flight-airline-title">
-                                <i class="fa-solid fa-plane"></i> ${leg.airline || '國泰航空'}
-                                ${pnrCode ? `<span style="font-size: 0.73rem; font-weight: 700; color: #b45309; margin-left: auto; background: #fef3c7; padding: 1px 6px; border-radius: 4px;">PNR: ${pnrCode}</span>` : ''}
+                                <i class="fa-solid ${legIcon}"></i> ${leg.airline || cfg.name}
+                                ${pnrCode ? `<span style="font-size: 0.73rem; font-weight: 700; color: #b45309; margin-left: auto; background: #fef3c7; padding: 1px 6px; border-radius: 4px;">代號: ${pnrCode}</span>` : ''}
                             </div>
 
                             <!-- 第 1 段 -->
                             <div style="background: #ffffff; border: 1px solid #fed7aa; border-radius: 6px; padding: 6px 8px; margin-top: 4px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <strong style="color: #0369a1; font-size: 0.85rem;"><i class="fa-solid fa-plane-departure" style="font-size:0.75rem;"></i> 第 1 段：${leg.flightNo || 'CX 407'}</strong>
-                                    <span style="font-size: 0.76rem; color: #64748b; font-weight: 600;">${leg.depTime || '08:00'} ➔ ${leg.arrTime || '10:00'}</span>
+                                    <strong style="color: #0369a1; font-size: 0.85rem;"><i class="fa-solid ${legIcon}" style="font-size:0.75rem;"></i> 第 1 段：${leg.flightNo || '班次 1'}</strong>
+                                    <span style="font-size: 0.76rem; color: #64748b; font-weight: 600;">${leg.depTime || '--:--'} ➔ ${leg.arrTime || '--:--'}</span>
                                 </div>
                                 <div style="font-size: 0.8rem; color: #334155; margin-top: 2px;">
-                                    ${leg.depLoc || '台北桃園 (TPE)'} ➔ ${leg.arrLoc || '香港 (HKG)'}
+                                    ${leg.depLoc || '出發地'} ➔ ${leg.arrLoc || '轉乘地'}
                                 </div>
                             </div>
 
-                            <!-- 轉機停留說明膠囊 -->
+                            <!-- 轉機/換乘停留說明膠囊 -->
                             <div class="flight-transfer-box">
                                 <i class="fa-solid fa-rotate"></i>
-                                <span>${leg.transferInfo || '香港國際機場 (HKG) 轉機停留'}</span>
+                                <span>${leg.transferInfo || '中轉換乘停留'}</span>
                             </div>
 
                             <!-- 第 2 段 -->
                             <div style="background: #ffffff; border: 1px solid #fed7aa; border-radius: 6px; padding: 6px 8px; margin-bottom: 4px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <strong style="color: #ea580c; font-size: 0.85rem;"><i class="fa-solid fa-plane-arrival" style="font-size:0.75rem;"></i> 第 2 段：${leg.flightNo2 || 'CX 928'}</strong>
-                                    <span style="font-size: 0.76rem; color: #64748b; font-weight: 600;">${leg.depTime2 || '13:35'} ➔ ${leg.arrTime2 || '16:10'}</span>
+                                    <strong style="color: #ea580c; font-size: 0.85rem;"><i class="fa-solid ${legIcon}" style="font-size:0.75rem;"></i> 第 2 段：${leg.flightNo2 || '班次 2'}</strong>
+                                    <span style="font-size: 0.76rem; color: #64748b; font-weight: 600;">${leg.depTime2 || '--:--'} ➔ ${leg.arrTime2 || '--:--'}</span>
                                 </div>
                                 <div style="font-size: 0.8rem; color: #334155; margin-top: 2px;">
-                                    ${leg.arrLoc || '香港 (HKG)'} ➔ ${leg.arrLoc2 || '重慶江北 (CKG)'}
+                                    ${leg.arrLoc || '轉乘地'} ➔ ${leg.arrLoc2 || '目的地'}
                                 </div>
                             </div>
 
                             <!-- 總時長標籤與航線標記 -->
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 4px; border-top: 1px dashed rgba(223, 171, 1, 0.3); font-size: 0.75rem; color: var(--notion-text-sub);">
-                                <span><i class="fa-regular fa-clock"></i> 總時長：${leg.duration || '經香港轉機'}</span>
-                                <span class="flight-intl-pill" style="margin: 0;">${leg.categoryTag || 'International'}</span>
+                                <span><i class="fa-regular fa-clock"></i> 總時長：${leg.duration || '經轉乘'}</span>
+                                <span class="flight-intl-pill" style="margin: 0;">${leg.categoryTag || cfg.name}</span>
                             </div>
                         </div>
                     `;
                 } else {
-                    // 直飛卡片模板
+                    // 直達卡片模板
                     return `
-                        <div class="flight-side-card" onclick="openEditFlightModal()" title="點擊編輯此航班交通資訊">
+                        <div class="flight-side-card" onclick="openEditFlightModal()" title="點擊編輯此交通資訊">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                                 <div style="display: flex; align-items: center; gap: 6px;">
                                     <span class="prop-pill ${pillClass}" style="font-size: 0.72rem; padding: 1px 7px;">${pillLabel}</span>
-                                    <button type="button" class="n-btn" style="background:#fff; border-color:${isOutbound ? '#7dd3fc' : '#fed7aa'}; color:${isOutbound ? '#0369a1' : '#c2410c'}; font-size:0.68rem; padding:1px 6px; font-weight:700; border-radius:4px;" onclick="event.stopPropagation(); syncFlightLegToDaySchedule(${idx})" title="點擊將此航班時間 (${leg.depTime} ➔ ${leg.arrTime}) 同步連動至 Day ${isOutbound ? 1 : '回程'} 行程活動">
+                                    <button type="button" class="n-btn" style="background:#fff; border-color:${isOutbound ? '#7dd3fc' : '#fed7aa'}; color:${isOutbound ? '#0369a1' : '#c2410c'}; font-size:0.68rem; padding:1px 6px; font-weight:700; border-radius:4px;" onclick="event.stopPropagation(); syncFlightLegToDaySchedule(${idx})" title="點擊將此班次時間 (${leg.depTime} ➔ ${leg.arrTime}) 同步連動至 Day ${isOutbound ? 1 : '回程'} 行程活動">
                                         <i class="fa-solid fa-calendar-check"></i> 同步至行程
                                     </button>
                                 </div>
                                 <span class="flight-card-edit-badge"><i class="fa-solid fa-pen-to-square"></i> 編輯</span>
                             </div>
                             <div class="flight-airline-title">
-                                <i class="fa-solid fa-plane"></i> ${leg.airline || '中華航空'}
-                                ${pnrCode ? `<span style="font-size: 0.73rem; font-weight: 700; color: #b45309; margin-left: auto; background: #fef3c7; padding: 1px 6px; border-radius: 4px;">PNR: ${pnrCode}</span>` : ''}
+                                <i class="fa-solid ${legIcon}"></i> ${leg.airline || cfg.name}
+                                ${pnrCode ? `<span style="font-size: 0.73rem; font-weight: 700; color: #b45309; margin-left: auto; background: #fef3c7; padding: 1px 6px; border-radius: 4px;">代號: ${pnrCode}</span>` : ''}
                             </div>
-                            <div class="flight-code-line">${leg.flightNo || 'CI 0517'}</div>
+                            <div class="flight-code-line">${leg.flightNo || '班次直達'}</div>
                             <div class="flight-route-info">
                                 <div style="display: flex; justify-content: space-between;">
-                                    <span>${leg.depLoc || '台北桃園 (TPE)'}</span>
+                                    <span>${leg.depLoc || '出發地'}</span>
                                     ${leg.depTime ? `<span style="font-weight: 600; color: #64748b;">${leg.depTime}</span>` : ''}
                                 </div>
-                                <div class="flight-duration-tag"><i class="fa-regular fa-clock"></i> ${leg.duration || '3 hrs 25 mins'}</div>
+                                <div class="flight-duration-tag"><i class="fa-regular fa-clock"></i> ${leg.duration || '直達'}</div>
                                 <div style="display: flex; justify-content: space-between;">
-                                    <span>${leg.arrLoc || '北京首都 (PEK)'}</span>
+                                    <span>${leg.arrLoc || '目的地'}</span>
                                     ${leg.arrTime ? `<span style="font-weight: 600; color: #64748b;">${leg.arrTime}</span>` : ''}
                                 </div>
                             </div>
-                            <div class="flight-intl-pill" style="margin-top: 4px; margin-bottom: 0;">${leg.categoryTag || 'International'}</div>
+                            <div class="flight-intl-pill" style="margin-top: 4px; margin-bottom: 0;">${leg.categoryTag || cfg.name}</div>
                         </div>
                     `;
                 }
@@ -6250,15 +6350,23 @@ const firebaseConfig = {
             let costSummaryHtml = '';
             if (fStats.isSet) {
                 const currInfo = getPlanCurrency(plan);
+                const isRoundtrip = fStats.pricingType === 'roundtrip';
+                let pricingNote = isRoundtrip
+                    ? `<span>🎫 來回合併票價 (維持1筆統計)</span>`
+                    : `<span>↔️ 去回分開：去 ${currInfo.symbol}${fStats.outCost.toLocaleString()} + 回 ${currInfo.symbol}${fStats.inCost.toLocaleString()}</span>`;
+
                 costSummaryHtml = `
-                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 7px 10px; margin-top: 6px; font-size: 0.75rem; color: #166534; cursor:pointer;" onclick="openEditFlightModal()" title="點擊修改機票與交通費用">
+                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 7px 10px; margin-top: 6px; font-size: 0.75rem; color: #166534; cursor:pointer;" onclick="openEditFlightModal()" title="點擊修改大交通與費用">
                         <div style="display:flex; justify-content:space-between; align-items:center; font-weight:700;">
-                            <span><i class="fa-solid fa-coins" style="color:#15803d;"></i> 機票大交通費用</span>
+                            <span><i class="fa-solid fa-coins" style="color:#15803d;"></i> ${cfg.name}費用</span>
                             <span style="color:#15803d; font-size:0.8rem;">全團 ${currInfo.symbol} ${fStats.groupLocal.toLocaleString()}</span>
                         </div>
                         <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.71rem; color:#166534; margin-top:2px;">
                             <span>每人平均 (${fStats.mode === 'single' ? '單人計費' : '均攤'})：<strong>${currInfo.symbol} ${fStats.personLocal.toLocaleString()}</strong></span>
                             <span style="color:#0284c7; font-weight:600;">≈ NT$ ${fStats.personTwd.toLocaleString()}</span>
+                        </div>
+                        <div style="font-size:0.7rem; color:#15803d; margin-top:2px;">
+                            ${pricingNote}
                         </div>
                         ${fStats.hasActual ? `
                         <div style="margin-top:3px; padding-top:3px; border-top:1px dashed #86efac; font-size:0.7rem; color:#0f766e; display:flex; justify-content:space-between;">
@@ -8595,18 +8703,18 @@ const firebaseConfig = {
 
                     <!-- 大交通與住宿兩大核心板塊 -->
                     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(360px, 1fr)); gap:14px; margin-bottom:20px;">
-                        <!-- 板塊 1: ✈️ 機票大交通核銷卡 -->
+                        <!-- 板塊 1: ✈️ 大交通費用核銷卡 -->
                         <div style="background:#ffffff; border:1px solid #bae6fd; border-radius:10px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                                 <div style="display:flex; align-items:center; gap:8px;">
-                                    <span style="font-size:1.15rem; color:#0284c7;"><i class="fa-solid fa-plane-departure"></i></span>
+                                    <span style="font-size:1.15rem; color:#0284c7;"><i class="fa-solid ${flightStats.transportType === 'train' ? 'fa-train' : (flightStats.transportType === 'bus' ? 'fa-bus' : (flightStats.transportType === 'cruise' ? 'fa-ship' : (flightStats.transportType === 'car' ? 'fa-car' : 'fa-plane-departure')))}"></i></span>
                                     <div>
-                                        <strong style="color:#0f172a; font-size:0.96rem;">機票 / 大交通費用核銷</strong>
-                                        <div style="font-size:0.75rem; color:#64748b;">同行 ${m} 人 ‧ 往返航班</div>
+                                        <strong style="color:#0f172a; font-size:0.96rem;">${flightStats.transportType === 'train' ? '火車 / 高鐵費用核銷' : (flightStats.transportType === 'bus' ? '長途巴士費用核銷' : (flightStats.transportType === 'cruise' ? '遊輪船票費用核銷' : (flightStats.transportType === 'car' ? '包車專車費用核銷' : '機票 / 大交通費用核銷')))}</strong>
+                                        <div style="font-size:0.75rem; color:#64748b;">同行 ${m} 人 ‧ ${flightStats.pricingType === 'separate' ? '去回分開計價 (2筆明細)' : '往返合併票價 (維持1筆總額)'}</div>
                                     </div>
                                 </div>
-                                <button class="n-btn" style="font-size:0.76rem; padding:3px 9px;" onclick="openEditFlightModal()" title="修改機票預估費用與實付金額">
-                                    <i class="fa-solid fa-pen"></i> 編輯機票與費用
+                                <button class="n-btn" style="font-size:0.76rem; padding:3px 9px;" onclick="openEditFlightModal()" title="修改大交通預估費用與實付金額">
+                                    <i class="fa-solid fa-pen"></i> 編輯大交通與費用
                                 </button>
                             </div>
 
@@ -8615,6 +8723,11 @@ const firebaseConfig = {
                                     <span style="color:#0369a1;">預估費用：</span>
                                     <strong>${flightStats.currType === 'TWD' ? `NT$ ${flightStats.groupTwd.toLocaleString()}` : `${curr.symbol} ${flightStats.groupLocal.toLocaleString()} (≈NT$${flightStats.groupTwd.toLocaleString()})`}</strong>
                                 </div>
+                                ${flightStats.pricingType === 'separate' ? `
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.75rem; color:#0369a1; padding:2px 8px; background:#e0f2fe; border-radius:4px;">
+                                    <span>去程：${curr.symbol} ${flightStats.outBreakdown.groupLocal.toLocaleString()} ｜ 回程：${curr.symbol} ${flightStats.inBreakdown.groupLocal.toLocaleString()}</span>
+                                    <span style="font-weight:600;">分開計價</span>
+                                </div>` : ''}
                                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                                     <span style="color:#0369a1;">實付金額：</span>
                                     <strong style="color:${flightStats.hasActual ? '#15803d' : '#64748b'};">
@@ -8625,7 +8738,7 @@ const firebaseConfig = {
                                 </div>
                                 ${flightStats.hasActual ? `
                                     <div style="display:flex; justify-content:space-between; border-top:1px dashed #bae6fd; padding-top:4px; font-size:0.78rem;">
-                                        <span>機票差額：</span>
+                                        <span>大交通差額：</span>
                                         <span style="font-weight:700; color:${(flightStats.groupTwd >= flightStats.actualGroupTwd) ? '#15803d' : '#b91c1c'};">
                                             ${(flightStats.groupTwd >= flightStats.actualGroupTwd) 
                                                 ? `🎉 省 NT$ ${(flightStats.groupTwd - flightStats.actualGroupTwd).toLocaleString()}` 
@@ -8635,7 +8748,7 @@ const firebaseConfig = {
                                 ` : ''}
                             </div>
                             <div style="font-size:0.76rem; color:#64748b;">
-                                每人平均機票實付約 <strong>NT$ ${(flightStats.hasActual ? flightStats.actualPersonTwd : flightStats.personTwd).toLocaleString()}</strong>
+                                每人平均實付約 <strong>NT$ ${(flightStats.hasActual ? flightStats.actualPersonTwd : flightStats.personTwd).toLocaleString()}</strong>
                             </div>
                         </div>
 
@@ -8801,7 +8914,9 @@ const firebaseConfig = {
 
             let txt = `【${plan.title} 實際費用與行程核銷對帳表】\n`;
             txt += `👥 同行成員：${m} 人 ｜ 幣別匯率：1 ${curr.code} ≈ ${curr.rate} TWD\n`;
-            txt += `✈️ 機票大交通：預估 NT$ ${flightStats.groupTwd.toLocaleString()} ｜ 實付 NT$ ${(flightStats.hasActual ? flightStats.actualGroupTwd : flightStats.groupTwd).toLocaleString()}\n`;
+            const transName = flightStats.transportType === 'train' ? '🚄 高鐵火車' : (flightStats.transportType === 'bus' ? '🚌 長途巴士' : (flightStats.transportType === 'cruise' ? '🚢 遊輪船票' : (flightStats.transportType === 'car' ? '🚗 包車專車' : '✈️ 機票大交通')));
+            const pricingNote = flightStats.pricingType === 'separate' ? ` (去程 NT$ ${flightStats.outBreakdown.groupTwd.toLocaleString()} + 回程 NT$ ${flightStats.inBreakdown.groupTwd.toLocaleString()})` : ' (來回合併一筆)';
+            txt += `${transName}：預估 NT$ ${flightStats.groupTwd.toLocaleString()} ｜ 實付 NT$ ${(flightStats.hasActual ? flightStats.actualGroupTwd : flightStats.groupTwd).toLocaleString()}${pricingNote}\n`;
             txt += `🏨 住宿飯店房費：預估 NT$ ${hotelStats.totalGroupTwd.toLocaleString()} ｜ 實付 NT$ ${(hotelStats.hasActual ? hotelStats.totalActualGroupTwd : hotelStats.totalGroupTwd).toLocaleString()}\n`;
             txt += `\n───────── 每日行程實付明細 ─────────\n`;
 
@@ -10282,23 +10397,331 @@ const firebaseConfig = {
         }
 
         // ==========================================
-        // 交通航班編輯與轉機處理邏輯
+        // 交通航班與多載具編輯處理邏輯
         // ==========================================
+        const TRANSPORT_CONFIG = {
+            flight: {
+                type: 'flight',
+                name: '飛機 / 航班',
+                icon: 'fa-plane',
+                headerTitle: '<i class="fa-solid fa-plane" style="color: #2383e2;"></i> 編輯大交通資訊 (飛機 / 航班)',
+                outTitle: '🛫 去程航班 (第 1 段或起發航段)',
+                inTitle: '🛬 回程航班 (第 1 段或返航航段)',
+                airlineLabel: '航空公司',
+                airlinePlaceholder: '國泰航空 / 中華航空',
+                noLabel: '班機代號',
+                noPlaceholder: 'CX 407',
+                depLocLabel: '起飛機場 / 航廈',
+                depLocPlaceholder: '台北桃園 (TPE) T1',
+                arrLocLabel: '抵達機場 (直飛目的地或轉機地)',
+                arrLocPlaceholder: '香港 (HKG) T1',
+                transferSpan: '🔄 本次大交通包含「轉機 / 中轉換乘」航段 (開啟第 2 段與中轉停留欄位)',
+                transferInfoLabel: '🔄 去程轉機地點與停留時間說明',
+                transferInfoPlaceholder: '香港國際機場 (HKG) 轉機停留 3 小時 35 分鐘',
+                no2Title: '去程第 2 段交通資訊',
+                no2Label: '第 2 段班機代號',
+                no2Placeholder: 'CX 928',
+                arrLoc2Label: '最終目的地機場 / 航廈',
+                arrLoc2Placeholder: '重慶江北 (CKG) T3',
+                inAirlineLabel: '航空公司',
+                inAirlinePlaceholder: '國泰航空 / 中華航空',
+                inNoLabel: '班機代號',
+                inNoPlaceholder: 'CX 945',
+                inDepLocLabel: '回程起飛機場 / 航廈',
+                inDepLocPlaceholder: '重慶江北 (CKG) T3',
+                inArrLocLabel: '抵達機場 (直飛目的地或轉機地)',
+                inArrLocPlaceholder: '香港 (HKG) T1',
+                inTransferInfoLabel: '🔄 回程轉機地點與停留時間說明',
+                inTransferInfoPlaceholder: '香港國際機場 (HKG) 轉機停留 4 小時 50 分鐘',
+                inNo2Title: '回程第 2 段交通資訊 (返抵國門)',
+                inNo2Label: '第 2 段班機代號',
+                inNo2Placeholder: 'CX 464',
+                inArrLoc2Label: '最終返抵機場 / 航廈',
+                inArrLoc2Placeholder: '台北桃園 (TPE) T1',
+                costSectionTitle: '機票 / 大交通費用計算'
+            },
+            train: {
+                type: 'train',
+                name: '高鐵 / 火車',
+                icon: 'fa-train',
+                headerTitle: '<i class="fa-solid fa-train" style="color: #0284c7;"></i> 編輯大交通資訊 (高鐵 / 火車 / 鐵道)',
+                outTitle: '🚄 去程車次 (第 1 段或起發車站)',
+                inTitle: '🚄 回程車次 (第 1 段或返程車站)',
+                airlineLabel: '鐵路公司 / 列車種類',
+                airlinePlaceholder: '台灣高鐵 / JR / 中國鐵路',
+                noLabel: '車次編號',
+                noPlaceholder: '0603 次 / Nozomi 12',
+                depLocLabel: '出發車站 / 月台',
+                depLocPlaceholder: '台北車站 / 新大阪站',
+                arrLocLabel: '抵達車站 (到達地或轉乘站)',
+                arrLocPlaceholder: '左營站 / 東京站',
+                transferSpan: '🔄 本次鐵路行程包含「中轉換乘」車次 (開啟第 2 段與換乘停留欄位)',
+                transferInfoLabel: '🔄 去程中轉車站與轉乘停留說明',
+                transferInfoPlaceholder: '名古屋站 換乘停留 25 分鐘',
+                no2Title: '去程第 2 段車次資訊',
+                no2Label: '第 2 段車次編號',
+                no2Placeholder: 'Hikari 512',
+                arrLoc2Label: '最終目的地車站',
+                arrLoc2Placeholder: '東京車站',
+                inAirlineLabel: '鐵路公司 / 列車種類',
+                inAirlinePlaceholder: '台灣高鐵 / JR / 中國鐵路',
+                inNoLabel: '車次編號',
+                inNoPlaceholder: '0672 次',
+                inDepLocLabel: '回程出發車站',
+                inDepLocPlaceholder: '左營站 / 東京站',
+                inArrLocLabel: '抵達車站 (直達或轉乘站)',
+                inArrLocPlaceholder: '台北車站',
+                inTransferInfoLabel: '🔄 回程中轉車站與換乘停留說明',
+                inTransferInfoPlaceholder: '新橫濱站 換乘停留 20 分鐘',
+                inNo2Title: '回程第 2 段車次資訊 (返程終點)',
+                inNo2Label: '第 2 段車次編號',
+                inNo2Placeholder: 'Kodama 720',
+                inArrLoc2Label: '最終返抵車站',
+                inArrLoc2Placeholder: '台北車站',
+                costSectionTitle: '火車 / 高鐵車票費用計算'
+            },
+            bus: {
+                type: 'bus',
+                name: '長途巴士 / 客運',
+                icon: 'fa-bus',
+                headerTitle: '<i class="fa-solid fa-bus" style="color: #10b981;"></i> 編輯大交通資訊 (長途巴士 / 客運)',
+                outTitle: '🚌 去程巴士班次',
+                inTitle: '🚌 回程巴士班次',
+                airlineLabel: '客運公司 / 業者',
+                airlinePlaceholder: '國光客運 / 統聯客運 / Willer Express',
+                noLabel: '班次路線 / 車次',
+                noPlaceholder: '1819 路線 / 班次 02',
+                depLocLabel: '上車客運站 / 站牌',
+                depLocPlaceholder: '台北轉運站 / 新宿高速巴士總站',
+                arrLocLabel: '下車站點 (到達站或轉運點)',
+                arrLocPlaceholder: '日月潭站 / 名古屋站',
+                transferSpan: '🔄 本次巴士包含「中轉換乘」路線 (開啟第 2 段與轉運欄位)',
+                transferInfoLabel: '🔄 去程轉運站點與休息換乘說明',
+                transferInfoPlaceholder: '中途休息站 / 轉運站停留 30 分鐘',
+                no2Title: '去程第 2 段巴士班次',
+                no2Label: '第 2 段巴士班次',
+                no2Placeholder: '接駁路線 B',
+                arrLoc2Label: '最終目的地站點',
+                arrLoc2Placeholder: '飯店接駁點 / 終點站',
+                inAirlineLabel: '客運公司 / 業者',
+                inAirlinePlaceholder: '國光客運 / 統聯客運',
+                inNoLabel: '班次路線 / 車次',
+                inNoPlaceholder: '1819 路線',
+                inDepLocLabel: '回程上車站點',
+                inDepLocPlaceholder: '日月潭站 / 名古屋站',
+                inArrLocLabel: '返抵站點 (直達或轉乘)',
+                inArrLocPlaceholder: '台北轉運站',
+                inTransferInfoLabel: '🔄 回程轉乘休息說明',
+                inTransferInfoPlaceholder: '台中轉運站 換乘',
+                inNo2Title: '回程第 2 段車次 (返程終點)',
+                inNo2Label: '第 2 段車次',
+                inNo2Placeholder: '直達車',
+                inArrLoc2Label: '最終返抵客運站',
+                inArrLoc2Placeholder: '台北轉運站',
+                costSectionTitle: '巴士 / 客運車票費用計算'
+            },
+            cruise: {
+                type: 'cruise',
+                name: '遊輪 / 輪渡',
+                icon: 'fa-ship',
+                headerTitle: '<i class="fa-solid fa-ship" style="color: #06b6d4;"></i> 編輯大交通資訊 (遊輪 / 輪渡 / 航運)',
+                outTitle: '🚢 去程船班 / 航次',
+                inTitle: '🚢 回程船班 / 返航航次',
+                airlineLabel: '郵輪船隊 / 航運公司',
+                airlinePlaceholder: '名勝世界壹號 / 歌詩達 / 澎湖輪',
+                noLabel: '航次代號 / 船名',
+                noPlaceholder: 'CR-2026 / 探索夢號',
+                depLocLabel: '登船港口 / 碼頭',
+                depLocPlaceholder: '基隆港東岸旅客中心',
+                arrLocLabel: '靠泊港口 (到達港或中途島)',
+                arrLocPlaceholder: '那霸港 / 石垣島港',
+                transferSpan: '🔄 本次航程包含「中途靠港 / 換船」 (開啟第 2 段靠泊欄位)',
+                transferInfoLabel: '🔄 去程中途停靠港口與岸上觀光說明',
+                transferInfoPlaceholder: '石垣島 靠泊停留 8 小時',
+                no2Title: '去程第 2 段航程 / 駁船',
+                no2Label: '第 2 段航程 / 駁船',
+                no2Placeholder: 'Tender Boat 01',
+                arrLoc2Label: '最終靠泊港口',
+                arrLoc2Placeholder: '那霸港新港埠',
+                inAirlineLabel: '郵輪船隊 / 航運公司',
+                inAirlinePlaceholder: '名勝世界壹號',
+                inNoLabel: '返航航次代號',
+                inNoPlaceholder: 'CR-2026-RET',
+                inDepLocLabel: '回程登船港口',
+                inDepLocPlaceholder: '那霸港旅客碼頭',
+                inArrLocLabel: '返抵港口',
+                inArrLocPlaceholder: '基隆港西岸碼頭',
+                inTransferInfoLabel: '🔄 回程中途靠泊說明',
+                inTransferInfoPlaceholder: '公海巡航',
+                inNo2Title: '回程第 2 段船班 (返抵港口)',
+                inNo2Label: '第 2 段船班',
+                inNo2Placeholder: '接駁船',
+                inArrLoc2Label: '最終返抵港口',
+                inArrLoc2Placeholder: '基隆港東岸旅客中心',
+                costSectionTitle: '郵輪船票 / 航程費用計算'
+            },
+            car: {
+                type: 'car',
+                name: '專車 / 包車接送',
+                icon: 'fa-car',
+                headerTitle: '<i class="fa-solid fa-car" style="color: #f59e0b;"></i> 編輯大交通資訊 (專車 / 包車接送)',
+                outTitle: '🚗 去程專車 / 接送服務',
+                inTitle: '🚗 回程專車 / 送機服務',
+                airlineLabel: '車隊服務商 / 車型',
+                airlinePlaceholder: 'Alphard 9人座 / 大都會專車',
+                noLabel: '預約單號 / 司機車牌',
+                noPlaceholder: 'ORD-8899 / 車號 ABC-888',
+                depLocLabel: '上車出發地點',
+                depLocPlaceholder: '台北市區住家 / 飯店大廳',
+                arrLocLabel: '目的地地點',
+                arrLocPlaceholder: '桃園機場 / 宜蘭度假村',
+                transferSpan: '🔄 本次包含中途停靠景點 / 換乘 (開啟第 2 段欄位)',
+                transferInfoLabel: '🔄 去程中途停靠景點與停留時間',
+                transferInfoPlaceholder: '途中停靠休息站 30 分鐘',
+                no2Title: '去程第 2 段用車',
+                no2Label: '第 2 段用車',
+                no2Placeholder: '區間專車',
+                arrLoc2Label: '最終目的地',
+                arrLoc2Placeholder: '目的地飯店',
+                inAirlineLabel: '車隊服務商 / 車型',
+                inAirlinePlaceholder: '回程專車車隊',
+                inNoLabel: '回程預約單號',
+                inNoPlaceholder: 'ORD-8900',
+                inDepLocLabel: '回程上車地點',
+                inDepLocPlaceholder: '度假村大廳 / 機場接機處',
+                inArrLocLabel: '回程返抵地點',
+                inArrLocPlaceholder: '台北市區住家',
+                inTransferInfoLabel: '🔄 回程中途停靠說明',
+                inTransferInfoPlaceholder: '直接直達',
+                inNo2Title: '回程第 2 段專車 (返抵住家)',
+                inNo2Label: '第 2 段專車',
+                inNo2Placeholder: '市區接駁',
+                inArrLoc2Label: '最終返抵地址',
+                inArrLoc2Placeholder: '台北市區住家',
+                costSectionTitle: '專車 / 包車費用計算'
+            }
+        };
+
+        function setTransportType(type) {
+            const cfg = TRANSPORT_CONFIG[type] || TRANSPORT_CONFIG.flight;
+            const input = document.getElementById('fTransportType');
+            if (input) input.value = type;
+
+            // 切換按鈕 active 樣式
+            const btns = document.querySelectorAll('#transportTypeButtonGroup .transport-btn');
+            btns.forEach(b => {
+                b.classList.remove('active');
+                b.style.background = '';
+                b.style.color = '';
+                b.style.fontWeight = 'normal';
+            });
+            const activeBtn = document.getElementById(`btnTransport${type.charAt(0).toUpperCase() + type.slice(1)}`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+                activeBtn.style.background = '#0284c7';
+                activeBtn.style.color = '#fff';
+                activeBtn.style.fontWeight = '700';
+            }
+
+            // 更新 UI 標籤文字與 placeholder
+            const setText = (id, txt) => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = txt;
+            };
+            const setHtml = (id, html) => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = html;
+            };
+            const setPlh = (id, plh) => {
+                const el = document.getElementById(id);
+                if (el) el.placeholder = plh;
+            };
+
+            setHtml('flightModalHeaderTitle', cfg.headerTitle);
+            setText('labelOutSectionTitle', cfg.outTitle);
+            setText('labelInSectionTitle', cfg.inTitle);
+
+            setText('labelOutAirline', cfg.airlineLabel);
+            setPlh('fOutAirline', cfg.airlinePlaceholder);
+            setText('labelOutNo', cfg.noLabel);
+            setPlh('fOutNo', cfg.noPlaceholder);
+            setText('labelOutDepLoc', cfg.depLocLabel);
+            setPlh('fOutDepLoc', cfg.depLocPlaceholder);
+            setText('fOutArrLabel1', cfg.arrLocLabel);
+            setPlh('fOutArrLoc1', cfg.arrLocPlaceholder);
+
+            setText('fIsTransferCheckboxSpan', cfg.transferSpan);
+            setText('labelOutTransferInfo', cfg.transferInfoLabel);
+            setPlh('fTransferInfoOut', cfg.transferInfoPlaceholder);
+            setText('labelOutNo2Title', cfg.no2Title);
+            setText('labelOutNo2', cfg.no2Label);
+            setPlh('fOutNo2', cfg.no2Placeholder);
+            setText('labelOutArrLoc2', cfg.arrLoc2Label);
+            setPlh('fOutArrLoc2', cfg.arrLoc2Placeholder);
+
+            setText('labelInAirline', cfg.inAirlineLabel);
+            setPlh('fInAirline', cfg.inAirlinePlaceholder);
+            setText('labelInNo', cfg.inNoLabel);
+            setPlh('fInNo', cfg.inNoPlaceholder);
+            setText('labelInDepLoc', cfg.inDepLocLabel);
+            setPlh('fInDepLoc', cfg.inDepLocPlaceholder);
+            setText('fInArrLabel1', cfg.inArrLocLabel);
+            setPlh('fInArrLoc1', cfg.inArrLocPlaceholder);
+
+            setText('labelInTransferInfo', cfg.inTransferInfoLabel);
+            setPlh('fTransferInfoIn', cfg.inTransferInfoPlaceholder);
+            setText('labelInNo2Title', cfg.inNo2Title);
+            setText('labelInNo2', cfg.inNo2Label);
+            setPlh('fInNo2', cfg.inNo2Placeholder);
+            setText('labelInArrLoc2', cfg.inArrLoc2Label);
+            setPlh('fInArrLoc2', cfg.inArrLoc2Placeholder);
+
+            setText('labelCostSectionTitle', cfg.costSectionTitle);
+
+            calcFlightModalCost();
+        }
+
+        function toggleFlightPricingMode() {
+            const isRoundtrip = document.getElementById('fPricingRoundtrip')?.checked ?? true;
+            const sepBox = document.getElementById('pricingSeparateFields');
+            const totLabel = document.getElementById('fTotalCostLabel');
+            const totInput = document.getElementById('fTotalCost');
+
+            if (sepBox) {
+                sepBox.style.display = isRoundtrip ? 'none' : 'grid';
+            }
+            if (totLabel) {
+                totLabel.innerText = isRoundtrip ? '🎫 來回總票價 (往返總額一筆)' : '🎫 來回總計金額 (由去程+回程自動加總)';
+            }
+            if (totInput) {
+                totInput.readOnly = !isRoundtrip;
+                if (!isRoundtrip) {
+                    totInput.style.backgroundColor = '#f1f5f9';
+                } else {
+                    totInput.style.backgroundColor = '';
+                }
+            }
+            calcFlightModalCost();
+        }
+
         function toggleFlightTransferFields() {
             const cb = document.getElementById('fIsTransferCheckbox');
             const outTrans = document.getElementById('transferOutboundFields');
             const inTrans = document.getElementById('transferInboundFields');
             const outArrLabel = document.getElementById('fOutArrLabel1');
             const inArrLabel = document.getElementById('fInArrLabel1');
+            const transportType = document.getElementById('fTransportType')?.value || 'flight';
+            const cfg = TRANSPORT_CONFIG[transportType] || TRANSPORT_CONFIG.flight;
             
             const isTrans = cb ? cb.checked : false;
             if (outTrans) outTrans.style.display = isTrans ? 'block' : 'none';
             if (inTrans) inTrans.style.display = isTrans ? 'block' : 'none';
-            if (outArrLabel) outArrLabel.innerText = isTrans ? '中轉機場 (轉機地)' : '抵達機場 (目的地)';
-            if (inArrLabel) inArrLabel.innerText = isTrans ? '中轉機場 (轉機地)' : '抵達機場 (目的地)';
+            if (outArrLabel) outArrLabel.innerText = isTrans ? (transportType === 'flight' ? '中轉機場 (轉機地)' : '中轉站點 (轉乘地)') : cfg.arrLocLabel;
+            if (inArrLabel) inArrLabel.innerText = isTrans ? (transportType === 'flight' ? '中轉機場 (轉機地)' : '中轉站點 (轉乘地)') : cfg.inArrLocLabel;
         }
 
         function fillTransferExampleChongqing() {
+            setTransportType('flight');
             const cb = document.getElementById('fIsTransferCheckbox');
             if (cb) cb.checked = true;
             toggleFlightTransferFields();
@@ -10334,23 +10757,26 @@ const firebaseConfig = {
             document.getElementById('fCategoryTag').value = 'International';
             document.getElementById('fPnr').value = 'EJ3HIM / CX8888';
 
-            // 帶入示範費用
+            // 帶入分開計價示範費用
+            const rSep = document.getElementById('fPricingSeparate');
+            if (rSep) rSep.checked = true;
+            toggleFlightPricingMode();
+
             const outCostEl = document.getElementById('fOutCost');
             if (outCostEl) outCostEl.value = '6250';
             const inCostEl = document.getElementById('fInCost');
             if (inCostEl) inCostEl.value = '6250';
-            const totCostEl = document.getElementById('fTotalCost');
-            if (totCostEl) totCostEl.value = '12500';
             const modeEl = document.getElementById('fCostMode');
             if (modeEl) modeEl.value = 'single';
             const currEl = document.getElementById('fCostCurr');
             if (currEl) currEl.value = 'TWD';
             calcFlightModalCost();
 
-            showToast('info', '已帶入重慶轉機示範資料與機票預估費用！');
+            showToast('info', '已帶入重慶轉機示範資料與分開計價費用！');
         }
 
         function fillDirectExampleBeijing() {
+            setTransportType('flight');
             const cb = document.getElementById('fIsTransferCheckbox');
             if (cb) cb.checked = false;
             toggleFlightTransferFields();
@@ -10386,11 +10812,11 @@ const firebaseConfig = {
             document.getElementById('fCategoryTag').value = 'International';
             document.getElementById('fPnr').value = 'CI-PEK2026';
 
-            // 帶入示範費用
-            const outCostEl = document.getElementById('fOutCost');
-            if (outCostEl) outCostEl.value = '7500';
-            const inCostEl = document.getElementById('fInCost');
-            if (inCostEl) inCostEl.value = '7500';
+            // 帶入來回合併計價示範費用
+            const rRound = document.getElementById('fPricingRoundtrip');
+            if (rRound) rRound.checked = true;
+            toggleFlightPricingMode();
+
             const totCostEl = document.getElementById('fTotalCost');
             if (totCostEl) totCostEl.value = '15000';
             const modeEl = document.getElementById('fCostMode');
@@ -10399,10 +10825,10 @@ const firebaseConfig = {
             if (currEl) currEl.value = 'TWD';
             calcFlightModalCost();
 
-            showToast('info', '已帶入北京直飛示範資料與機票預估費用！');
+            showToast('info', '已帶入北京直飛示範資料與來回合併票價！');
         }
 
-        // 打開交通航班編輯彈窗
+        // 打開交通編輯彈窗
         function openEditFlightModal() {
             const plan = getCurrentPlan();
             if (!plan) return;
@@ -10411,6 +10837,19 @@ const firebaseConfig = {
             const l1 = legs[0] || {};
             const l2 = legs[1] || {};
 
+            const transportType = fl.transportType || 'flight';
+            setTransportType(transportType);
+
+            const pricingType = fl.pricingType || (fl.cost > 0 && !fl.outboundCost && !fl.inboundCost ? 'roundtrip' : (fl.outboundCost || fl.inboundCost ? 'separate' : 'roundtrip'));
+            const rRound = document.getElementById('fPricingRoundtrip');
+            const rSep = document.getElementById('fPricingSeparate');
+            if (pricingType === 'separate') {
+                if (rSep) rSep.checked = true;
+            } else {
+                if (rRound) rRound.checked = true;
+            }
+            toggleFlightPricingMode();
+
             const isTrans = fl.isTransfer === true || l1.isTransfer === true || !!l1.transferInfo || (l1.flightNo2 && l1.flightNo2.trim().length > 0);
 
             const cb = document.getElementById('fIsTransferCheckbox');
@@ -10418,32 +10857,52 @@ const firebaseConfig = {
             toggleFlightTransferFields();
 
             // 去程填入
-            document.getElementById('fOutAirline').value = l1.airline || '國泰航空';
-            document.getElementById('fOutNo').value = l1.flightNo || 'CX 407';
-            document.getElementById('fOutDepTime').value = l1.depTime || '08:00';
-            document.getElementById('fOutArrTime1').value = l1.arrTime || '10:00';
-            document.getElementById('fOutDepLoc').value = l1.depLoc || '台北桃園 (TPE) T1';
-            document.getElementById('fOutArrLoc1').value = l1.arrLoc || '香港 (HKG) T1';
-            document.getElementById('fTransferInfoOut').value = l1.transferInfo || (isTrans ? '香港國際機場 (HKG) 轉機停留 3 小時 35 分鐘' : '');
-            document.getElementById('fOutNo2').value = l1.flightNo2 || (isTrans ? 'CX 928' : '');
-            document.getElementById('fOutDepTime2').value = l1.depTime2 || (isTrans ? '13:35' : '');
-            document.getElementById('fOutArrTime2').value = l1.arrTime2 || (isTrans ? '16:10' : '');
-            document.getElementById('fOutArrLoc2').value = l1.arrLoc2 || (isTrans ? '重慶江北 (CKG) T3' : '');
-            document.getElementById('fOutDuration').value = l1.duration || (isTrans ? '8 hrs 10 mins (經香港轉機)' : '3 hrs 25 mins');
+            const cfg = TRANSPORT_CONFIG[transportType] || TRANSPORT_CONFIG.flight;
+            document.getElementById('fOutAirline').value = l1.airline || '';
+            document.getElementById('fOutNo').value = l1.flightNo || '';
+            document.getElementById('fOutDepTime').value = l1.depTime || '';
+            document.getElementById('fOutArrTime1').value = l1.arrTime || '';
+            document.getElementById('fOutDepLoc').value = l1.depLoc || '';
+            document.getElementById('fOutArrLoc1').value = l1.arrLoc || '';
+            document.getElementById('fTransferInfoOut').value = l1.transferInfo || '';
+            document.getElementById('fOutNo2').value = l1.flightNo2 || '';
+            document.getElementById('fOutDepTime2').value = l1.depTime2 || '';
+            document.getElementById('fOutArrTime2').value = l1.arrTime2 || '';
+            document.getElementById('fOutArrLoc2').value = l1.arrLoc2 || '';
+            document.getElementById('fOutDuration').value = l1.duration || '';
+
+            // 如果目前全是空值且為飛機，帶入合理預設
+            if (!l1.airline && !l1.flightNo && transportType === 'flight') {
+                document.getElementById('fOutAirline').value = '國泰航空';
+                document.getElementById('fOutNo').value = 'CX 407';
+                document.getElementById('fOutDepTime').value = '08:00';
+                document.getElementById('fOutArrTime1').value = '10:00';
+                document.getElementById('fOutDepLoc').value = '台北桃園 (TPE) T1';
+                document.getElementById('fOutArrLoc1').value = '香港 (HKG) T1';
+            }
 
             // 回程填入
-            document.getElementById('fInAirline').value = l2.airline || (isTrans ? '國泰航空' : '中華航空');
-            document.getElementById('fInNo').value = l2.flightNo || (isTrans ? 'CX 945' : 'CI 0512');
-            document.getElementById('fInDepTime').value = l2.depTime || (isTrans ? '10:50' : '12:25');
-            document.getElementById('fInArrTime1').value = l2.arrTime || (isTrans ? '14:25' : '15:45');
-            document.getElementById('fInDepLoc').value = l2.depLoc || (isTrans ? '重慶江北 (CKG) T3' : '北京首都 (PEK) T3');
-            document.getElementById('fInArrLoc1').value = l2.arrLoc || (isTrans ? '香港 (HKG) T1' : '台北桃園 (TPE) T2');
-            document.getElementById('fTransferInfoIn').value = l2.transferInfo || (isTrans ? '香港國際機場 (HKG) 轉機停留 4 小時 50 分鐘' : '');
-            document.getElementById('fInNo2').value = l2.flightNo2 || (isTrans ? 'CX 464' : '');
-            document.getElementById('fInDepTime2').value = l2.depTime2 || (isTrans ? '19:35' : '');
-            document.getElementById('fInArrTime2').value = l2.arrTime2 || (isTrans ? '21:20' : '');
-            document.getElementById('fInArrLoc2').value = l2.arrLoc2 || (isTrans ? '台北桃園 (TPE) T1' : '');
-            document.getElementById('fInDuration').value = l2.duration || (isTrans ? '10 hrs 30 mins (經香港轉機)' : '3 hrs 15 mins');
+            document.getElementById('fInAirline').value = l2.airline || '';
+            document.getElementById('fInNo').value = l2.flightNo || '';
+            document.getElementById('fInDepTime').value = l2.depTime || '';
+            document.getElementById('fInArrTime1').value = l2.arrTime || '';
+            document.getElementById('fInDepLoc').value = l2.depLoc || '';
+            document.getElementById('fInArrLoc1').value = l2.arrLoc || '';
+            document.getElementById('fTransferInfoIn').value = l2.transferInfo || '';
+            document.getElementById('fInNo2').value = l2.flightNo2 || '';
+            document.getElementById('fInDepTime2').value = l2.depTime2 || '';
+            document.getElementById('fInArrTime2').value = l2.arrTime2 || '';
+            document.getElementById('fInArrLoc2').value = l2.arrLoc2 || '';
+            document.getElementById('fInDuration').value = l2.duration || '';
+
+            if (!l2.airline && !l2.flightNo && transportType === 'flight') {
+                document.getElementById('fInAirline').value = isTrans ? '國泰航空' : '中華航空';
+                document.getElementById('fInNo').value = isTrans ? 'CX 945' : 'CI 0512';
+                document.getElementById('fInDepTime').value = isTrans ? '10:50' : '12:25';
+                document.getElementById('fInArrTime1').value = isTrans ? '14:25' : '15:45';
+                document.getElementById('fInDepLoc').value = isTrans ? '重慶江北 (CKG) T3' : '北京首都 (PEK) T3';
+                document.getElementById('fInArrLoc1').value = isTrans ? '香港 (HKG) T1' : '台北桃園 (TPE) T2';
+            }
 
             document.getElementById('fCategoryTag').value = fl.categoryTag || 'International';
             document.getElementById('fPnr').value = fl.pnr || (l1.pnr || '');
@@ -10464,15 +10923,22 @@ const firebaseConfig = {
             openModal('editFlightModal');
         }
 
-        // 儲存航班交通表單設定 (強固防呆，徹底防止點選儲存無反應)
+        // 儲存交通表單設定 (強固防呆，最優先立即關閉彈窗，徹底防止點選儲存無反應或小視窗不關閉)
         function handleSaveFlightSubmit(e) {
             if (e && e.preventDefault) e.preventDefault();
             try {
                 const plan = getCurrentPlan();
                 if (!plan) {
+                    closeModal('editFlightModal');
+                    const modalEl = document.getElementById('editFlightModal');
+                    if (modalEl) modalEl.classList.remove('active');
                     showToast('warning', '找不到當前行程計劃，請重新整理頁面');
                     return false;
                 }
+
+                const transportType = document.getElementById('fTransportType')?.value || 'flight';
+                const isPricingRoundtrip = document.getElementById('fPricingRoundtrip')?.checked ?? true;
+                const pricingType = isPricingRoundtrip ? 'roundtrip' : 'separate';
 
                 const isTrans = !!document.getElementById('fIsTransferCheckbox')?.checked;
                 const cat = (document.getElementById('fCategoryTag')?.value || 'International').trim();
@@ -10481,47 +10947,33 @@ const firebaseConfig = {
                 const getVal = (id, def = '') => (document.getElementById(id)?.value ?? def).trim();
 
                 // 構建去程 leg (帶有預設值與容錯)
-                const outAirline = getVal('fOutAirline') || (isTrans ? '國泰航空' : '中華航空');
-                const outFlightNo = getVal('fOutNo');
-                const outDepTime = getVal('fOutDepTime');
-                const outArrTime1 = getVal('fOutArrTime1');
-                const outDepLoc = getVal('fOutDepLoc') || '台北桃園 (TPE)';
-                const outArrLoc1 = getVal('fOutArrLoc1') || (isTrans ? '香港 (HKG)' : '目的地機場');
-                const outDuration = getVal('fOutDuration');
-
                 const outLeg = {
                     type: 'outbound',
+                    transportType: transportType,
                     isTransfer: isTrans,
-                    airline: outAirline,
-                    flightNo: outFlightNo,
-                    depTime: outDepTime,
-                    arrTime: outArrTime1,
-                    depLoc: outDepLoc,
-                    arrLoc: outArrLoc1,
-                    duration: outDuration,
+                    airline: getVal('fOutAirline'),
+                    flightNo: getVal('fOutNo'),
+                    depTime: getVal('fOutDepTime'),
+                    arrTime: getVal('fOutArrTime1'),
+                    depLoc: getVal('fOutDepLoc'),
+                    arrLoc: getVal('fOutArrLoc1'),
+                    duration: getVal('fOutDuration'),
                     categoryTag: cat,
                     pnr: pnrVal
                 };
 
                 // 構建回程 leg (帶有預設值與容錯)
-                const inAirline = getVal('fInAirline') || (isTrans ? '國泰航空' : '中華航空');
-                const inFlightNo = getVal('fInNo');
-                const inDepTime = getVal('fInDepTime');
-                const inArrTime1 = getVal('fInArrTime1');
-                const inDepLoc = getVal('fInDepLoc') || (isTrans ? '出發地機場' : '出發地機場');
-                const inArrLoc1 = getVal('fInArrLoc1') || (isTrans ? '香港 (HKG)' : '台北桃園 (TPE)');
-                const inDuration = getVal('fInDuration');
-
                 const inLeg = {
                     type: 'inbound',
+                    transportType: transportType,
                     isTransfer: isTrans,
-                    airline: inAirline,
-                    flightNo: inFlightNo,
-                    depTime: inDepTime,
-                    arrTime: inArrTime1,
-                    depLoc: inDepLoc,
-                    arrLoc: inArrLoc1,
-                    duration: inDuration,
+                    airline: getVal('fInAirline'),
+                    flightNo: getVal('fInNo'),
+                    depTime: getVal('fInDepTime'),
+                    arrTime: getVal('fInArrTime1'),
+                    depLoc: getVal('fInDepLoc'),
+                    arrLoc: getVal('fInArrLoc1'),
+                    duration: getVal('fInDuration'),
                     categoryTag: cat,
                     pnr: pnrVal
                 };
@@ -10540,31 +10992,45 @@ const firebaseConfig = {
                     inLeg.arrLoc2 = getVal('fInArrLoc2');
                 }
 
+                const outCostVal = parseFloat(document.getElementById('fOutCost')?.value) || 0;
+                const inCostVal = parseFloat(document.getElementById('fInCost')?.value) || 0;
+                let totCostVal = parseFloat(document.getElementById('fTotalCost')?.value) || 0;
+
+                if (pricingType === 'separate') {
+                    totCostVal = outCostVal + inCostVal;
+                }
+
                 const rawActCost = document.getElementById('fActualCost')?.value;
                 plan.flights = {
+                    transportType: transportType,
+                    pricingType: pricingType,
                     pnr: pnrVal,
                     categoryTag: cat,
                     isTransfer: isTrans,
-                    outboundCost: parseFloat(document.getElementById('fOutCost')?.value) || 0,
-                    inboundCost: parseFloat(document.getElementById('fInCost')?.value) || 0,
-                    cost: parseFloat(document.getElementById('fTotalCost')?.value) || 0,
+                    outboundCost: outCostVal,
+                    inboundCost: inCostVal,
+                    cost: totCostVal,
                     costMode: document.getElementById('fCostMode')?.value || 'single',
                     costCurr: document.getElementById('fCostCurr')?.value || 'LOCAL',
                     actualCost: (rawActCost !== '' && rawActCost !== undefined && !isNaN(parseFloat(rawActCost))) ? parseFloat(rawActCost) : undefined,
                     legs: [outLeg, inLeg]
                 };
 
+                // 【最優先保證】立即關閉彈窗，絕不拖延！
+                closeModal('editFlightModal');
+                const modalEl = document.getElementById('editFlightModal');
+                if (modalEl) modalEl.classList.remove('active');
+
                 // 雙向同步：檢查是否勾選同步更新行程活動
                 const syncToSchedule = document.getElementById('fSyncToScheduleCheckbox')?.checked ?? true;
                 if (syncToSchedule && Array.isArray(plan.days)) {
                     try {
-                        // 1. 同步更新去程至 Day 1
                         const outInfo = getFlightLegDetails(outLeg);
                         const day1 = plan.days.find(d => d.dayNum === 1);
                         if (day1 && Array.isArray(day1.events) && outInfo) {
                             let ev1 = day1.events.find(e => e.flightLegIndex === 0 || e.type === 'flight');
                             if (!ev1) {
-                                ev1 = day1.events.find(e => e.title && (e.title.includes('班機') || e.title.includes('航班') || e.title.includes('飛機')));
+                                ev1 = day1.events.find(e => e.title && (e.title.includes('班機') || e.title.includes('航班') || e.title.includes('車次') || e.title.includes('交通') || e.title.includes('專車') || e.title.includes('船班')));
                             }
                             if (ev1) {
                                 ev1.time = outInfo.timeStr || ev1.time;
@@ -10577,7 +11043,6 @@ const firebaseConfig = {
                             }
                         }
 
-                        // 2. 同步更新回程至最後一天
                         const inInfo = getFlightLegDetails(inLeg);
                         const lastDay = plan.days[plan.days.length - 1];
                         if (lastDay && Array.isArray(lastDay.events) && lastDay.dayNum > 1 && inInfo) {
@@ -10604,9 +11069,12 @@ const firebaseConfig = {
                     }
                 }
 
-                // 核心儲存與彈窗關閉 (確保 100% 執行)
-                saveState();
-                closeModal('editFlightModal');
+                // 資料持久化
+                try {
+                    saveState();
+                } catch (saveErr) {
+                    console.warn('儲存旅行狀態時發生非致命警告:', saveErr);
+                }
 
                 // 刷新相依 UI 視圖
                 try {
@@ -10619,10 +11087,15 @@ const firebaseConfig = {
                     console.warn('刷新側邊欄或預算視圖時發生警告:', uiErr);
                 }
 
-                showToast('success', syncToSchedule ? '交通航班資訊與費用已成功儲存，並同步更新每日行程活動！' : '交通航班資訊與費用已成功儲存！');
+                const cfg = TRANSPORT_CONFIG[transportType] || TRANSPORT_CONFIG.flight;
+                showToast('success', syncToSchedule ? `${cfg.name}資訊與費用已成功儲存，並同步更新行程！` : `${cfg.name}資訊與費用已成功儲存！`);
                 return false;
             } catch (err) {
-                console.error('儲存航班交通時發生例外錯誤:', err);
+                console.error('儲存大交通時發生例外錯誤:', err);
+                // 即使發生未預期例外，也強制關閉彈窗以維持使用者體驗
+                closeModal('editFlightModal');
+                const modalEl = document.getElementById('editFlightModal');
+                if (modalEl) modalEl.classList.remove('active');
                 showToast('danger', '儲存失敗：' + (err.message || '未知錯誤'));
                 return false;
             }
@@ -10838,20 +11311,22 @@ const firebaseConfig = {
             const endTime = (isTrans ? (leg.arrTime2 || '16:10') : (leg.arrTime || '12:00')).trim();
             const timeStr = `${startTime} - ${endTime}`;
 
-            // 2. 航空公司與班機代號
-            const airline = leg.airline || '國泰航空';
-            const f1 = leg.flightNo || 'CX 407';
-            const f2 = leg.flightNo2 || 'CX 928';
+            // 2. 營運單位與車次/班次代號
+            const tType = leg.transportType || 'flight';
+            const actionWord = tType === 'train' ? '搭乘高鐵/火車' : (tType === 'bus' ? '搭乘長途客運' : (tType === 'cruise' ? '搭乘遊輪/輪渡' : (tType === 'car' ? '搭乘專車/包車接送' : '搭乘班機出發')));
+            const airline = leg.airline || (tType === 'train' ? '台灣高鐵/鐵路' : (tType === 'bus' ? '客運巴士' : (tType === 'cruise' ? '遊輪船隊' : (tType === 'car' ? '包車接送' : '國泰航空'))));
+            const f1 = leg.flightNo || (tType === 'train' ? '車次' : 'CX 407');
+            const f2 = leg.flightNo2 || (tType === 'train' ? '轉乘車次' : 'CX 928');
 
             // 3. 標準標題
             let title = '';
-            const depShort = (leg.depLoc || '台北桃園').split(' ')[0].replace(/\(.*?\)/g, '').trim();
-            const transShort = (leg.arrLoc || '香港').split(' ')[0].replace(/\(.*?\)/g, '').trim();
-            const destShort = (isTrans ? (leg.arrLoc2 || '重慶江北') : (leg.arrLoc || '目的地')).split(' ')[0].replace(/\(.*?\)/g, '').trim();
+            const depShort = (leg.depLoc || (tType === 'train' ? '出發站' : '台北桃園')).split(' ')[0].replace(/\(.*?\)/g, '').trim();
+            const transShort = (leg.arrLoc || (tType === 'train' ? '轉乘站' : '香港')).split(' ')[0].replace(/\(.*?\)/g, '').trim();
+            const destShort = (isTrans ? (leg.arrLoc2 || '目的地') : (leg.arrLoc || '目的地')).split(' ')[0].replace(/\(.*?\)/g, '').trim();
             if (isTrans) {
-                title = `搭乘班機出發：${depShort} ➔ ${transShort}轉機 ➔ 抵達${destShort} (${airline} ${f1} / ${f2})`;
+                title = `${actionWord}：${depShort} ➔ ${transShort}中轉 ➔ 抵達${destShort} (${airline} ${f1} / ${f2})`;
             } else {
-                title = `搭乘班機出發：${depShort} ➔ 直飛抵達${destShort} (${airline} ${f1})`;
+                title = `${actionWord}：${depShort} ➔ 直達抵達${destShort} (${airline} ${f1})`;
             }
 
             // 4. 目的地導航地點
@@ -10860,9 +11335,9 @@ const firebaseConfig = {
             // 5. 注意事項與攻略提示
             let notes = '';
             if (isTrans) {
-                notes = `${leg.transferInfo || '香港國際機場轉機停留'}，總時長 ${leg.duration || '經轉機'}，PNR: ${leg.pnr || ''}`.trim();
+                notes = `${leg.transferInfo || '中轉換乘停留'}，總時長 ${leg.duration || '經轉乘'}，訂票代號: ${leg.pnr || ''}`.trim();
             } else {
-                notes = `直飛航程，飛行時間 ${leg.duration || ''}，PNR: ${leg.pnr || ''}`.trim();
+                notes = `直達交通，時長 ${leg.duration || ''}，訂票代號: ${leg.pnr || ''}`.trim();
             }
 
             return {
