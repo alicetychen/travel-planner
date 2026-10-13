@@ -2901,7 +2901,7 @@
                 <span class="n-section-badge-yellow">交通</span>
 
                 <div style="margin: 6px 0 10px;">
-                    <button class="n-btn" style="width: 100%; justify-content: flex-start; padding: 7px 12px;" onclick="openEditFlightModal()">
+                    <button type="button" class="n-btn" style="width: 100%; justify-content: flex-start; padding: 7px 12px;" onclick="if(event){event.stopPropagation();event.preventDefault();} openEditFlightModal();">
                         <i class="fa-solid fa-asterisk"></i> 新增交通
                     </button>
                 </div>
@@ -2912,7 +2912,7 @@
                 </div>
 
                 <!-- + New Page Button (第三張圖) -->
-                <button class="btn-side-newpage" onclick="openEditFlightModal()">
+                <button type="button" class="btn-side-newpage" onclick="if(event){event.stopPropagation();event.preventDefault();} openEditFlightModal();">
                     + New page
                 </button>
             </div>
@@ -3398,7 +3398,7 @@
                             <span style="font-weight:700; color:#0369a1; font-size:0.84rem; display:flex; align-items:center; gap:6px;">
                                 <i class="fa-solid fa-plane-departure"></i> 連動交通設定航班 (機票實際時刻)
                             </span>
-                            <button type="button" class="n-btn" style="padding:2px 7px; font-size:0.72rem; color:#0284c7; background:#fff; border-color:#bae6fd;" onclick="openEditFlightModal()" title="開啟交通面板編輯機票資訊">
+                            <button type="button" class="n-btn" style="padding:2px 7px; font-size:0.72rem; color:#0284c7; background:#fff; border-color:#bae6fd;" onclick="if(event){event.stopPropagation();event.preventDefault();} openEditFlightModal();" title="開啟交通面板編輯機票資訊">
                                 <i class="fa-solid fa-gear"></i> 管理交通航班
                             </button>
                         </div>
@@ -3972,7 +3972,7 @@
 
     <!-- 5. 編輯航班資訊 (交通：支援飛機/高鐵/巴士/遊輪，直飛/直達與中轉/換乘) -->
     <div class="modal-backdrop" id="editFlightModal" onclick="handleBackdropClick(event, 'editFlightModal')">
-        <div class="modal-dialog" style="max-width: 760px;">
+        <div class="modal-dialog" style="max-width: 760px;" onclick="event.stopPropagation();">
             <div class="modal-header">
                 <div class="modal-title" id="flightModalHeaderTitle"><i class="fa-solid fa-plane" style="color: #2383e2;"></i> 編輯大交通資訊 (支援多種載具與轉機/換乘)</div>
                 <button type="button" class="modal-close-btn" onclick="closeModal('editFlightModal')"><i class="fa-solid fa-xmark"></i></button>
@@ -4237,8 +4237,6 @@
                     </div>
                 </div>
             </form>
-        </div>
-    </div>
         </div>
     </div>
 
@@ -4608,6 +4606,12 @@ const firebaseConfig = {
 
             // 側邊欄交通 (匹配第三張圖)
             flights: {
+                transportType: 'flight',
+                pricingType: 'roundtrip',
+                cost: 15000,
+                costMode: 'single',
+                costCurr: 'TWD',
+                actualCost: 14800,
                 pnr: 'CI-PEK2026',
                 categoryTag: 'International',
                 isTransfer: false,
@@ -4820,6 +4824,14 @@ const firebaseConfig = {
             },
 
             flights: {
+                transportType: 'flight',
+                pricingType: 'separate',
+                outboundCost: 6250,
+                inboundCost: 6250,
+                cost: 12500,
+                costMode: 'single',
+                costCurr: 'TWD',
+                actualCost: 12500,
                 pnr: 'EJ3HIM / CX8888',
                 categoryTag: 'International',
                 isTransfer: true,
@@ -5590,21 +5602,31 @@ const firebaseConfig = {
                 });
             }
 
-            // 自動相容修復：若重慶行程缺少轉機詳細資料，自動補齊
+            // 安全相容：確保重慶行程大交通結構存在，若完全無大交通才初始化範本；絕對不可覆蓋使用者的自訂修改與費用
             if (appState.plans['plan-chongqing']) {
-                const cqFlights = appState.plans['plan-chongqing'].flights;
-                if (!cqFlights || !cqFlights.isTransfer || !cqFlights.legs || !cqFlights.legs[0] || !cqFlights.legs[0].transferInfo) {
+                if (!appState.plans['plan-chongqing'].flights) {
                     appState.plans['plan-chongqing'].flights = JSON.parse(JSON.stringify(PRESET_CHONGQING.flights));
                     saveState();
+                } else {
+                    const cqFlights = appState.plans['plan-chongqing'].flights;
+                    if (!Array.isArray(cqFlights.legs) || cqFlights.legs.length === 0) {
+                        cqFlights.legs = JSON.parse(JSON.stringify(PRESET_CHONGQING.flights.legs));
+                        saveState();
+                    }
                 }
             }
 
-            // 自動相容修復：若北京行程缺少起降時間，自動補齊
+            // 安全相容：確保北京行程大交通結構存在，若完全無大交通才初始化範本；絕對不可覆蓋使用者的自訂修改與費用
             if (appState.plans['plan-beijing']) {
-                const bjFlights = appState.plans['plan-beijing'].flights;
-                if (!bjFlights || !bjFlights.legs || !bjFlights.legs[0] || !bjFlights.legs[0].depTime) {
+                if (!appState.plans['plan-beijing'].flights) {
                     appState.plans['plan-beijing'].flights = JSON.parse(JSON.stringify(PRESET_BEIJING.flights));
                     saveState();
+                } else {
+                    const bjFlights = appState.plans['plan-beijing'].flights;
+                    if (!Array.isArray(bjFlights.legs) || bjFlights.legs.length === 0) {
+                        bjFlights.legs = JSON.parse(JSON.stringify(PRESET_BEIJING.flights.legs));
+                        saveState();
+                    }
                 }
             }
 
@@ -6337,7 +6359,7 @@ const firebaseConfig = {
 
             if (legs.length === 0) {
                 container.innerHTML = `
-                    <div style="font-size: 0.8rem; color: var(--notion-text-muted); text-align: center; padding: 12px; cursor: pointer; border: 1px dashed var(--notion-border); border-radius: 6px;" onclick="openEditFlightModal()">
+                    <div style="font-size: 0.8rem; color: var(--notion-text-muted); text-align: center; padding: 12px; cursor: pointer; border: 1px dashed var(--notion-border); border-radius: 6px;" onclick="if(event){event.stopPropagation();} openEditFlightModal();">
                         <i class="fa-solid ${cfg.icon}"></i> 尚無${cfg.name}卡片，點擊新增
                     </div>
                 `;
@@ -6355,7 +6377,7 @@ const firebaseConfig = {
                 if (isTrans) {
                     // 轉乘卡片模板
                     return `
-                        <div class="flight-side-card" onclick="openEditFlightModal()" title="點擊編輯此交通資訊 (支援中轉)">
+                        <div class="flight-side-card" onclick="if(event){event.stopPropagation();} openEditFlightModal();" title="點擊編輯此交通資訊 (支援中轉)">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                                 <div style="display: flex; align-items: center; gap: 6px;">
                                     <span class="prop-pill ${pillClass}" style="font-size: 0.72rem; padding: 1px 7px;">${pillLabel}</span>
@@ -6408,7 +6430,7 @@ const firebaseConfig = {
                 } else {
                     // 直達卡片模板
                     return `
-                        <div class="flight-side-card" onclick="openEditFlightModal()" title="點擊編輯此交通資訊">
+                        <div class="flight-side-card" onclick="if(event){event.stopPropagation();} openEditFlightModal();" title="點擊編輯此交通資訊">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                                 <div style="display: flex; align-items: center; gap: 6px;">
                                     <span class="prop-pill ${pillClass}" style="font-size: 0.72rem; padding: 1px 7px;">${pillLabel}</span>
@@ -6450,7 +6472,7 @@ const firebaseConfig = {
                     : `<span>↔️ 去回分開：去 ${currInfo.symbol}${fStats.outCost.toLocaleString()} + 回 ${currInfo.symbol}${fStats.inCost.toLocaleString()}</span>`;
 
                 costSummaryHtml = `
-                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 7px 10px; margin-top: 6px; font-size: 0.75rem; color: #166534; cursor:pointer;" onclick="openEditFlightModal()" title="點擊修改大交通與費用">
+                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 7px 10px; margin-top: 6px; font-size: 0.75rem; color: #166534; cursor:pointer;" onclick="if(event){event.stopPropagation();} openEditFlightModal();" title="點擊修改大交通與費用">
                         <div style="display:flex; justify-content:space-between; align-items:center; font-weight:700;">
                             <span><i class="fa-solid fa-coins" style="color:#15803d;"></i> ${cfg.name}費用</span>
                             <span style="color:#15803d; font-size:0.8rem;">全團 ${currInfo.symbol} ${fStats.groupLocal.toLocaleString()}</span>
@@ -8893,7 +8915,7 @@ const firebaseConfig = {
                                         <div style="font-size:0.75rem; color:#64748b;">同行 ${m} 人 ‧ ${flightStats.pricingType === 'separate' ? '去回分開計價 (2筆明細)' : '往返合併票價 (維持1筆總額)'}</div>
                                     </div>
                                 </div>
-                                <button class="n-btn" style="font-size:0.76rem; padding:3px 9px;" onclick="openEditFlightModal()" title="修改大交通預估費用與實付金額">
+                                <button type="button" class="n-btn" style="font-size:0.76rem; padding:3px 9px;" onclick="if(event){event.stopPropagation();event.preventDefault();} openEditFlightModal();" title="修改大交通預估費用與實付金額">
                                     <i class="fa-solid fa-pen"></i> 編輯大交通與費用
                                 </button>
                             </div>
@@ -10901,206 +10923,211 @@ const firebaseConfig = {
         }
 
         function fillTransferExampleChongqing() {
-            setTransportType('flight');
-            const cb = document.getElementById('fIsTransferCheckbox');
-            if (cb) cb.checked = true;
-            toggleFlightTransferFields();
+            try {
+                setTransportType('flight');
+                const cb = document.getElementById('fIsTransferCheckbox');
+                if (cb) cb.checked = true;
+                toggleFlightTransferFields();
 
-            // 去程
-            document.getElementById('fOutAirline').value = '國泰航空';
-            document.getElementById('fOutNo').value = 'CX 407';
-            document.getElementById('fOutDepTime').value = '08:00';
-            document.getElementById('fOutArrTime1').value = '10:00';
-            document.getElementById('fOutDepLoc').value = '台北桃園 (TPE) T1';
-            document.getElementById('fOutArrLoc1').value = '香港 (HKG) T1';
-            document.getElementById('fTransferInfoOut').value = '香港國際機場 (HKG) 轉機停留 3 小時 35 分鐘';
-            document.getElementById('fOutNo2').value = 'CX 928';
-            document.getElementById('fOutDepTime2').value = '13:35';
-            document.getElementById('fOutArrTime2').value = '16:10';
-            document.getElementById('fOutArrLoc2').value = '重慶江北 (CKG) T3';
-            document.getElementById('fOutDuration').value = '8 hrs 10 mins (經香港轉機)';
+                const setVal = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = (val !== undefined && val !== null) ? val : '';
+                };
 
-            // 回程
-            document.getElementById('fInAirline').value = '國泰航空';
-            document.getElementById('fInNo').value = 'CX 945';
-            document.getElementById('fInDepTime').value = '10:50';
-            document.getElementById('fInArrTime1').value = '14:25';
-            document.getElementById('fInDepLoc').value = '重慶江北 (CKG) T3';
-            document.getElementById('fInArrLoc1').value = '香港 (HKG) T1';
-            document.getElementById('fTransferInfoIn').value = '香港國際機場 (HKG) 轉機停留 4 小時 50 分鐘';
-            document.getElementById('fInNo2').value = 'CX 464';
-            document.getElementById('fInDepTime2').value = '19:35';
-            document.getElementById('fInArrTime2').value = '21:20';
-            document.getElementById('fInArrLoc2').value = '台北桃園 (TPE) T1';
-            document.getElementById('fInDuration').value = '10 hrs 30 mins (經香港轉機)';
+                // 去程
+                setVal('fOutAirline', '國泰航空');
+                setVal('fOutNo', 'CX 407');
+                setVal('fOutDepTime', '08:00');
+                setVal('fOutArrTime1', '10:00');
+                setVal('fOutDepLoc', '台北桃園 (TPE) T1');
+                setVal('fOutArrLoc1', '香港 (HKG) T1');
+                setVal('fTransferInfoOut', '香港國際機場 (HKG) 轉機停留 3 小時 35 分鐘');
+                setVal('fOutNo2', 'CX 928');
+                setVal('fOutDepTime2', '13:35');
+                setVal('fOutArrTime2', '16:10');
+                setVal('fOutArrLoc2', '重慶江北 (CKG) T3');
+                setVal('fOutDuration', '8 hrs 10 mins (經香港轉機)');
 
-            document.getElementById('fCategoryTag').value = 'International';
-            document.getElementById('fPnr').value = 'EJ3HIM / CX8888';
+                // 回程
+                setVal('fInAirline', '國泰航空');
+                setVal('fInNo', 'CX 945');
+                setVal('fInDepTime', '10:50');
+                setVal('fInArrTime1', '14:25');
+                setVal('fInDepLoc', '重慶江北 (CKG) T3');
+                setVal('fInArrLoc1', '香港 (HKG) T1');
+                setVal('fTransferInfoIn', '香港國際機場 (HKG) 轉機停留 4 小時 50 分鐘');
+                setVal('fInNo2', 'CX 464');
+                setVal('fInDepTime2', '19:35');
+                setVal('fInArrTime2', '21:20');
+                setVal('fInArrLoc2', '台北桃園 (TPE) T1');
+                setVal('fInDuration', '10 hrs 30 mins (經香港轉機)');
 
-            // 帶入分開計價示範費用
-            const rSep = document.getElementById('fPricingSeparate');
-            if (rSep) rSep.checked = true;
-            toggleFlightPricingMode();
+                setVal('fCategoryTag', 'International');
+                setVal('fPnr', 'EJ3HIM / CX8888');
 
-            const outCostEl = document.getElementById('fOutCost');
-            if (outCostEl) outCostEl.value = '6250';
-            const inCostEl = document.getElementById('fInCost');
-            if (inCostEl) inCostEl.value = '6250';
-            const modeEl = document.getElementById('fCostMode');
-            if (modeEl) modeEl.value = 'single';
-            const currEl = document.getElementById('fCostCurr');
-            if (currEl) currEl.value = 'TWD';
-            calcFlightModalCost();
+                // 帶入分開計價示範費用
+                const rSep = document.getElementById('fPricingSeparate');
+                if (rSep) rSep.checked = true;
+                toggleFlightPricingMode();
 
-            showToast('info', '已帶入重慶轉機示範資料與分開計價費用！');
+                setVal('fOutCost', '6250');
+                setVal('fInCost', '6250');
+                setVal('fCostMode', 'single');
+                setVal('fCostCurr', 'TWD');
+                setVal('fActualCost', '12500');
+                calcFlightModalCost();
+
+                showToast('info', '已帶入重慶轉機示範資料與分開計價費用！');
+            } catch (e) {
+                console.warn('帶入重慶轉機範例時發生警告:', e);
+            }
         }
 
         function fillDirectExampleBeijing() {
-            setTransportType('flight');
-            const cb = document.getElementById('fIsTransferCheckbox');
-            if (cb) cb.checked = false;
-            toggleFlightTransferFields();
+            try {
+                setTransportType('flight');
+                const cb = document.getElementById('fIsTransferCheckbox');
+                if (cb) cb.checked = false;
+                toggleFlightTransferFields();
 
-            // 去程
-            document.getElementById('fOutAirline').value = '中華航空';
-            document.getElementById('fOutNo').value = 'CI 0517';
-            document.getElementById('fOutDepTime').value = '15:35';
-            document.getElementById('fOutArrTime1').value = '18:55';
-            document.getElementById('fOutDepLoc').value = '台北桃園 (TPE) T2';
-            document.getElementById('fOutArrLoc1').value = '北京首都 (PEK) T3';
-            document.getElementById('fTransferInfoOut').value = '';
-            document.getElementById('fOutNo2').value = '';
-            document.getElementById('fOutDepTime2').value = '';
-            document.getElementById('fOutArrTime2').value = '';
-            document.getElementById('fOutArrLoc2').value = '';
-            document.getElementById('fOutDuration').value = '3 hrs 25 mins (直飛)';
+                const setVal = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = (val !== undefined && val !== null) ? val : '';
+                };
 
-            // 回程
-            document.getElementById('fInAirline').value = '中華航空';
-            document.getElementById('fInNo').value = 'CI 0512';
-            document.getElementById('fInDepTime').value = '12:25';
-            document.getElementById('fInArrTime1').value = '15:45';
-            document.getElementById('fInDepLoc').value = '北京首都 (PEK) T3';
-            document.getElementById('fInArrLoc1').value = '台北桃園 (TPE) T2';
-            document.getElementById('fTransferInfoIn').value = '';
-            document.getElementById('fInNo2').value = '';
-            document.getElementById('fInDepTime2').value = '';
-            document.getElementById('fInArrTime2').value = '';
-            document.getElementById('fInArrLoc2').value = '';
-            document.getElementById('fInDuration').value = '3 hrs 15 mins (直飛)';
+                // 去程
+                setVal('fOutAirline', '中華航空');
+                setVal('fOutNo', 'CI 0517');
+                setVal('fOutDepTime', '15:35');
+                setVal('fOutArrTime1', '18:55');
+                setVal('fOutDepLoc', '台北桃園 (TPE) T2');
+                setVal('fOutArrLoc1', '北京首都 (PEK) T3');
+                setVal('fTransferInfoOut', '');
+                setVal('fOutNo2', '');
+                setVal('fOutDepTime2', '');
+                setVal('fOutArrTime2', '');
+                setVal('fOutArrLoc2', '');
+                setVal('fOutDuration', '3 hrs 25 mins (直飛)');
 
-            document.getElementById('fCategoryTag').value = 'International';
-            document.getElementById('fPnr').value = 'CI-PEK2026';
+                // 回程
+                setVal('fInAirline', '中華航空');
+                setVal('fInNo', 'CI 0512');
+                setVal('fInDepTime', '12:25');
+                setVal('fInArrTime1', '15:45');
+                setVal('fInDepLoc', '北京首都 (PEK) T3');
+                setVal('fInArrLoc1', '台北桃園 (TPE) T2');
+                setVal('fTransferInfoIn', '');
+                setVal('fInNo2', '');
+                setVal('fInDepTime2', '');
+                setVal('fInArrTime2', '');
+                setVal('fInArrLoc2', '');
+                setVal('fInDuration', '3 hrs 15 mins (直飛)');
 
-            // 帶入來回合併計價示範費用
-            const rRound = document.getElementById('fPricingRoundtrip');
-            if (rRound) rRound.checked = true;
-            toggleFlightPricingMode();
+                setVal('fCategoryTag', 'International');
+                setVal('fPnr', 'CI-PEK2026');
 
-            const totCostEl = document.getElementById('fTotalCost');
-            if (totCostEl) totCostEl.value = '15000';
-            const modeEl = document.getElementById('fCostMode');
-            if (modeEl) modeEl.value = 'single';
-            const currEl = document.getElementById('fCostCurr');
-            if (currEl) currEl.value = 'TWD';
-            calcFlightModalCost();
+                // 帶入來回合併計價示範費用
+                const rRound = document.getElementById('fPricingRoundtrip');
+                if (rRound) rRound.checked = true;
+                toggleFlightPricingMode();
 
-            showToast('info', '已帶入北京直飛示範資料與來回合併票價！');
+                setVal('fTotalCost', '15000');
+                setVal('fCostMode', 'single');
+                setVal('fCostCurr', 'TWD');
+                setVal('fActualCost', '14800');
+                calcFlightModalCost(true);
+
+                showToast('info', '已帶入北京直飛示範資料與來回合併票價！');
+            } catch (e) {
+                console.warn('帶入北京直飛範例時發生警告:', e);
+            }
         }
 
-        // 打開交通編輯彈窗
+        // 打開交通編輯彈窗 (強固防呆，全面防止拋錯閃退)
         function openEditFlightModal() {
-            const plan = getCurrentPlan();
-            if (!plan) return;
-            const fl = plan.flights || {};
-            const legs = fl.legs || [];
-            const l1 = legs[0] || {};
-            const l2 = legs[1] || {};
+            try {
+                const plan = getCurrentPlan();
+                if (!plan) {
+                    showToast('warning', '請先選擇行程計劃');
+                    return;
+                }
+                const fl = plan.flights || {};
+                const legs = fl.legs || [];
+                const l1 = legs[0] || {};
+                const l2 = legs[1] || {};
 
-            const transportType = fl.transportType || 'flight';
-            setTransportType(transportType);
+                const transportType = fl.transportType || 'flight';
+                setTransportType(transportType);
 
-            const pricingType = fl.pricingType || (fl.cost > 0 && !fl.outboundCost && !fl.inboundCost ? 'roundtrip' : (fl.outboundCost || fl.inboundCost ? 'separate' : 'roundtrip'));
-            const rRound = document.getElementById('fPricingRoundtrip');
-            const rSep = document.getElementById('fPricingSeparate');
-            if (pricingType === 'separate') {
-                if (rSep) rSep.checked = true;
-            } else {
-                if (rRound) rRound.checked = true;
+                const pricingType = fl.pricingType || (fl.cost > 0 && !fl.outboundCost && !fl.inboundCost ? 'roundtrip' : (fl.outboundCost || fl.inboundCost ? 'separate' : 'roundtrip'));
+                const rRound = document.getElementById('fPricingRoundtrip');
+                const rSep = document.getElementById('fPricingSeparate');
+                if (pricingType === 'separate') {
+                    if (rSep) rSep.checked = true;
+                } else {
+                    if (rRound) rRound.checked = true;
+                }
+                toggleFlightPricingMode();
+
+                const isTrans = fl.isTransfer === true || l1.isTransfer === true || !!l1.transferInfo || (l1.flightNo2 && l1.flightNo2.trim().length > 0);
+
+                const cb = document.getElementById('fIsTransferCheckbox');
+                if (cb) cb.checked = isTrans;
+                toggleFlightTransferFields();
+
+                // 安全給值小幫手：元素不存在時安全忽略，絕不拋出 TypeError
+                const setVal = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = (val !== undefined && val !== null) ? val : '';
+                };
+
+                // 去程填入
+                setVal('fOutAirline', l1.airline || '');
+                setVal('fOutNo', l1.flightNo || '');
+                setVal('fOutDepTime', l1.depTime || '');
+                setVal('fOutArrTime1', l1.arrTime || '');
+                setVal('fOutDepLoc', l1.depLoc || '');
+                setVal('fOutArrLoc1', l1.arrLoc || '');
+                setVal('fTransferInfoOut', l1.transferInfo || '');
+                setVal('fOutNo2', l1.flightNo2 || '');
+                setVal('fOutDepTime2', l1.depTime2 || '');
+                setVal('fOutArrTime2', l1.arrTime2 || '');
+                setVal('fOutArrLoc2', l1.arrLoc2 || '');
+                setVal('fOutDuration', l1.duration || '');
+
+                // 回程填入
+                setVal('fInAirline', l2.airline || '');
+                setVal('fInNo', l2.flightNo || '');
+                setVal('fInDepTime', l2.depTime || '');
+                setVal('fInArrTime1', l2.arrTime || '');
+                setVal('fInDepLoc', l2.depLoc || '');
+                setVal('fInArrLoc1', l2.arrLoc || '');
+                setVal('fTransferInfoIn', l2.transferInfo || '');
+                setVal('fInNo2', l2.flightNo2 || '');
+                setVal('fInDepTime2', l2.depTime2 || '');
+                setVal('fInArrTime2', l2.arrTime2 || '');
+                setVal('fInArrLoc2', l2.arrLoc2 || '');
+                setVal('fInDuration', l2.duration || '');
+
+                setVal('fCategoryTag', fl.categoryTag || 'International');
+                setVal('fPnr', fl.pnr || (l1.pnr || ''));
+
+                // 填入交通/機票費用設定
+                setVal('fOutCost', (fl.outboundCost !== undefined && fl.outboundCost !== null) ? fl.outboundCost : '');
+                setVal('fInCost', (fl.inboundCost !== undefined && fl.inboundCost !== null) ? fl.inboundCost : '');
+                setVal('fTotalCost', (fl.cost !== undefined && fl.cost !== null) ? fl.cost : '');
+                setVal('fCostMode', fl.costMode || 'single');
+                setVal('fCostCurr', fl.costCurr || 'LOCAL');
+                setVal('fActualCost', (fl.actualCost !== undefined && fl.actualCost !== null) ? fl.actualCost : '');
+
+                calcFlightModalCost();
+                openModal('editFlightModal');
+            } catch (err) {
+                console.error('開啟交通編輯彈窗時發生非致命問題:', err);
+                try {
+                    openModal('editFlightModal');
+                } catch (e) {}
             }
-            toggleFlightPricingMode();
-
-            const isTrans = fl.isTransfer === true || l1.isTransfer === true || !!l1.transferInfo || (l1.flightNo2 && l1.flightNo2.trim().length > 0);
-
-            const cb = document.getElementById('fIsTransferCheckbox');
-            if (cb) cb.checked = isTrans;
-            toggleFlightTransferFields();
-
-            // 去程填入
-            const cfg = TRANSPORT_CONFIG[transportType] || TRANSPORT_CONFIG.flight;
-            document.getElementById('fOutAirline').value = l1.airline || '';
-            document.getElementById('fOutNo').value = l1.flightNo || '';
-            document.getElementById('fOutDepTime').value = l1.depTime || '';
-            document.getElementById('fOutArrTime1').value = l1.arrTime || '';
-            document.getElementById('fOutDepLoc').value = l1.depLoc || '';
-            document.getElementById('fOutArrLoc1').value = l1.arrLoc || '';
-            document.getElementById('fTransferInfoOut').value = l1.transferInfo || '';
-            document.getElementById('fOutNo2').value = l1.flightNo2 || '';
-            document.getElementById('fOutDepTime2').value = l1.depTime2 || '';
-            document.getElementById('fOutArrTime2').value = l1.arrTime2 || '';
-            document.getElementById('fOutArrLoc2').value = l1.arrLoc2 || '';
-            document.getElementById('fOutDuration').value = l1.duration || '';
-
-            // 如果目前全是空值且為飛機，帶入合理預設
-            if (!l1.airline && !l1.flightNo && transportType === 'flight') {
-                document.getElementById('fOutAirline').value = '國泰航空';
-                document.getElementById('fOutNo').value = 'CX 407';
-                document.getElementById('fOutDepTime').value = '08:00';
-                document.getElementById('fOutArrTime1').value = '10:00';
-                document.getElementById('fOutDepLoc').value = '台北桃園 (TPE) T1';
-                document.getElementById('fOutArrLoc1').value = '香港 (HKG) T1';
-            }
-
-            // 回程填入
-            document.getElementById('fInAirline').value = l2.airline || '';
-            document.getElementById('fInNo').value = l2.flightNo || '';
-            document.getElementById('fInDepTime').value = l2.depTime || '';
-            document.getElementById('fInArrTime1').value = l2.arrTime || '';
-            document.getElementById('fInDepLoc').value = l2.depLoc || '';
-            document.getElementById('fInArrLoc1').value = l2.arrLoc || '';
-            document.getElementById('fTransferInfoIn').value = l2.transferInfo || '';
-            document.getElementById('fInNo2').value = l2.flightNo2 || '';
-            document.getElementById('fInDepTime2').value = l2.depTime2 || '';
-            document.getElementById('fInArrTime2').value = l2.arrTime2 || '';
-            document.getElementById('fInArrLoc2').value = l2.arrLoc2 || '';
-            document.getElementById('fInDuration').value = l2.duration || '';
-
-            if (!l2.airline && !l2.flightNo && transportType === 'flight') {
-                document.getElementById('fInAirline').value = isTrans ? '國泰航空' : '中華航空';
-                document.getElementById('fInNo').value = isTrans ? 'CX 945' : 'CI 0512';
-                document.getElementById('fInDepTime').value = isTrans ? '10:50' : '12:25';
-                document.getElementById('fInArrTime1').value = isTrans ? '14:25' : '15:45';
-                document.getElementById('fInDepLoc').value = isTrans ? '重慶江北 (CKG) T3' : '北京首都 (PEK) T3';
-                document.getElementById('fInArrLoc1').value = isTrans ? '香港 (HKG) T1' : '台北桃園 (TPE) T2';
-            }
-
-            document.getElementById('fCategoryTag').value = fl.categoryTag || 'International';
-            document.getElementById('fPnr').value = fl.pnr || (l1.pnr || '');
-
-            // 填入交通/機票費用設定
-            const setCostVal = (id, val) => {
-                const el = document.getElementById(id);
-                if (el) el.value = (val !== undefined && val !== null) ? val : '';
-            };
-            setCostVal('fOutCost', fl.outboundCost || '');
-            setCostVal('fInCost', fl.inboundCost || '');
-            setCostVal('fTotalCost', (fl.cost !== undefined && fl.cost !== null) ? fl.cost : '');
-            setCostVal('fCostMode', fl.costMode || 'single');
-            setCostVal('fCostCurr', fl.costCurr || 'LOCAL');
-            setCostVal('fActualCost', (fl.actualCost !== undefined && fl.actualCost !== null) ? fl.actualCost : '');
-            calcFlightModalCost();
-
-            openModal('editFlightModal');
         }
 
         // 儲存交通表單設定 (強固防呆，最優先立即關閉彈窗，徹底防止點選儲存無反應或小視窗不關閉)
