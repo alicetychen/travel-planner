@@ -3384,6 +3384,22 @@
                         </div>
                     </div>
 
+                    <!-- 行程間交通移動智慧引導轉化卡片模組 (當行程類別選為「交通移動」時動態展開) -->
+                    <div id="eventTransitConvertBox" style="display:none; background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:12px; margin-bottom:14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <span style="font-weight:700; color:#15803d; font-size:0.84rem; display:flex; align-items:center; gap:6px;">
+                                <i class="fa-solid fa-route"></i> 智慧建議：直接調整為行程間移動接駁
+                            </span>
+                            <span style="font-size:0.72rem; color:#16a34a; font-weight:700; background:#dcfce7; padding:1px 6px; border-radius:4px;">推薦最佳呈現</span>
+                        </div>
+                        <div style="font-size:0.76rem; color:#334155; margin-bottom:10px; line-height:1.45;">
+                            前後行程之間的接駁車程、專車接送或航程移動，可一鍵轉為<strong>「行程之間移動」</strong>。資訊將直接整合顯示在時間軸的站間移動條中（含時程、花費與導航），不再佔用獨立的大活動卡片，讓整體時間軸更清晰流暢！
+                        </div>
+                        <button type="button" class="n-btn n-btn-primary" style="width:100%; font-size:0.8rem; font-weight:700; background:#16a34a; border-color:#16a34a; color:#fff;" onclick="handleConvertCurrentModalEventToTransit()">
+                            <i class="fa-solid fa-arrows-split-up-and-left"></i> ⚡ 一鍵轉為行程間移動接駁 (自動移入站間移動)
+                        </button>
+                    </div>
+
                     <!-- 航班交通設定即時連動卡片模組 (當行程類別選為「航班航程」時動態展開) -->
                     <div id="eventFlightLinkBox" style="display:none; background:#f0f9ff; border:1px solid #7dd3fc; border-radius:8px; padding:12px; margin-bottom:14px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -3594,6 +3610,14 @@
                         </div>
                     </div>
 
+                    <!-- 自訂接駁移動項目名稱 / 說明 -->
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label class="form-label" style="font-weight:700; color:#334155;">
+                            移動接駁名稱 / 說明 (選填)
+                        </label>
+                        <input type="text" id="transitTitleInput" class="form-input" placeholder="例如：專車接送出發前往桃園機場、重慶機場專車直達飯店">
+                    </div>
+
                     <!-- 移動時間與交通方式設定 -->
                     <div class="form-row">
                         <div class="form-group">
@@ -3602,10 +3626,12 @@
                             </label>
                             <select id="transitModeSelect" class="form-input">
                                 <option value="car">🚗 開車 / 計程車 / 專車接送</option>
-                                <option value="transit">🚇 大眾運輸 / 地鐵 / 公車</option>
+                                <option value="transit">🚇 大眾運輸 / 地鐵 / 捷運</option>
+                                <option value="bus">🚌 長途客運 / 巴士 / 公車</option>
                                 <option value="walk">🚶 步行 / 散步</option>
                                 <option value="flight">✈️ 航班 / 航程</option>
                                 <option value="train">🚄 高鐵 / 火車 / 動車</option>
+                                <option value="ship">🚢 遊輪 / 渡輪 / 船班</option>
                                 <option value="bike">🚲 自行車 / 騎行</option>
                                 <option value="other">📌 其他交通方式</option>
                             </select>
@@ -3637,7 +3663,8 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label" id="transitCostLabel">交通花費 (選填)</label>
-                            <input type="number" id="transitCostInput" class="form-input" placeholder="0" min="0">
+                            <input type="number" id="transitCostInput" class="form-input" placeholder="0" min="0" oninput="updateTransitCostTwdHint()">
+                            <div id="transitCostTwdHint" style="font-size:0.75rem; color:#0284c7; margin-top:2px;"></div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">接駁備註 (選填)</label>
@@ -3671,7 +3698,7 @@
                     </button>
                     <div style="display:flex; gap:8px;">
                         <button type="button" class="n-btn" onclick="closeModal('transitSettingsModal')">取消</button>
-                        <button type="submit" class="n-btn n-btn-primary">
+                        <button type="button" class="n-btn n-btn-primary" onclick="handleSaveTransitSubmit(event)">
                             <i class="fa-solid fa-check"></i> 儲存接駁設定
                         </button>
                     </div>
@@ -6365,6 +6392,50 @@ const firebaseConfig = {
             const events = activeDay.events || [];
             const curr = getPlanCurrency(plan);
 
+            // 當日起程交通移動接駁條 (首站出發交通，例如專車去機場)
+            let firstTransitHtml = '';
+            const fTransit = activeDay.firstTransit;
+            if (fTransit && (fTransit.minutes || fTransit.title || fTransit.cost)) {
+                const fModeInfo = getTransitModeInfo(fTransit.mode || 'car');
+                const fMinutes = Number(fTransit.minutes || 0);
+                const fCost = Number(fTransit.cost || 0);
+                const fTwd = Math.round(fCost * curr.rate);
+                const fTwdHint = (curr.code !== 'TWD' && fCost > 0) ? ` (≈ NT$ ${fTwd.toLocaleString()})` : '';
+                const fCostHtml = fCost > 0 ? `<span style="color:#0f766e; font-weight:700; font-size:0.74rem; background:#ccfbf1; padding:1px 6px; border-radius:4px; margin-left:4px;" title="起程交通費用"><i class="fa-solid fa-coins"></i> ${curr.symbol}${fCost.toLocaleString()}${fTwdHint}</span>` : '';
+                const fRange = (fTransit.startTimeStr && fTransit.endTimeStr) ? `(${fTransit.startTimeStr} ➔ ${fTransit.endTimeStr})` : '';
+
+                firstTransitHtml = `
+                    <div class="timeline-transit-row" style="margin-bottom:8px; background:#f0f9ff; border:1px dashed #7dd3fc; border-radius:8px; padding:6px 10px;">
+                        <div class="timeline-transit-badge custom-set" onclick="openTransitSettingsModal(${activeDay.dayNum}, 0)" title="點擊編輯首站起程出發交通設定" style="background:#fff; cursor:pointer;">
+                            <span style="background:#0284c7; color:#fff; font-size:0.65rem; padding:1px 5px; border-radius:3px; font-weight:700; margin-right:4px;"><i class="fa-solid fa-location-arrow"></i> 起程接駁</span>
+                            ${fTransit.title ? `<strong style="color:#0369a1; font-size:0.76rem; margin-right:4px;"><i class="fa-solid fa-diamond-turn-right" style="font-size:0.68rem;"></i> ${escapeHtml(fTransit.title)}</strong>` : ''}
+                            <i class="fa-solid ${fModeInfo.icon}"></i>
+                            <span>${fModeInfo.label}約 <strong>${formatDuration(fMinutes)}</strong></span>
+                            <span style="font-size:0.68rem; opacity:0.85; margin-left:2px;">${fRange}</span>
+                            ${fCostHtml}
+                            ${fTransit.notes ? `<span style="font-size:0.7rem; color:#64748b; margin-left:4px;" title="${escapeHtml(fTransit.notes)}"><i class="fa-regular fa-comment-dots"></i> ${escapeHtml(fTransit.notes.length > 18 ? fTransit.notes.slice(0, 18) + '…' : fTransit.notes)}</span>` : ''}
+                            <i class="fa-solid fa-pen-to-square" style="font-size:0.68rem; opacity:0.6; margin-left:4px;"></i>
+                        </div>
+                        <div class="timeline-transit-actions" style="margin-left:auto; display:flex; gap:6px;">
+                            <button type="button" class="n-btn transit-action-btn map-btn" onclick="openFirstTransitMapQuick(${activeDay.dayNum})" title="地圖路線規劃與交通查詢">
+                                <i class="fa-solid fa-map-location-dot"></i> 地圖路線
+                            </button>
+                            <button type="button" class="n-btn transit-action-btn" onclick="openTransitSettingsModal(${activeDay.dayNum}, 0)" title="設定當日起程交通與花費">
+                                <i class="fa-solid fa-gear"></i> 設定
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else if (events.length > 0) {
+                firstTransitHtml = `
+                    <div style="display:flex; justify-content:flex-start; margin-bottom:10px;">
+                        <button type="button" class="n-btn" style="font-size:0.72rem; padding:3px 10px; color:#0284c7; background:#f0f9ff; border:1px dashed #7dd3fc; border-radius:6px; font-weight:600;" onclick="openTransitSettingsModal(${activeDay.dayNum}, 0)" title="設定當日從出發地/飯店前往首站的起程交通接駁">
+                            <i class="fa-solid fa-location-arrow"></i> 設定當日起程交通 (專車出發/前往機場/地鐵)
+                        </button>
+                    </div>
+                `;
+            }
+
             let eventsHtml = '';
             if (events.length === 0) {
                 eventsHtml = `<div style="text-align:center; padding:20px; color:var(--notion-text-sub); font-size:0.86rem;">當天尚無排定活動</div>`;
@@ -6410,9 +6481,23 @@ const firebaseConfig = {
                         const customTagHtml = isCustomSet
                             ? `<span style="background:#2563eb; color:#fff; font-size:0.62rem; padding:1px 5px; border-radius:3px; font-weight:700;">自訂</span>`
                             : '';
-                        const costTagHtml = (customTransit && customTransit.cost)
-                            ? `<span style="color:#0f766e; font-size:0.68rem; margin-left:3px;"><i class="fa-solid fa-coins"></i> ${curr.symbol}${customTransit.cost}</span>`
-                            : '';
+                        
+                        // 擷取自訂移動名稱與備註
+                        const transitTitleText = (customTransit && customTransit.title) ? escapeHtml(customTransit.title) : '';
+                        const transitNotesText = (customTransit && customTransit.notes) ? escapeHtml(customTransit.notes) : '';
+
+                        let titleTagHtml = '';
+                        if (transitTitleText) {
+                            titleTagHtml = `<strong style="color:#0369a1; font-size:0.76rem; margin-right:4px; background:#e0f2fe; padding:1px 6px; border-radius:4px;"><i class="fa-solid fa-diamond-turn-right" style="font-size:0.68rem;"></i> ${transitTitleText}</strong>`;
+                        }
+
+                        let costDisplayHtml = '';
+                        if (customTransit && customTransit.cost) {
+                            const costVal = Number(customTransit.cost);
+                            const twdVal = Math.round(costVal * curr.rate);
+                            const twdHint = (curr.code !== 'TWD') ? ` (≈ NT$ ${twdVal.toLocaleString()})` : '';
+                            costDisplayHtml = `<span style="color:#0f766e; font-weight:700; font-size:0.74rem; background:#ccfbf1; padding:1px 6px; border-radius:4px; margin-left:4px;" title="交通費用"><i class="fa-solid fa-coins"></i> ${curr.symbol}${costVal.toLocaleString()}${twdHint}</span>`;
+                        }
 
                         // 預期抵達/次站開始時間
                         const expectedStartM = prevEndMinutes + displayMinutes;
@@ -6445,17 +6530,21 @@ const firebaseConfig = {
                                 : `(${prevTimeLabel} ➔ 預計 ${expectedStartTimeStr})`;
 
                             badgeInnerHtml = `
+                                ${titleTagHtml}
                                 <i class="fa-solid ${modeInfo.icon}"></i>
                                 <span>${modeInfo.label}約 <strong>${formatDuration(displayMinutes)}</strong></span>
                                 ${customTagHtml}
                                 <span style="font-size:0.68rem; opacity:0.85; margin-left:2px;">${rangeDisplay}</span>
-                                ${costTagHtml}
+                                ${costDisplayHtml}
+                                ${transitNotesText ? `<span style="font-size:0.7rem; color:#64748b; margin-left:4px;" title="${transitNotesText}"><i class="fa-regular fa-comment-dots"></i> ${transitNotesText.length > 18 ? transitNotesText.slice(0, 18) + '…' : transitNotesText}</span>` : ''}
                             `;
                         } else if (naturalTransitMinutes === 0) {
                             badgeExtraClass += ' seamless';
                             badgeInnerHtml = `
+                                ${titleTagHtml}
                                 <i class="fa-solid fa-shoe-prints"></i>
                                 <span>無縫銜接 (${prevTimeLabel})</span>
+                                ${costDisplayHtml}
                             `;
                         }
 
@@ -6514,7 +6603,12 @@ const firebaseConfig = {
                                     ${ev.notes ? `<span style="color:#64748b;"><i class="fa-regular fa-note-sticky"></i> ${escapeHtml(ev.notes)}</span>` : ''}
                                 </div>
                             </div>
-                            <div style="display:flex; gap:6px; flex-shrink:0;">
+                            <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                                ${ev.type === 'trans' ? `
+                                    <button type="button" class="n-btn" style="padding:2px 8px; font-size:0.72rem; color:#0369a1; background:#e0f2fe; border-color:#7dd3fc; font-weight:700;" onclick="event.stopPropagation(); convertEventToTransit(${activeDay.dayNum}, ${eIdx})" title="將此交通活動轉為行程間移動接駁，時間軸更流暢乾淨">
+                                        <i class="fa-solid fa-arrows-split-up-and-left"></i> 轉為站間移動
+                                    </button>
+                                ` : ''}
                                 <button type="button" class="n-btn" style="padding: 2px 7px; font-size: 0.74rem;" onclick="event.stopPropagation(); openEditEventModal(${activeDay.dayNum}, ${eIdx})" title="編輯此行程活動">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
@@ -6561,7 +6655,15 @@ const firebaseConfig = {
                 } else {
                     dayOtherTotal += c;
                 }
+                // 站間移動自訂交通花費納入交通總額
+                if (e.transit && Number(e.transit.cost) > 0) {
+                    evTransTotal += Number(e.transit.cost);
+                }
             });
+            // 起程出發交通自訂花費納入交通總額
+            if (activeDay.firstTransit && Number(activeDay.firstTransit.cost) > 0) {
+                evTransTotal += Number(activeDay.firstTransit.cost);
+            }
 
             const memberCount = Math.max(1, parseInt(plan.memberCount || 1));
 
@@ -6725,6 +6827,7 @@ const firebaseConfig = {
                     </div>
 
                     <div class="timeline-events-list">
+                        ${firstTransitHtml}
                         ${eventsHtml}
                     </div>
 
@@ -7205,7 +7308,17 @@ const firebaseConfig = {
                             evOther += c;
                         }
                     }
+                    if (e.transit && Number(e.transit.cost) > 0) {
+                        const trCost = Number(e.transit.cost);
+                        evTrans += trCost;
+                        totalEventCost += trCost;
+                    }
                 });
+                if (d.firstTransit && Number(d.firstTransit.cost) > 0) {
+                    const fCost = Number(d.firstTransit.cost);
+                    evTrans += fCost;
+                    totalEventCost += fCost;
+                }
 
                 const dTrans = (d.transportCost !== undefined && d.transportCost !== null) ? Number(d.transportCost) : evTrans;
                 const dSpot = (d.spotCost !== undefined && d.spotCost !== null) ? Number(d.spotCost) : evSpot;
@@ -10916,14 +11029,18 @@ const firebaseConfig = {
             showToast('success', `已成功將交通航班時刻 (${info.startTime} - ${info.endTime}) 與航程資訊同步帶入！`);
         }
 
+        function updateEventTransitConvertBox(show) {
+            const box = document.getElementById('eventTransitConvertBox');
+            if (box) box.style.display = show ? 'block' : 'none';
+        }
+
         function handleEventTypeChange() {
             handleTimeSelectorChange();
             const typeSelect = document.getElementById('eventTypeSelect');
-            if (typeSelect && typeSelect.value === 'flight') {
-                updateEventFlightLinkBox(null, true);
-            } else {
-                updateEventFlightLinkBox(null, false);
-            }
+            const isFlight = (typeSelect && typeSelect.value === 'flight');
+            const isTrans = (typeSelect && typeSelect.value === 'trans');
+            updateEventFlightLinkBox(null, isFlight);
+            updateEventTransitConvertBox(isTrans);
         }
 
         // 即時行程關聯與影響分析 (Impact Analysis)
@@ -11168,15 +11285,32 @@ const firebaseConfig = {
         // ==========================================
         function getTransitModeInfo(mode) {
             const map = {
-                'car': { label: '開車/計程車', icon: 'fa-car-side', emoji: '🚗' },
+                'car': { label: '開車/計程車/專車', icon: 'fa-car-side', emoji: '🚗' },
                 'transit': { label: '大眾運輸/地鐵', icon: 'fa-train-subway', emoji: '🚇' },
-                'walk': { label: '步行', icon: 'fa-person-walking', emoji: '🚶' },
+                'bus': { label: '長途客運/公車巴士', icon: 'fa-bus', emoji: '🚌' },
+                'walk': { label: '步行散步', icon: 'fa-person-walking', emoji: '🚶' },
                 'flight': { label: '航班航程', icon: 'fa-plane-departure', emoji: '✈️' },
                 'train': { label: '高鐵火車', icon: 'fa-train', emoji: '🚄' },
+                'ship': { label: '遊輪/渡輪/船班', icon: 'fa-ship', emoji: '🚢' },
                 'bike': { label: '自行車騎行', icon: 'fa-bicycle', emoji: '🚲' },
                 'other': { label: '接駁移動', icon: 'fa-diamond-turn-right', emoji: '🚙' }
             };
             return map[mode] || map['car'];
+        }
+
+        // 接駁費用即時匯率折算提示
+        function updateTransitCostTwdHint() {
+            const hint = document.getElementById('transitCostTwdHint');
+            if (!hint) return;
+            const plan = getCurrentPlan();
+            const curr = getPlanCurrency(plan);
+            const costVal = parseFloat(document.getElementById('transitCostInput')?.value) || 0;
+            if (costVal > 0 && curr.code !== 'TWD') {
+                const twd = Math.round(costVal * curr.rate);
+                hint.innerText = `≈ NT$ ${twd.toLocaleString()} (${curr.rate} 匯率折算)`;
+            } else {
+                hint.innerText = '';
+            }
         }
 
         function getMapRouteUrl(origin, destination, mode = 'driving', provider = 'google') {
@@ -11199,23 +11333,101 @@ const firebaseConfig = {
             return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination || origin)}`;
         }
 
-        // 開啟接駁設定彈窗
+        // 開啟首站起程交通在外部地圖之路線規劃
+        function openFirstTransitMapQuick(dayNum) {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
+            if (!day || !day.events || day.events.length === 0) return;
+
+            const fTransit = day.firstTransit || {};
+            const firstEv = day.events[0];
+            const originStr = (fTransit.fromLoc || '出發地').trim();
+            const destStr = (firstEv.loc || firstEv.title || '').replace(/➔/g, ' ').trim();
+
+            const url = getMapRouteUrl(originStr, destStr, 'driving', 'google');
+            if (url) {
+                window.open(url, '_blank');
+            } else {
+                showToast('warning', '未能取得地點資訊，請先在首站或接駁設定中填寫地點！');
+            }
+        }
+
+        // 開啟接駁設定彈窗 (支援 eventIdx === 0 首站起程接駁與 eventIdx > 0 站間接駁)
         function openTransitSettingsModal(dayNum, eventIdx) {
             const plan = getCurrentPlan();
             if (!plan) return;
             const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
-            if (!day || !day.events || !day.events[eventIdx] || eventIdx <= 0) return;
+            if (!day || !day.events || day.events.length === 0 || eventIdx < 0) return;
 
             day.events = sortDayEventsByTime(day.events);
+            const currCurr = getPlanCurrency(plan);
+            const modalTitleEl = document.getElementById('transitModalTitle');
+
+            document.getElementById('transitDayNum').value = dayNum;
+            document.getElementById('transitEventIdx').value = eventIdx;
+
+            const titleInput = document.getElementById('transitTitleInput');
+            const costLabel = document.getElementById('transitCostLabel');
+            if (costLabel) costLabel.innerText = `交通花費 (${currCurr.symbol} ${currCurr.name})`;
+
+            if (eventIdx === 0) {
+                // 1. 首站起程接駁設定
+                const firstEv = day.events[0];
+                const pFirst = parseTimeString(firstEv.time);
+                const fTransit = day.firstTransit || {};
+
+                if (modalTitleEl) {
+                    modalTitleEl.innerHTML = `<i class="fa-solid fa-location-arrow" style="color:#0284c7;"></i> 設定當日起程交通 (前往首站接駁移動)`;
+                }
+
+                document.getElementById('transitFromTitle').innerText = fTransit.fromLoc ? `出發地 (${fTransit.fromLoc})` : '出發地 / 家中 / 住宿飯店';
+                document.getElementById('transitFromEndTime').innerText = fTransit.startTimeStr ? `預計 ${fTransit.startTimeStr} 出發` : '出發啟程';
+                const fromLocEl = document.getElementById('transitFromLoc');
+                const fromLocRow = document.getElementById('transitFromLocRow');
+                fromLocEl.innerText = fTransit.fromLoc || '自訂出發點';
+                fromLocRow.style.display = 'block';
+
+                document.getElementById('transitToTitle').innerText = firstEv.title || '當日首站行程';
+                document.getElementById('transitToStartTime').innerText = `${pFirst.startTimeStr} 開始`;
+                const toLocEl = document.getElementById('transitToLoc');
+                const toLocRow = document.getElementById('transitToLocRow');
+                if (firstEv.loc) {
+                    toLocEl.innerText = firstEv.loc;
+                    toLocRow.style.display = 'block';
+                } else {
+                    toLocRow.style.display = 'none';
+                }
+
+                const initialMinutes = (fTransit.minutes !== undefined && fTransit.minutes !== null && fTransit.minutes !== '')
+                    ? Number(fTransit.minutes)
+                    : 40;
+                document.getElementById('transitMinutesInput').value = initialMinutes;
+
+                const modeSelect = document.getElementById('transitModeSelect');
+                if (modeSelect) modeSelect.value = fTransit.mode || 'car';
+
+                if (titleInput) titleInput.value = fTransit.title || '專車接送出發前往第一站';
+                document.getElementById('transitCostInput').value = fTransit.cost || '';
+                document.getElementById('transitNotesInput').value = fTransit.notes || '';
+
+                updateTransitCostTwdHint();
+                updateTransitLivePreview();
+                openModal('transitSettingsModal');
+                return;
+            }
+
+            // 2. 站間接駁設定 (eventIdx > 0)
+            if (!day.events[eventIdx]) return;
             const prev = day.events[eventIdx - 1];
             const curr = day.events[eventIdx];
 
             const pPrev = parseTimeString(prev.time);
             const pCurr = parseTimeString(curr.time);
-            const currCurr = getPlanCurrency(plan);
 
-            document.getElementById('transitDayNum').value = dayNum;
-            document.getElementById('transitEventIdx').value = eventIdx;
+            if (modalTitleEl) {
+                modalTitleEl.innerHTML = `<i class="fa-solid fa-route" style="color:#0284c7;"></i> 設定行程間移動接駁與地圖路線`;
+            }
 
             // 前站與次站資訊
             const prevEndMinutes = pPrev.hasEnd ? pPrev.endMinutes : pPrev.startMinutes;
@@ -11261,12 +11473,11 @@ const firebaseConfig = {
                 modeSelect.value = autoMode;
             }
 
+            if (titleInput) titleInput.value = customTransit.title || '';
             document.getElementById('transitCostInput').value = customTransit.cost || '';
-            const costLabel = document.getElementById('transitCostLabel');
-            if (costLabel) costLabel.innerText = `交通花費 (${currCurr.symbol} ${currCurr.name})`;
             document.getElementById('transitNotesInput').value = customTransit.notes || '';
 
-            // 更新即時推算預覽
+            updateTransitCostTwdHint();
             updateTransitLivePreview();
             openModal('transitSettingsModal');
         }
@@ -11333,8 +11544,33 @@ const firebaseConfig = {
             const dayNum = Number(document.getElementById('transitDayNum')?.value || 1);
             const eventIdx = Number(document.getElementById('transitEventIdx')?.value || 1);
             const day = (plan.days || []).find(d => d.dayNum === dayNum);
-            if (!day || !day.events || !day.events[eventIdx] || eventIdx <= 0) return;
+            if (!day || !day.events || day.events.length === 0 || eventIdx < 0) return;
 
+            const minsInput = document.getElementById('transitMinutesInput');
+            const setMinutes = parseInt(minsInput ? minsInput.value : '0', 10) || 0;
+
+            if (eventIdx === 0) {
+                // 首站起程接駁即時預覽
+                const firstEv = day.events[0];
+                const pFirst = parseTimeString(firstEv.time);
+                const startMinutes = Math.max(0, pFirst.startMinutes - setMinutes);
+                const sH = String(Math.floor(startMinutes / 60) % 24).padStart(2, '0');
+                const sM = String(startMinutes % 60).padStart(2, '0');
+                const startTimeStr = `${sH}:${sM}`;
+
+                box.innerHTML = `
+                    <div style="color:#0369a1; font-weight:700; margin-bottom:3px;">
+                        🎯 首站起程出發推算結果：
+                    </div>
+                    <div>
+                        首站「${escapeHtml(firstEv.title)}」於 <strong>${pFirst.startTimeStr}</strong> 開始 ➔ 預估車程 <strong>${formatDuration(setMinutes)}</strong> ➔ 建議於 <strong>${startTimeStr}</strong> 從出發點準時出發接駁！
+                    </div>
+                `;
+                return;
+            }
+
+            // 站間接駁即時預覽 (eventIdx > 0)
+            if (!day.events[eventIdx]) return;
             const prev = day.events[eventIdx - 1];
             const curr = day.events[eventIdx];
             const pPrev = parseTimeString(prev.time);
@@ -11343,8 +11579,6 @@ const firebaseConfig = {
             const prevEndMinutes = pPrev.hasEnd ? pPrev.endMinutes : pPrev.startMinutes;
             const prevTimeStr = pPrev.hasEnd ? pPrev.endTimeStr : pPrev.startTimeStr;
 
-            const minsInput = document.getElementById('transitMinutesInput');
-            const setMinutes = parseInt(minsInput ? minsInput.value : '0', 10) || 0;
             const syncNextTime = document.getElementById('transitSyncNextEventTime')?.checked;
 
             const newStartMinutes = prevEndMinutes + setMinutes;
@@ -11385,7 +11619,7 @@ const firebaseConfig = {
             box.innerHTML = previewHtml;
         }
 
-        // 儲存接駁設定表單
+        // 儲存接駁設定表單 (支援首站與站間接駁)
         function handleSaveTransitSubmit(e) {
             if (e) {
                 if (typeof e.preventDefault === 'function') e.preventDefault();
@@ -11397,20 +11631,52 @@ const firebaseConfig = {
             const dayNum = Number(document.getElementById('transitDayNum')?.value || 1);
             const eventIdx = Number(document.getElementById('transitEventIdx')?.value || 1);
             const day = (plan.days || []).find(d => d.dayNum === dayNum);
-            if (!day || !day.events || !day.events[eventIdx] || eventIdx <= 0) return false;
+            if (!day || !day.events || day.events.length === 0 || eventIdx < 0) return false;
 
+            const minutes = parseInt(document.getElementById('transitMinutesInput')?.value || '0', 10);
+            const mode = document.getElementById('transitModeSelect')?.value || 'car';
+            const cost = parseFloat(document.getElementById('transitCostInput')?.value) || 0;
+            const title = document.getElementById('transitTitleInput')?.value.trim() || '';
+            const notes = document.getElementById('transitNotesInput')?.value.trim() || '';
+
+            if (eventIdx === 0) {
+                // 1. 儲存首站起程出發接駁
+                const firstEv = day.events[0];
+                const pFirst = parseTimeString(firstEv.time);
+                const startMinutes = Math.max(0, pFirst.startMinutes - minutes);
+                const sH = String(Math.floor(startMinutes / 60) % 24).padStart(2, '0');
+                const sM = String(startMinutes % 60).padStart(2, '0');
+                const startTimeStr = `${sH}:${sM}`;
+
+                day.firstTransit = {
+                    title: title || '專車接送出發前往第一站',
+                    mode: mode,
+                    minutes: minutes,
+                    cost: cost,
+                    notes: notes,
+                    fromLoc: '出發地',
+                    startTimeStr: startTimeStr,
+                    endTimeStr: pFirst.startTimeStr,
+                    custom: true
+                };
+
+                saveState();
+                renderTimelineView();
+                closeModal('transitSettingsModal');
+                showToast('success', `已成功儲存當日起程交通設定（${formatDuration(minutes)}）！`);
+                return false;
+            }
+
+            // 2. 儲存站間接駁 (eventIdx > 0)
+            if (!day.events[eventIdx]) return false;
             const prev = day.events[eventIdx - 1];
             const curr = day.events[eventIdx];
             const pPrev = parseTimeString(prev.time);
             const pCurr = parseTimeString(curr.time);
 
-            const minutes = parseInt(document.getElementById('transitMinutesInput')?.value || '0', 10);
-            const mode = document.getElementById('transitModeSelect')?.value || 'car';
-            const cost = parseFloat(document.getElementById('transitCostInput')?.value) || 0;
-            const notes = document.getElementById('transitNotesInput')?.value.trim() || '';
-
             // 儲存自訂接駁物件
             curr.transit = {
+                title: title,
                 minutes: minutes,
                 mode: mode,
                 cost: cost,
@@ -11448,20 +11714,160 @@ const firebaseConfig = {
             return false;
         }
 
-        // 清除自訂接駁設定，恢復依行程時間差自動計算
+        // 清除自訂接駁設定，恢復依行程時間差自動計算 (支援首站與站間)
         function resetTransitCustomSetting() {
             const plan = getCurrentPlan();
             if (!plan) return;
             const dayNum = Number(document.getElementById('transitDayNum')?.value || 1);
             const eventIdx = Number(document.getElementById('transitEventIdx')?.value || 1);
             const day = (plan.days || []).find(d => d.dayNum === dayNum);
-            if (!day || !day.events || !day.events[eventIdx] || eventIdx <= 0) return;
+            if (!day || !day.events || day.events.length === 0 || eventIdx < 0) return;
 
-            delete day.events[eventIdx].transit;
+            if (eventIdx === 0) {
+                delete day.firstTransit;
+                saveState();
+                renderTimelineView();
+                closeModal('transitSettingsModal');
+                showToast('info', '已清除當日起程出發交通設定！');
+                return;
+            }
+
+            if (day.events[eventIdx]) {
+                delete day.events[eventIdx].transit;
+            }
             saveState();
             renderTimelineView();
             closeModal('transitSettingsModal');
             showToast('info', '已恢復為依照行程起訖時間差自動計算移動時間！');
+        }
+
+        // 一鍵將獨立交通活動轉化為行程間移動接駁 (核心需求)
+        function convertEventToTransit(dayNum, eventIdx) {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
+            if (!day || !day.events || !day.events[eventIdx]) return;
+
+            day.events = sortDayEventsByTime(day.events);
+            const ev = day.events[eventIdx];
+            const parsed = parseTimeString(ev.time);
+            const durationMins = (parsed.hasEnd && parsed.durationMinutes > 0) ? parsed.durationMinutes : 40;
+
+            // 智慧推算交通方式
+            let autoMode = 'car';
+            if (ev.type === 'flight' || ev.title.includes('機') || ev.title.includes('航班')) autoMode = 'flight';
+            else if (ev.title.includes('地鐵') || ev.title.includes('捷運') || ev.title.includes('公車')) autoMode = 'transit';
+            else if (ev.title.includes('高鐵') || ev.title.includes('火車') || ev.title.includes('動車')) autoMode = 'train';
+            else if (ev.title.includes('步行') || ev.title.includes('散步') || ev.title.includes('走')) autoMode = 'walk';
+            else if (ev.title.includes('船') || ev.title.includes('索道')) autoMode = 'ship';
+
+            if (eventIdx === 0) {
+                // 首站項目：轉化為當日起程出發交通
+                day.firstTransit = {
+                    title: ev.title || '專車接送出發前往第一站',
+                    mode: autoMode,
+                    minutes: durationMins,
+                    cost: Number(ev.cost || 0),
+                    notes: ev.notes || '',
+                    fromLoc: ev.loc || '台北 / 出發地',
+                    startTimeStr: parsed.startTimeStr,
+                    endTimeStr: parsed.hasEnd ? parsed.endTimeStr : '',
+                    custom: true
+                };
+                day.events.splice(eventIdx, 1);
+                showToast('success', `已成功將「${ev.title}」調整為當日起程出發移動接駁！`);
+            } else {
+                // 站間或末站項目：整合至相鄰站間移動
+                const nextEvent = day.events[eventIdx + 1];
+                if (nextEvent) {
+                    nextEvent.transit = {
+                        title: ev.title,
+                        mode: autoMode,
+                        minutes: durationMins,
+                        cost: Number(ev.cost || 0),
+                        notes: ev.notes || '',
+                        custom: true
+                    };
+                    day.events.splice(eventIdx, 1);
+                    showToast('success', `已成功將「${ev.title}」調整為行程間移動接駁！`);
+                } else {
+                    const prevEvent = day.events[eventIdx - 1];
+                    if (prevEvent) {
+                        ev.transit = {
+                            title: ev.title,
+                            mode: autoMode,
+                            minutes: durationMins,
+                            cost: Number(ev.cost || 0),
+                            notes: ev.notes || '',
+                            custom: true
+                        };
+                        showToast('success', `已將「${ev.title}」設定為移動接駁！`);
+                    }
+                }
+            }
+
+            closeModal('addEventModal');
+            saveState();
+            renderTimelineView();
+            if (typeof renderTripSummary === 'function') renderTripSummary();
+            if (typeof renderBudgetWidget === 'function') renderBudgetWidget();
+            if (typeof renderBudgetView === 'function') renderBudgetView();
+        }
+
+        // 在新增/編輯行程彈窗中點擊「一鍵轉為行程間接駁移動」
+        function handleConvertCurrentModalEventToTransit() {
+            const targetDaySelect = document.getElementById('eventTargetDay');
+            const dayNum = parseInt(targetDaySelect ? targetDaySelect.value : '1');
+            const editIdx = parseInt(document.getElementById('eventEditIndex')?.value || '-1');
+
+            const titleVal = document.getElementById('eventTitleStr')?.value.trim() || '交通移動';
+            const locVal = document.getElementById('eventLocStr')?.value.trim() || '';
+            const costVal = parseFloat(document.getElementById('eventCostNum')?.value) || 0;
+            const notesVal = document.getElementById('eventNotesStr')?.value.trim() || '';
+
+            let timeVal = '';
+            const customBox = document.getElementById('customTimeInputBox');
+            if (customBox && customBox.style.display !== 'none') {
+                timeVal = document.getElementById('eventTimeStr')?.value.trim() || '';
+            } else {
+                const hasEnd = document.getElementById('eventHasEndTime')?.checked ?? true;
+                const sH = document.getElementById('timeStartHour')?.value || '04';
+                const sM = document.getElementById('timeStartMin')?.value || '20';
+                const eH = document.getElementById('timeEndHour')?.value || '05';
+                const eM = document.getElementById('timeEndMin')?.value || '00';
+                timeVal = hasEnd ? `${sH}:${sM} - ${eH}:${eM}` : `${sH}:${sM}`;
+            }
+
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === dayNum);
+            if (!day) return;
+
+            if (editIdx >= 0 && day.events && day.events[editIdx]) {
+                day.events[editIdx].title = titleVal;
+                day.events[editIdx].loc = locVal;
+                day.events[editIdx].cost = costVal;
+                day.events[editIdx].notes = notesVal;
+                day.events[editIdx].time = timeVal;
+                day.events[editIdx].type = 'trans';
+
+                convertEventToTransit(dayNum, editIdx);
+            } else {
+                // 全新項目直接作為首站起程交通
+                day.firstTransit = {
+                    title: titleVal,
+                    mode: 'car',
+                    minutes: 40,
+                    cost: costVal,
+                    notes: notesVal,
+                    fromLoc: locVal || '台北',
+                    custom: true
+                };
+                showToast('success', `已成功將「${titleVal}」設定為當日起程出發接駁！`);
+                closeModal('addEventModal');
+                saveState();
+                renderTimelineView();
+            }
         }
 
         // 在時間軸上一鍵將次站開始時間對齊為「前站結束時間 + 移動時間」
@@ -11704,6 +12110,7 @@ const firebaseConfig = {
 
             setTimeSelectorValue('');
             updateEventFlightLinkBox();
+            updateEventTransitConvertBox(false);
 
             const modalTitle = document.getElementById('eventModalTitle');
             if (modalTitle) modalTitle.innerHTML = '<i class="fa-solid fa-calendar-plus"></i> 新增行程項目';
@@ -11769,6 +12176,9 @@ const firebaseConfig = {
             } else {
                 updateEventFlightLinkBox(null, false);
             }
+
+            // 若為交通移動活動，展開行程間接駁轉化提示卡片
+            updateEventTransitConvertBox(ev.type === 'trans');
 
             const modalTitle = document.getElementById('eventModalTitle');
             if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-pen-to-square"></i> 編輯行程項目 (${escapeHtml(ev.title || '項目')})`;
