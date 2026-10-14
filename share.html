@@ -3197,12 +3197,12 @@
          ==================================================== -->
     <!-- 1. 建立全新旅行計畫 -->
     <div class="modal-backdrop" id="createPlanModal" onclick="handleBackdropClick(event, 'createPlanModal')">
-        <div class="modal-dialog" style="max-width: 520px;">
+        <div class="modal-dialog" style="max-width: 520px;" onclick="event.stopPropagation();">
             <div class="modal-header">
                 <div class="modal-title"><i class="fa-solid fa-suitcase-rolling" style="color: #2383e2;"></i> 建立全新旅行計畫</div>
-                <button class="modal-close-btn" onclick="closeModal('createPlanModal')"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" class="modal-close-btn" onclick="closeModal('createPlanModal')"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <form onsubmit="handleCreatePlanSubmit(event)">
+            <form onsubmit="handleCreatePlanSubmit(event); return false;" novalidate>
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="form-label">旅行計畫名稱</label>
@@ -3264,12 +3264,12 @@
 
     <!-- 2. 編輯基本設定 (支援同行出遊人數與成員設定、當地幣別與匯率) -->
     <div class="modal-backdrop" id="editPlanBaseModal" onclick="handleBackdropClick(event, 'editPlanBaseModal')">
-        <div class="modal-dialog" style="max-width: 580px;">
+        <div class="modal-dialog" style="max-width: 580px;" onclick="event.stopPropagation();">
             <div class="modal-header">
                 <div class="modal-title"><i class="fa-solid fa-pen-to-square"></i> 編輯計畫基本設定</div>
-                <button class="modal-close-btn" onclick="closeModal('editPlanBaseModal')"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" class="modal-close-btn" onclick="closeModal('editPlanBaseModal')"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <form onsubmit="handleSavePlanBaseSubmit(event)">
+            <form id="editPlanBaseForm" onsubmit="handleSavePlanBaseSubmit(event); return false;" novalidate>
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="form-label">計畫標題</label>
@@ -3347,7 +3347,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="n-btn" onclick="closeModal('editPlanBaseModal')">取消</button>
-                    <button type="submit" class="n-btn n-btn-primary">儲存設定</button>
+                    <button type="button" class="n-btn n-btn-primary" onclick="handleSavePlanBaseSubmit(event)">儲存設定</button>
                 </div>
             </form>
         </div>
@@ -3786,12 +3786,12 @@
 
     <!-- 4. 編輯當日預算 (支援填寫幣別調整與各項幣別自訂) -->
     <div class="modal-backdrop" id="editDayMetaModal" onclick="handleBackdropClick(event, 'editDayMetaModal')">
-        <div class="modal-dialog" style="max-width: 680px;">
+        <div class="modal-dialog" style="max-width: 680px;" onclick="event.stopPropagation();">
             <div class="modal-header">
                 <div class="modal-title"><i class="fa-solid fa-pen-to-square" style="color:#ea580c;"></i> 編輯當日預算</div>
-                <button class="modal-close-btn" onclick="closeModal('editDayMetaModal')"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" class="modal-close-btn" onclick="closeModal('editDayMetaModal')"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <form onsubmit="handleSaveDayMetaSubmit(event)">
+            <form id="editDayMetaForm" onsubmit="handleSaveDayMetaSubmit(event); return false;" novalidate>
                 <input type="hidden" id="editMetaDayNum" value="1">
                 <div class="modal-body">
                     <div style="display:grid; grid-template-columns:1fr 180px; gap:12px; margin-bottom:10px;">
@@ -3972,7 +3972,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="n-btn" onclick="closeModal('editDayMetaModal')">取消</button>
-                    <button type="submit" class="n-btn n-btn-primary"><i class="fa-solid fa-check"></i> 儲存當日所有設定與預算</button>
+                    <button type="button" class="n-btn n-btn-primary" onclick="handleSaveDayMetaSubmit(event)"><i class="fa-solid fa-check"></i> 儲存當日所有設定與預算</button>
                 </div>
             </form>
         </div>
@@ -13151,170 +13151,221 @@ const firebaseConfig = {
         }
 
         function handleSaveDayMetaSubmit(e) {
-            e.preventDefault();
-            const plan = getCurrentPlan();
-            if (!plan) return;
-            const dayNum = parseInt(document.getElementById('editMetaDayNum').value);
-            const day = (plan.days || []).find(d => d.dayNum === dayNum);
-            if (!day) return;
+            if (e && e.preventDefault) e.preventDefault();
+            if (e && e.stopPropagation) e.stopPropagation();
 
-            // 1. 同步計畫主幣別與匯率 (若使用者在彈窗中調整)
-            const select = document.getElementById('editMetaPlanCurrencySelect');
-            if (select && select.value && select.value !== 'CUSTOM') {
-                const parts = select.value.split('|');
-                plan.currencyCode = parts[0];
-                plan.currencyName = parts[1];
-                plan.currencySymbol = parts[2];
-            }
-            const rateInput = document.getElementById('editMetaPlanExchangeRate');
-            const newRate = parseFloat(rateInput?.value);
-            if (newRate > 0) {
-                plan.exchangeRate = newRate;
-            }
-            const currentRate = plan.exchangeRate || 1.0;
-
-            // 2. 儲存當日文字資訊
-            day.title = document.getElementById('editMetaDayTitle').value;
-            day.date = document.getElementById('editMetaDayDate').value;
-            day.breakfast = document.getElementById('editMetaBreakfast').value;
-            day.lunch = document.getElementById('editMetaLunch').value;
-            day.dinner = document.getElementById('editMetaDinner').value;
-            day.snack = document.getElementById('editMetaSnack')?.value || '';
-
-            // 3. 儲存餐飲費用數值與個別幣別
-            day.breakfastCost = Math.max(0, Number(document.getElementById('editMetaBreakfastCost').value) || 0);
-            day.breakfastCurr = document.getElementById('editMetaBreakfastCurr')?.value || 'LOCAL';
-
-            day.lunchCost = Math.max(0, Number(document.getElementById('editMetaLunchCost').value) || 0);
-            day.lunchCurr = document.getElementById('editMetaLunchCurr')?.value || 'LOCAL';
-
-            day.dinnerCost = Math.max(0, Number(document.getElementById('editMetaDinnerCost').value) || 0);
-            day.dinnerCurr = document.getElementById('editMetaDinnerCurr')?.value || 'LOCAL';
-
-            day.snackCost = Math.max(0, Number(document.getElementById('editMetaSnackCost')?.value) || 0);
-            day.snackCurr = document.getElementById('editMetaSnackCurr')?.value || 'LOCAL';
-
-            // 4. 計算折合輔助函數
-            function getCostLocalAndTwd(val, currType) {
-                if (!val || val <= 0) return { local: 0, twd: 0 };
-                if (currType === 'TWD') {
-                    const twd = val;
-                    const local = (plan.currencyCode === 'TWD') ? val : Math.round(val / currentRate);
-                    return { local, twd };
-                } else {
-                    const local = val;
-                    const twd = Math.round(val * currentRate);
-                    return { local, twd };
-                }
-            }
-
-            const memberCount = Math.max(1, Number(plan.memberCount) || 1);
-
-            // 5. 儲存多筆交通項目 (支援單人 vs 總計模式)
-            const transRows = document.querySelectorAll('#modalTransportList .transport-cost-row');
-            const transports = [];
-            let transPersonTotalLocal = 0;
-            let transPersonTotalTwd = 0;
-            let transGroupTotalLocal = 0;
-            let transGroupTotalTwd = 0;
-            transRows.forEach(row => {
-                const title = row.querySelector('.transport-cost-title')?.value.trim() || '';
-                const cost = Math.max(0, Number(row.querySelector('.transport-cost-val')?.value) || 0);
-                const curr = row.querySelector('.transport-cost-curr')?.value || 'LOCAL';
-                const mode = row.querySelector('.transport-cost-mode')?.value || 'single';
-                if (title || cost > 0) {
-                    transports.push({ title: title || '交通支出', cost, curr, mode });
-                    const c = calcCostItemBreakdown(cost, curr, mode, memberCount, plan, currentRate);
-                    transPersonTotalLocal += c.personLocal;
-                    transPersonTotalTwd += c.personTwd;
-                    transGroupTotalLocal += c.groupLocal;
-                    transGroupTotalTwd += c.groupTwd;
-                }
-            });
-            day.transports = transports;
-            day.transportCost = transPersonTotalLocal;
-            day.transportCostGroup = transGroupTotalLocal;
-            day.transportNote = transports.map(t => `${t.title}${t.mode === 'total' ? '(總計)' : ''}`).filter(Boolean).join(' + ');
-
-            // 6. 儲存多筆景點門票項目 (支援單人 vs 總計模式)
-            const spotRows = document.querySelectorAll('#modalSpotList .spot-cost-row');
-            const spots = [];
-            let spotPersonTotalLocal = 0;
-            let spotPersonTotalTwd = 0;
-            let spotGroupTotalLocal = 0;
-            let spotGroupTotalTwd = 0;
-            spotRows.forEach(row => {
-                const title = row.querySelector('.spot-cost-title')?.value.trim() || '';
-                const cost = Math.max(0, Number(row.querySelector('.spot-cost-val')?.value) || 0);
-                const curr = row.querySelector('.spot-cost-curr')?.value || 'LOCAL';
-                const mode = row.querySelector('.spot-cost-mode')?.value || 'single';
-                if (title || cost > 0) {
-                    spots.push({ title: title || '景點門票', cost, curr, mode });
-                    const c = calcCostItemBreakdown(cost, curr, mode, memberCount, plan, currentRate);
-                    spotPersonTotalLocal += c.personLocal;
-                    spotPersonTotalTwd += c.personTwd;
-                    spotGroupTotalLocal += c.groupLocal;
-                    spotGroupTotalTwd += c.groupTwd;
-                }
-            });
-            day.spots = spots;
-            day.spotCost = spotPersonTotalLocal;
-            day.spotCostGroup = spotGroupTotalLocal;
-            day.spotNote = spots.map(s => `${s.title}${s.mode === 'total' ? '(總計)' : ''}`).filter(Boolean).join(' + ');
-
-            // 7. 儲存自訂其他費用項目 (支援單人 vs 總計模式)
-            const extraRows = document.querySelectorAll('#modalExtraCostsList .extra-cost-row');
-            const extraCosts = [];
-            let extraPersonTotalLocal = 0;
-            let extraPersonTotalTwd = 0;
-            let extraGroupTotalLocal = 0;
-            let extraGroupTotalTwd = 0;
-            extraRows.forEach(row => {
-                const title = row.querySelector('.extra-cost-title')?.value.trim() || '';
-                const cost = Math.max(0, Number(row.querySelector('.extra-cost-val')?.value) || 0);
-                const curr = row.querySelector('.extra-cost-curr')?.value || 'LOCAL';
-                const mode = row.querySelector('.extra-cost-mode')?.value || 'single';
-                if (title || cost > 0) {
-                    extraCosts.push({ title: title || '自訂項目', cost, curr, mode });
-                    const c = calcCostItemBreakdown(cost, curr, mode, memberCount, plan, currentRate);
-                    extraPersonTotalLocal += c.personLocal;
-                    extraPersonTotalTwd += c.personTwd;
-                    extraGroupTotalLocal += c.groupLocal;
-                    extraGroupTotalTwd += c.groupTwd;
-                }
-            });
-            day.extraCosts = extraCosts;
-
-            // 8. 計算當日早中晚與其他花費總額
-            const cBf = getCostLocalAndTwd(day.breakfastCost, day.breakfastCurr);
-            const cLc = getCostLocalAndTwd(day.lunchCost, day.lunchCurr);
-            const cDn = getCostLocalAndTwd(day.dinnerCost, day.dinnerCurr);
-            const cSnack = getCostLocalAndTwd(day.snackCost, day.snackCurr);
-
-            let otherSumLocal = 0;
-            let otherSumTwd = 0;
-            (day.events || []).forEach(ev => {
-                const c = Number(ev.cost || 0);
-                if (c > 0 && ev.type !== 'trans' && ev.type !== 'flight' && ev.type !== 'spot') {
-                    otherSumLocal += c;
-                    otherSumTwd += Math.round(c * currentRate);
-                }
-            });
-
-            day.budget = cBf.local + cLc.local + cDn.local + cSnack.local + transPersonTotalLocal + spotPersonTotalLocal + extraPersonTotalLocal + otherSumLocal;
-            day.budgetTwd = cBf.twd + cLc.twd + cDn.twd + cSnack.twd + transPersonTotalTwd + spotPersonTotalTwd + extraPersonTotalTwd + otherSumTwd;
-
-            day.budgetGroup = (cBf.local + cLc.local + cDn.local + cSnack.local + otherSumLocal) * memberCount + transGroupTotalLocal + spotGroupTotalLocal + extraGroupTotalLocal;
-            day.budgetGroupTwd = (cBf.twd + cLc.twd + cDn.twd + cSnack.twd + otherSumTwd) * memberCount + transGroupTotalTwd + spotGroupTotalTwd + extraGroupTotalTwd;
-
-            saveState();
+            // 【最優先保證】立即關閉彈窗，給使用者最流暢的即時反饋！
             closeModal('editDayMetaModal');
-            renderTimelineView();
-            renderBudgetWidget();
-            renderBudgetView();
-            renderTripSummary();
-            syncCurrencyBoxWithPlan();
-            showToast('success', `已成功儲存 Day ${dayNum} 交通、門票與預算設定！`);
+            const modalEl = document.getElementById('editDayMetaModal');
+            if (modalEl) modalEl.classList.remove('active');
+
+            try {
+                const plan = getCurrentPlan();
+                if (!plan) {
+                    showToast('warning', '找不到當前行程計劃');
+                    return false;
+                }
+
+                const dayNumInput = document.getElementById('editMetaDayNum');
+                const dayNum = parseInt(dayNumInput?.value || 1);
+                const day = (plan.days || []).find(d => d.dayNum === dayNum);
+                if (!day) {
+                    showToast('warning', `找不到 Day ${dayNum} 的行程資料`);
+                    return false;
+                }
+
+                const curr = getPlanCurrency(plan);
+
+                // 1. 同步計畫主幣別與匯率 (若使用者在彈窗中調整)
+                const select = document.getElementById('editMetaPlanCurrencySelect');
+                if (select && select.value && select.value !== 'CUSTOM') {
+                    const parts = select.value.split('|');
+                    plan.currencyCode = parts[0];
+                    plan.currencyName = parts[1];
+                    plan.currencySymbol = parts[2];
+                }
+                const rateInput = document.getElementById('editMetaPlanExchangeRate');
+                const newRate = parseFloat(rateInput?.value);
+                if (!isNaN(newRate) && newRate > 0) {
+                    plan.exchangeRate = newRate;
+                }
+                const currentRate = Math.max(0.0001, parseFloat(plan.exchangeRate || curr.rate || 1.0));
+
+                // 安全獲取輸入值之輔助函式
+                const getVal = (id, def = '') => {
+                    const el = document.getElementById(id);
+                    return el ? (el.value || '').trim() : def;
+                };
+                const getNum = (id, def = 0) => {
+                    const el = document.getElementById(id);
+                    const n = parseFloat(el?.value);
+                    return (!isNaN(n) && n >= 0) ? n : def;
+                };
+
+                // 2. 儲存當日文字資訊
+                day.title = getVal('editMetaDayTitle', day.title || `Day ${dayNum}`);
+                day.date = getVal('editMetaDayDate', day.date || '');
+                day.breakfast = getVal('editMetaBreakfast', day.breakfast || '');
+                day.lunch = getVal('editMetaLunch', day.lunch || '');
+                day.dinner = getVal('editMetaDinner', day.dinner || '');
+                day.snack = getVal('editMetaSnack', day.snack || '');
+
+                // 3. 儲存餐飲費用數值與個別幣別
+                day.breakfastCost = getNum('editMetaBreakfastCost', 0);
+                day.breakfastCurr = getVal('editMetaBreakfastCurr', 'LOCAL');
+
+                day.lunchCost = getNum('editMetaLunchCost', 0);
+                day.lunchCurr = getVal('editMetaLunchCurr', 'LOCAL');
+
+                day.dinnerCost = getNum('editMetaDinnerCost', 0);
+                day.dinnerCurr = getVal('editMetaDinnerCurr', 'LOCAL');
+
+                day.snackCost = getNum('editMetaSnackCost', 0);
+                day.snackCurr = getVal('editMetaSnackCurr', 'LOCAL');
+
+                // 4. 計算折合輔助函數
+                function getCostLocalAndTwd(val, currType) {
+                    if (!val || val <= 0) return { local: 0, twd: 0 };
+                    if (currType === 'TWD') {
+                        const twd = val;
+                        const local = (plan.currencyCode === 'TWD') ? val : Math.round(val / currentRate);
+                        return { local, twd };
+                    } else {
+                        const local = val;
+                        const twd = Math.round(val * currentRate);
+                        return { local, twd };
+                    }
+                }
+
+                const memberCount = Math.max(1, Number(plan.memberCount) || 1);
+
+                // 5. 儲存多筆交通項目 (支援單人 vs 總計模式，嚴格防呆)
+                const transRows = document.querySelectorAll('#modalTransportList .transport-cost-row');
+                const transports = [];
+                let transPersonTotalLocal = 0;
+                let transPersonTotalTwd = 0;
+                let transGroupTotalLocal = 0;
+                let transGroupTotalTwd = 0;
+                transRows.forEach(row => {
+                    const title = (row.querySelector('.transport-cost-title')?.value || '').trim();
+                    const costVal = parseFloat(row.querySelector('.transport-cost-val')?.value);
+                    const cost = (!isNaN(costVal) && costVal > 0) ? costVal : 0;
+                    const cType = row.querySelector('.transport-cost-curr')?.value || 'LOCAL';
+                    const mode = row.querySelector('.transport-cost-mode')?.value || 'single';
+                    if (title || cost > 0) {
+                        transports.push({ title: title || '交通支出', cost, curr: cType, mode });
+                        const c = calcCostItemBreakdown(cost, cType, mode, memberCount, curr, currentRate);
+                        transPersonTotalLocal += c.personLocal;
+                        transPersonTotalTwd += c.personTwd;
+                        transGroupTotalLocal += c.groupLocal;
+                        transGroupTotalTwd += c.groupTwd;
+                    }
+                });
+                day.transports = transports;
+                day.transportCost = transPersonTotalLocal;
+                day.transportCostGroup = transGroupTotalLocal;
+                day.transportNote = transports.map(t => `${t.title}${t.mode === 'total' ? '(總計)' : ''}`).filter(Boolean).join(' + ');
+
+                // 6. 儲存多筆景點門票項目 (支援單人 vs 總計模式，嚴格防呆)
+                const spotRows = document.querySelectorAll('#modalSpotList .spot-cost-row');
+                const spots = [];
+                let spotPersonTotalLocal = 0;
+                let spotPersonTotalTwd = 0;
+                let spotGroupTotalLocal = 0;
+                let spotGroupTotalTwd = 0;
+                spotRows.forEach(row => {
+                    const title = (row.querySelector('.spot-cost-title')?.value || '').trim();
+                    const costVal = parseFloat(row.querySelector('.spot-cost-val')?.value);
+                    const cost = (!isNaN(costVal) && costVal > 0) ? costVal : 0;
+                    const cType = row.querySelector('.spot-cost-curr')?.value || 'LOCAL';
+                    const mode = row.querySelector('.spot-cost-mode')?.value || 'single';
+                    if (title || cost > 0) {
+                        spots.push({ title: title || '景點門票', cost, curr: cType, mode });
+                        const c = calcCostItemBreakdown(cost, cType, mode, memberCount, curr, currentRate);
+                        spotPersonTotalLocal += c.personLocal;
+                        spotPersonTotalTwd += c.personTwd;
+                        spotGroupTotalLocal += c.groupLocal;
+                        spotGroupTotalTwd += c.groupTwd;
+                    }
+                });
+                day.spots = spots;
+                day.spotCost = spotPersonTotalLocal;
+                day.spotCostGroup = spotGroupTotalLocal;
+                day.spotNote = spots.map(s => `${s.title}${s.mode === 'total' ? '(總計)' : ''}`).filter(Boolean).join(' + ');
+
+                // 7. 儲存自訂其他費用項目 (支援單人 vs 總計模式，嚴格防呆)
+                const extraRows = document.querySelectorAll('#modalExtraCostsList .extra-cost-row');
+                const extraCosts = [];
+                let extraPersonTotalLocal = 0;
+                let extraPersonTotalTwd = 0;
+                let extraGroupTotalLocal = 0;
+                let extraGroupTotalTwd = 0;
+                extraRows.forEach(row => {
+                    const title = (row.querySelector('.extra-cost-title')?.value || '').trim();
+                    const costVal = parseFloat(row.querySelector('.extra-cost-val')?.value);
+                    const cost = (!isNaN(costVal) && costVal > 0) ? costVal : 0;
+                    const cType = row.querySelector('.extra-cost-curr')?.value || 'LOCAL';
+                    const mode = row.querySelector('.extra-cost-mode')?.value || 'single';
+                    if (title || cost > 0) {
+                        extraCosts.push({ title: title || '自訂項目', cost, curr: cType, mode });
+                        const c = calcCostItemBreakdown(cost, cType, mode, memberCount, curr, currentRate);
+                        extraPersonTotalLocal += c.personLocal;
+                        extraPersonTotalTwd += c.personTwd;
+                        extraGroupTotalLocal += c.groupLocal;
+                        extraGroupTotalTwd += c.groupTwd;
+                    }
+                });
+                day.extraCosts = extraCosts;
+
+                // 8. 計算當日早中晚與其他花費總額
+                const cBf = getCostLocalAndTwd(day.breakfastCost, day.breakfastCurr);
+                const cLc = getCostLocalAndTwd(day.lunchCost, day.lunchCurr);
+                const cDn = getCostLocalAndTwd(day.dinnerCost, day.dinnerCurr);
+                const cSnack = getCostLocalAndTwd(day.snackCost, day.snackCurr);
+
+                let otherSumLocal = 0;
+                let otherSumTwd = 0;
+                (day.events || []).forEach(ev => {
+                    const c = Number(ev.cost || 0);
+                    if (c > 0 && ev.type !== 'trans' && ev.type !== 'flight' && ev.type !== 'spot') {
+                        otherSumLocal += c;
+                        otherSumTwd += Math.round(c * currentRate);
+                    }
+                });
+
+                day.budget = cBf.local + cLc.local + cDn.local + cSnack.local + transPersonTotalLocal + spotPersonTotalLocal + extraPersonTotalLocal + otherSumLocal;
+                day.budgetTwd = cBf.twd + cLc.twd + cDn.twd + cSnack.twd + transPersonTotalTwd + spotPersonTotalTwd + extraPersonTotalTwd + otherSumTwd;
+
+                day.budgetGroup = (cBf.local + cLc.local + cDn.local + cSnack.local + otherSumLocal) * memberCount + transGroupTotalLocal + spotGroupTotalLocal + extraGroupTotalLocal;
+                day.budgetGroupTwd = (cBf.twd + cLc.twd + cDn.twd + cSnack.twd + otherSumTwd) * memberCount + transGroupTotalTwd + spotGroupTotalTwd + extraGroupTotalTwd;
+
+                // 9. 資料持久化與安全刷新 UI
+                try {
+                    saveState();
+                } catch (saveErr) {
+                    console.warn('儲存旅行狀態時發生非致命問題:', saveErr);
+                }
+
+                try {
+                    if (typeof renderTimelineView === 'function') renderTimelineView();
+                    if (typeof renderBudgetWidget === 'function') renderBudgetWidget();
+                    if (typeof renderBudgetView === 'function') renderBudgetView();
+                    if (typeof renderTripSummary === 'function') renderTripSummary();
+                    if (typeof syncCurrencyBoxWithPlan === 'function') syncCurrencyBoxWithPlan();
+                } catch (uiErr) {
+                    console.warn('刷新介面視圖時發生非致命警告:', uiErr);
+                }
+
+                showToast('success', `已成功儲存 Day ${dayNum} 交通、門票與預算設定！`);
+                return false;
+            } catch (err) {
+                console.error('儲存當日預算時發生例外錯誤:', err);
+                closeModal('editDayMetaModal');
+                const modalEl = document.getElementById('editDayMetaModal');
+                if (modalEl) modalEl.classList.remove('active');
+                showToast('danger', '儲存失敗：' + (err.message || '未知錯誤'));
+                return false;
+            }
         }
 
         // Booking Modal (支援新增與編輯，防呆與防閃退)
