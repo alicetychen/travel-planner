@@ -13,3 +13,6 @@ $RECYCLE.BIN/
 
 # 測試暫存腳本
 scratch/
+
+# Python 虛擬環境
+.venv/

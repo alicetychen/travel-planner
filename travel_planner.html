@@ -2743,6 +2743,74 @@
             padding: 6px 18px !important;
             border-radius: 6px !important;
         }
+
+        /* 匯出與行動裝置同步彈窗專用樣式 */
+        .export-tab-btn {
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 8px 16px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .export-tab-btn:hover {
+            color: #1e293b;
+            background: #f1f5f9;
+            border-radius: 6px 6px 0 0;
+        }
+        .export-tab-btn.active {
+            color: #0284c7;
+            border-bottom-color: #0284c7;
+            background: #f0f9ff;
+            border-radius: 6px 6px 0 0;
+        }
+        .export-hero-card {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 14px;
+        }
+        .export-step-box {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: #334155;
+            line-height: 1.6;
+        }
+        .export-step-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .export-step-item:last-child {
+            margin-bottom: 0;
+        }
+        .export-step-badge {
+            background: #0284c7;
+            color: #ffffff;
+            font-size: 0.72rem;
+            font-weight: 700;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
     </style>
 </head>
 <body>
@@ -2761,8 +2829,8 @@
                 <span id="cloudStatusText" style="font-weight: 700;">☁️ 雲端同步</span>
             </button>
 
-            <button class="n-btn" onclick="exportDataJson()" title="下載行程 JSON 備份">
-                <i class="fa-solid fa-file-export"></i> <span class="topbar-btn-text">匯出</span>
+            <button class="n-btn" onclick="openExportModal()" title="匯出至 iPhone 行事曆、備忘錄或 JSON 備份" style="font-weight: 600; border-color: #93c5fd; color: #1d4ed8; background: #eff6ff;">
+                <i class="fa-solid fa-arrow-up-from-bracket"></i> <span class="topbar-btn-text">匯出 / 同步</span>
             </button>
             <button class="n-btn" onclick="triggerImportJson()" title="匯入行程 JSON">
                 <i class="fa-solid fa-file-import"></i> <span class="topbar-btn-text">匯入</span>
@@ -3148,6 +3216,179 @@
 
         </section>
     </main>
+
+    <!-- ====================================================
+         MODAL: 行程匯出與行動裝置同步 (iPhone 行事曆 & 備忘錄)
+         ==================================================== -->
+    <div class="modal-backdrop" id="exportModal" onclick="handleBackdropClick(event, 'exportModal')">
+        <div class="modal-dialog" style="max-width: 680px; max-height: 92vh;" onclick="event.stopPropagation();">
+            <div class="modal-header" style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white;">
+                <div class="modal-title" style="color: white; font-weight: 800; font-size: 1.15rem;">
+                    <i class="fa-solid fa-arrow-up-from-bracket" style="color: #38bdf8;"></i> 行程匯出與行動裝置同步
+                </div>
+                <button type="button" class="modal-close-btn" style="color: white;" onclick="closeModal('exportModal')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body" style="padding: 16px 20px;">
+                <!-- 頁籤導覽列 Tabs -->
+                <div style="display: flex; gap: 4px; border-bottom: 2px solid #e2e8f0; margin-bottom: 16px; overflow-x: auto;">
+                    <button type="button" class="export-tab-btn active" id="exportTabBtnCalendar" onclick="switchExportTab('calendar')">
+                        <i class="fa-regular fa-calendar-days" style="color:#0284c7;"></i> iPhone 行事曆 (.ics)
+                    </button>
+                    <button type="button" class="export-tab-btn" id="exportTabBtnNotes" onclick="switchExportTab('notes')">
+                        <i class="fa-regular fa-note-sticky" style="color:#eab308;"></i> iPhone 備忘錄 (Notes)
+                    </button>
+                    <button type="button" class="export-tab-btn" id="exportTabBtnJson" onclick="switchExportTab('json')">
+                        <i class="fa-solid fa-database" style="color:#10b981;"></i> 完整 JSON 備份
+                    </button>
+                </div>
+
+                <!-- 內容頁 1: iPhone 行事曆 (.ics) -->
+                <div id="exportTabCalendar" class="export-tab-content">
+                    <div class="export-hero-card" style="border-left: 4px solid #0284c7;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                            <span style="font-size: 1.3rem;">📅</span>
+                            <strong style="color: #0f172a; font-size: 1rem;">匯出至 iPhone / Apple Calendar 行事曆</strong>
+                        </div>
+                        <div style="font-size: 0.85rem; color: #475569; line-height: 1.5;">
+                            產生符合 RFC 5545 國際標準的 <code>.ics</code> 檔案。在 iPhone 上下載後點擊，即可<strong>一鍵全部加入</strong>內建行事曆！
+                            同時支援 Mac、iPad、Google 日曆與 Outlook。
+                        </div>
+                    </div>
+
+                    <!-- 匯出選項設定 -->
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;">
+                        <div style="font-weight: 700; font-size: 0.86rem; color: #334155; margin-bottom: 8px;">
+                            <i class="fa-solid fa-sliders"></i> 自訂行事曆包含項目：
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; color: #334155;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="exportOptEvents" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
+                                <span><strong>每日行程活動與景點</strong>（含活動時間、地點導航、預算費用與備忘筆記）</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="exportOptFlights" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
+                                <span><strong>往返航班與長途交通</strong>（含起降時間、機場航廈與訂位代號 PNR）</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="exportOptMeals" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
+                                <span><strong>每日餐飲美食推薦</strong>（早餐 08:30、午餐 12:30、晚餐 18:30 自動排定）</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 主要操作按鈕 -->
+                    <div style="margin-bottom: 16px;">
+                        <button type="button" class="n-btn n-btn-primary" onclick="downloadICalendarFile()" style="width: 100%; justify-content: center; padding: 12px 18px; font-size: 1rem; font-weight: 700; background: #0284c7; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
+                            <i class="fa-solid fa-cloud-arrow-down" style="font-size: 1.15rem;"></i> 下載 iPhone 行事曆檔案 (.ics)
+                        </button>
+                    </div>
+
+                    <!-- iPhone 匯入 3 步驟教學卡片 -->
+                    <div class="export-step-box">
+                        <div style="font-weight: 700; color: #0284c7; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-brands fa-apple"></i> iPhone 快速匯入 3 步驟指引：
+                        </div>
+                        <div class="export-step-item">
+                            <span class="export-step-badge">1</span>
+                            <div>使用 iPhone 的 <strong>Safari 瀏覽器</strong>開啟此網頁，點選上方「下載 iPhone 行事曆檔案 (.ics)」。</div>
+                        </div>
+                        <div class="export-step-item">
+                            <span class="export-step-badge">2</span>
+                            <div>Safari 會彈出確認視窗，點擊<strong>「下載」</strong>並點選檔案（或直接詢問是否於行事曆中開啟）。</div>
+                        </div>
+                        <div class="export-step-item">
+                            <span class="export-step-badge">3</span>
+                            <div>iPhone 將顯示整趟行程預覽清單，直接點選右上角<strong>「全部加入 (Add All)」</strong>，即刻完成！</div>
+                        </div>
+                        <div style="font-size: 0.78rem; color: #64748b; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #e2e8f0;">
+                            💡 小秘訣：若您在電腦端下載，也可以直接使用 <strong>AirDrop</strong> 傳送給 iPhone，手機接收後點擊即可一鍵加入。
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 內容頁 2: iPhone 備忘錄 (Notes) -->
+                <div id="exportTabNotes" class="export-tab-content" style="display: none;">
+                    <div class="export-hero-card" style="border-left: 4px solid #eab308;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                            <span style="font-size: 1.3rem;">📝</span>
+                            <strong style="color: #0f172a; font-size: 1rem;">匯出至 iPhone 備忘錄 (Apple Notes)</strong>
+                        </div>
+                        <div style="font-size: 0.85rem; color: #475569; line-height: 1.5;">
+                            專為 iPhone 備忘錄精心設計的 Emoji 美型隨身筆記排版，完整收錄每日時間軸、推薦美食、飯店航班、行李清單與搶票提醒，無網路時亦可隨身翻閱。
+                        </div>
+                    </div>
+
+                    <!-- 操作按鈕列 -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+                        <button type="button" class="n-btn n-btn-primary" onclick="shareToAppleNotes()" style="flex: 1 1 200px; justify-content: center; padding: 10px 14px; font-weight: 700; background: #0284c7;">
+                            <i class="fa-solid fa-arrow-up-from-bracket"></i> 📲 分享至 iPhone 備忘錄
+                        </button>
+                        <button type="button" class="n-btn" onclick="copyAppleNotesText()" style="flex: 1 1 160px; justify-content: center; padding: 10px 14px; font-weight: 700; border-color: #0284c7; color: #0284c7; background: #f0f9ff;">
+                            <i class="fa-regular fa-copy"></i> 📋 複製備忘錄全文
+                        </button>
+                        <button type="button" class="n-btn" onclick="downloadNotesTxtFile()" style="flex: 1 1 140px; justify-content: center; padding: 10px 14px; font-weight: 700;">
+                            <i class="fa-solid fa-file-arrow-down"></i> 下載 .txt 檔
+                        </button>
+                    </div>
+
+                    <!-- 備忘錄即時預覽框 -->
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span style="font-weight: 700; font-size: 0.84rem; color: #334155;">
+                                <i class="fa-regular fa-eye"></i> 備忘錄內容即時預覽：
+                            </span>
+                            <span style="font-size: 0.78rem; color: #64748b;" id="exportNotesCharCount">共 0 字</span>
+                        </div>
+                        <textarea id="exportNotesPreview" readonly style="width: 100%; height: 180px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace; font-size: 0.82rem; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; color: #1e293b; resize: vertical; line-height: 1.5; outline: none;"></textarea>
+                    </div>
+
+                    <!-- iPhone 備忘錄使用教學卡片 -->
+                    <div class="export-step-box">
+                        <div style="font-weight: 700; color: #b45309; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-lightbulb"></i> iPhone 快速匯入備忘錄方法：
+                        </div>
+                        <div class="export-step-item">
+                            <span class="export-step-badge" style="background:#b45309;">A</span>
+                            <div><strong>行動裝置一鍵分享（推薦）</strong>：在 iPhone 上點擊「📲 分享至 iPhone 備忘錄」，在跳出的分享面板直接選擇<strong>「備忘錄」</strong>➔ 點擊<strong>「儲存」</strong>即可！</div>
+                        </div>
+                        <div class="export-step-item">
+                            <span class="export-step-badge" style="background:#b45309;">B</span>
+                            <div><strong>剪貼簿複製貼上</strong>：點擊「📋 複製備忘錄全文」，開啟 iPhone「備忘錄」App 新增筆記，長按畫面選擇<strong>「貼上」</strong>。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 內容頁 3: 完整 JSON 備份 -->
+                <div id="exportTabJson" class="export-tab-content" style="display: none;">
+                    <div class="export-hero-card" style="border-left: 4px solid #10b981;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                            <span style="font-size: 1.3rem;">💾</span>
+                            <strong style="color: #0f172a; font-size: 1rem;">完整旅行計畫 JSON 備份與還原</strong>
+                        </div>
+                        <div style="font-size: 0.85rem; color: #475569; line-height: 1.5;">
+                            匯出包含目前所有旅行計畫、預算記帳、地圖設定與封面圖片之完整資料備份檔，可用於更換電腦、跨瀏覽器轉移或存檔備查。
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 16px;">
+                        <button type="button" class="n-btn n-btn-primary" onclick="exportDataJson()" style="flex: 1; justify-content: center; padding: 12px; font-weight: 700; background: #059669;">
+                            <i class="fa-solid fa-download"></i> 下載完整 JSON 備份
+                        </button>
+                        <button type="button" class="n-btn" onclick="triggerImportJson()" style="flex: 1; justify-content: center; padding: 12px; font-weight: 700; border-color: #059669; color: #059669; background: #ecfdf5;">
+                            <i class="fa-solid fa-file-import"></i> 匯入 JSON 備份檔
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="padding: 12px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end;">
+                <button type="button" class="n-btn" onclick="closeModal('exportModal')">關閉</button>
+            </div>
+        </div>
+    </div>
 
     <!-- ====================================================
          MODAL: 專屬隨身旅遊小手冊 (Travel Booklet)
@@ -14583,6 +14824,539 @@ const firebaseConfig = {
                 if (iconEl) iconEl.innerText = newEmoji;
                 renderPlanSelectDropdown();
                 showToast('success', '圖標已更新');
+            }
+        }
+
+        // ====================================================
+        // 行程匯出與行動裝置同步 (iPhone 行事曆 & 備忘錄)
+        // ====================================================
+        function openExportModal() {
+            updateExportModalPreviews();
+            openModal('exportModal');
+        }
+
+        function switchExportTab(tabName) {
+            const tabs = ['calendar', 'notes', 'json'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`exportTabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`);
+                const content = document.getElementById(`exportTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+                if (btn) {
+                    if (t === tabName) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                }
+                if (content) {
+                    content.style.display = (t === tabName) ? 'block' : 'none';
+                }
+            });
+            if (tabName === 'notes') {
+                updateExportModalPreviews();
+            }
+        }
+
+        function updateExportModalPreviews() {
+            try {
+                const plan = getCurrentPlan();
+                if (!plan) return;
+                const notesText = generateAppleNotesText(plan);
+                const previewEl = document.getElementById('exportNotesPreview');
+                const countEl = document.getElementById('exportNotesCharCount');
+                if (previewEl) {
+                    previewEl.value = notesText;
+                }
+                if (countEl) {
+                    countEl.textContent = `共 ${notesText.length} 字`;
+                }
+            } catch(e) {
+                console.warn('更新匯出預覽失敗:', e);
+            }
+        }
+
+        // 解析指定 Day 的年月日
+        function getDayFullDateObj(plan, day, dayIdx) {
+            let baseYear = new Date().getFullYear();
+            let startDate = null;
+            if (plan && plan.dateRange) {
+                const matches = plan.dateRange.match(/(\d{4})[./-](\d{1,2})[./-](\d{1,2})/);
+                if (matches) {
+                    baseYear = parseInt(matches[1], 10);
+                    startDate = new Date(baseYear, parseInt(matches[2], 10) - 1, parseInt(matches[3], 10));
+                }
+            }
+
+            if (day && day.date) {
+                const fullMatch = day.date.match(/(\d{4})[./-](\d{1,2})[./-](\d{1,2})/);
+                if (fullMatch) {
+                    return {
+                        y: parseInt(fullMatch[1], 10),
+                        m: parseInt(fullMatch[2], 10),
+                        d: parseInt(fullMatch[3], 10)
+                    };
+                }
+                const mdMatch = day.date.match(/(\d{1,2})[./-](\d{1,2})/);
+                if (mdMatch) {
+                    return {
+                        y: baseYear,
+                        m: parseInt(mdMatch[1], 10),
+                        d: parseInt(mdMatch[2], 10)
+                    };
+                }
+            }
+
+            if (startDate && !isNaN(startDate.getTime())) {
+                const offset = (day && typeof day.dayNum === 'number' && day.dayNum > 0) ? (day.dayNum - 1) : dayIdx;
+                const target = new Date(startDate.getTime() + offset * 86400000);
+                return {
+                    y: target.getFullYear(),
+                    m: target.getMonth() + 1,
+                    d: target.getDate()
+                };
+            }
+
+            const fallback = new Date(Date.now() + dayIdx * 86400000);
+            return {
+                y: fallback.getFullYear(),
+                m: fallback.getMonth() + 1,
+                d: fallback.getDate()
+            };
+        }
+
+        // 產生符合 RFC 5545 規約之 iCalendar (.ics) 字串
+        function generateICalendar(plan, options = {}) {
+            if (!plan) return '';
+            const optEvents = options.includeEvents !== false;
+            const optFlights = options.includeFlights !== false;
+            const optMeals = options.includeMeals !== false;
+
+            function pad(n) { return String(n).padStart(2, '0'); }
+
+            function formatIcalDateTime(dtObj, h = 0, m = 0) {
+                return `${String(dtObj.y).padStart(4, '0')}${pad(dtObj.m)}${pad(dtObj.d)}T${pad(h)}${pad(m)}00`;
+            }
+
+            function formatIcalDateOnly(dtObj) {
+                return `${String(dtObj.y).padStart(4, '0')}${pad(dtObj.m)}${pad(dtObj.d)}`;
+            }
+
+            function escapeIcal(text) {
+                if (!text) return '';
+                return String(text)
+                    .replace(/\\/g, '\\\\')
+                    .replace(/;/g, '\\;')
+                    .replace(/,/g, '\\,')
+                    .replace(/\r\n|\r|\n/g, '\\n');
+            }
+
+            const nowUtc = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+            const lines = [
+                'BEGIN:VCALENDAR',
+                'VERSION:2.0',
+                'PRODID:-//TravelPlanner//TW//ZH-HANT',
+                'CALSCALE:GREGORIAN',
+                'METHOD:PUBLISH',
+                `X-WR-CALNAME:${escapeIcal(plan.title || '旅行行程')}`,
+                'X-WR-TIMEZONE:Asia/Taipei',
+                'BEGIN:VTIMEZONE',
+                'TZID:Asia/Taipei',
+                'X-LIC-LOCATION:Asia/Taipei',
+                'BEGIN:STANDARD',
+                'TZOFFSETFROM:+0800',
+                'TZOFFSETTO:+0800',
+                'TZNAME:CST',
+                'DTSTART:19700101T000000',
+                'END:STANDARD',
+                'END:VTIMEZONE'
+            ];
+
+            let eventSeq = 1;
+
+            // 1. 航班與交通班次
+            if (optFlights && Array.isArray(plan.flights) && plan.flights.length > 0) {
+                plan.flights.forEach((fl, idx) => {
+                    if (!fl || (!fl.flightNo && !fl.airline)) return;
+                    const isOutbound = idx === 0;
+                    const targetDayIdx = isOutbound ? 0 : ((plan.days && plan.days.length > 0) ? plan.days.length - 1 : 0);
+                    const targetDay = (plan.days && plan.days[targetDayIdx]) || {};
+                    const dtObj = getDayFullDateObj(plan, targetDay, targetDayIdx);
+
+                    const depParts = (fl.depTime || '10:00').split(':');
+                    const arrParts = (fl.arrTime || '14:00').split(':');
+                    const depH = parseInt(depParts[0], 10) || 10;
+                    const depM = parseInt(depParts[1], 10) || 0;
+                    const arrH = parseInt(arrParts[0], 10) || (depH + 3);
+                    const arrM = parseInt(arrParts[1], 10) || 0;
+
+                    const summary = `✈️ ${isOutbound ? '【去程航班】' : '【回程航班】'}${fl.airline || ''} ${fl.flightNo || ''}`.trim();
+                    const location = `${fl.depLoc || '出發機場'} ➔ ${fl.arrLoc || '抵達機場'}`;
+                    let desc = `航班代號：${fl.flightNo || '無'}\\n航線：${fl.depLoc || ''} ➔ ${fl.arrLoc || ''}`;
+                    if (fl.pnrCode) desc += `\\n訂位代號 (PNR)：${fl.pnrCode}`;
+                    if (fl.seat) desc += `\\n座位：${fl.seat}`;
+                    if (fl.terminal) desc += `\\n航廈：${fl.terminal}`;
+                    if (fl.notes) desc += `\\n備註說明：${fl.notes}`;
+
+                    lines.push('BEGIN:VEVENT');
+                    lines.push(`UID:flight-${Date.now()}-${eventSeq++}@travelplanner`);
+                    lines.push(`DTSTAMP:${nowUtc}`);
+                    lines.push(`DTSTART;TZID=Asia/Taipei:${formatIcalDateTime(dtObj, depH, depM)}`);
+                    lines.push(`DTEND;TZID=Asia/Taipei:${formatIcalDateTime(dtObj, arrH, arrM)}`);
+                    lines.push(`SUMMARY:${escapeIcal(summary)}`);
+                    lines.push(`LOCATION:${escapeIcal(location)}`);
+                    lines.push(`DESCRIPTION:${desc}`);
+                    lines.push('STATUS:CONFIRMED');
+                    lines.push('END:VEVENT');
+                });
+            }
+
+            // 2. 每日行程活動與餐食
+            if (Array.isArray(plan.days)) {
+                plan.days.forEach((day, dIdx) => {
+                    const dtObj = getDayFullDateObj(plan, day, dIdx);
+
+                    // 餐食推薦
+                    if (optMeals) {
+                        const mealConfigs = [
+                            { key: 'breakfast', label: '🍳 早餐推薦', h: 8, m: 30, endH: 9, endM: 30 },
+                            { key: 'lunch', label: '🍱 午餐推薦', h: 12, m: 30, endH: 13, endM: 30 },
+                            { key: 'dinner', label: '🍲 晚餐推薦', h: 18, m: 30, endH: 20, endM: 0 }
+                        ];
+                        mealConfigs.forEach(mCfg => {
+                            const val = day[mCfg.key];
+                            if (val && typeof val === 'string' && val.trim() && val !== '無' && val !== '自理') {
+                                lines.push('BEGIN:VEVENT');
+                                lines.push(`UID:meal-${mCfg.key}-${Date.now()}-${eventSeq++}@travelplanner`);
+                                lines.push(`DTSTAMP:${nowUtc}`);
+                                lines.push(`DTSTART;TZID=Asia/Taipei:${formatIcalDateTime(dtObj, mCfg.h, mCfg.m)}`);
+                                lines.push(`DTEND;TZID=Asia/Taipei:${formatIcalDateTime(dtObj, mCfg.endH, mCfg.endM)}`);
+                                lines.push(`SUMMARY:${escapeIcal(`${mCfg.label}：${val.trim()}`)}`);
+                                lines.push(`DESCRIPTION:${escapeIcal(`Day ${day.dayNum || (dIdx + 1)} 餐飲安排\\n當日主題：${day.title || ''}`)}`);
+                                lines.push('END:VEVENT');
+                            }
+                        });
+                    }
+
+                    // 行程活動
+                    if (optEvents && Array.isArray(day.events)) {
+                        day.events.forEach((ev) => {
+                            if (!ev || !ev.title) return;
+
+                            let emoji = '📍';
+                            if (ev.type === 'flight') emoji = '✈️';
+                            else if (ev.type === 'trans') emoji = '🚗';
+                            else if (ev.type === 'spot') emoji = '🏛️';
+                            else if (ev.type === 'food') emoji = '🍽️';
+                            else if (ev.type === 'hotel') emoji = '🏨';
+
+                            const summary = `${emoji} ${ev.title}`.trim();
+                            const location = ev.loc || '';
+
+                            let desc = `當日主題：Day ${day.dayNum || (dIdx + 1)} ${day.title || ''}`;
+                            if (ev.time) desc += `\\n時間：${ev.time}`;
+                            if (ev.cost) desc += `\\n預算：NT$ ${ev.cost}`;
+                            if (ev.notes) desc += `\\n備忘筆記：${ev.notes}`;
+
+                            let isAllDay = false;
+                            let startH = 9, startM = 0, endH = 10, endM = 0;
+                            if (ev.time) {
+                                const timeRange = ev.time.match(/(\d{1,2}):(\d{2})\s*[-~至➔]\s*(\d{1,2}):(\d{2})/);
+                                if (timeRange) {
+                                    startH = parseInt(timeRange[1], 10);
+                                    startM = parseInt(timeRange[2], 10);
+                                    endH = parseInt(timeRange[3], 10);
+                                    endM = parseInt(timeRange[4], 10);
+                                } else {
+                                    const singleTime = ev.time.match(/(\d{1,2}):(\d{2})/);
+                                    if (singleTime) {
+                                        startH = parseInt(singleTime[1], 10);
+                                        startM = parseInt(singleTime[2], 10);
+                                        endH = startH + 1;
+                                        endM = startM;
+                                        if (endH >= 24) endH = 23;
+                                    } else {
+                                        isAllDay = true;
+                                    }
+                                }
+                            } else {
+                                isAllDay = true;
+                            }
+
+                            lines.push('BEGIN:VEVENT');
+                            lines.push(`UID:event-${Date.now()}-${eventSeq++}@travelplanner`);
+                            lines.push(`DTSTAMP:${nowUtc}`);
+
+                            if (isAllDay) {
+                                lines.push(`DTSTART;VALUE=DATE:${formatIcalDateOnly(dtObj)}`);
+                                const nextDate = new Date(dtObj.y, dtObj.m - 1, dtObj.d + 1);
+                                const nextDtObj = { y: nextDate.getFullYear(), m: nextDate.getMonth() + 1, d: nextDate.getDate() };
+                                lines.push(`DTEND;VALUE=DATE:${formatIcalDateOnly(nextDtObj)}`);
+                            } else {
+                                lines.push(`DTSTART;TZID=Asia/Taipei:${formatIcalDateTime(dtObj, startH, startM)}`);
+                                lines.push(`DTEND;TZID=Asia/Taipei:${formatIcalDateTime(dtObj, endH, endM)}`);
+                            }
+
+                            lines.push(`SUMMARY:${escapeIcal(summary)}`);
+                            if (location) lines.push(`LOCATION:${escapeIcal(location)}`);
+                            lines.push(`DESCRIPTION:${escapeIcal(desc)}`);
+                            lines.push('STATUS:CONFIRMED');
+                            lines.push('END:VEVENT');
+                        });
+                    }
+                });
+            }
+
+            lines.push('END:VCALENDAR');
+            return lines.join('\r\n');
+        }
+
+        // 下載 iPhone 行事曆檔案 (.ics)
+        function downloadICalendarFile() {
+            try {
+                const plan = getCurrentPlan();
+                if (!plan) {
+                    showToast('error', '未找到行程資料', '請先建立或選擇一個行程計畫');
+                    return;
+                }
+                const optEvents = document.getElementById('exportOptEvents') ? document.getElementById('exportOptEvents').checked : true;
+                const optFlights = document.getElementById('exportOptFlights') ? document.getElementById('exportOptFlights').checked : true;
+                const optMeals = document.getElementById('exportOptMeals') ? document.getElementById('exportOptMeals').checked : true;
+
+                const icalContent = generateICalendar(plan, {
+                    includeEvents: optEvents,
+                    includeFlights: optFlights,
+                    includeMeals: optMeals
+                });
+
+                const blob = new Blob([icalContent], { type: 'text/calendar;charset=utf-8;' });
+                const cleanTitle = (plan.title || '行程').replace(/[/\\?%*:|"<>]/g, '_');
+                const fileName = `${cleanTitle}_行事曆.ics`;
+
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '已成功下載行事曆檔案！',
+                        html: `
+                            <div style="text-align: left; font-size: 0.9rem; color: #334155; line-height: 1.6;">
+                                <p style="margin-bottom: 8px;"><strong>📱 iPhone 操作方式：</strong></p>
+                                點擊下載後的 <code>${fileName}</code> 檔案，iPhone 會自動開啟行事曆，請點選右上角<strong>「全部加入」</strong>即可！<br>
+                                <span style="font-size: 0.8rem; color: #64748b;">(在 Mac 或 Windows 下載亦可雙擊直接匯入行事曆)</span>
+                            </div>
+                        `,
+                        confirmButtonText: '了解',
+                        customClass: { popup: 'swal2-compact-popup' }
+                    });
+                } else {
+                    showToast('success', '已成功下載行事曆檔案！');
+                }
+            } catch(err) {
+                console.error('匯出行事曆失敗:', err);
+                showToast('error', '匯出行事曆失敗', err.message);
+            }
+        }
+
+        // 產生 iPhone 備忘錄排版字串
+        function generateAppleNotesText(plan) {
+            if (!plan) return '';
+            let out = [];
+            out.push(`✈️【${plan.title || '旅行計畫'}】隨身備忘錄`);
+            if (plan.dateRange) out.push(`📅 旅行日期：${plan.dateRange}`);
+            if (plan.destination) out.push(`📍 目的地：${plan.destination}`);
+            out.push('');
+
+            // 航班與交通
+            if (Array.isArray(plan.flights) && plan.flights.length > 0) {
+                out.push('══════════════════════');
+                out.push('✈️ 航班與交通資訊');
+                plan.flights.forEach((fl, idx) => {
+                    if (!fl || (!fl.flightNo && !fl.airline)) return;
+                    const isOut = idx === 0;
+                    out.push(`• ${isOut ? '去程' : '回程'}：${fl.airline || ''} ${fl.flightNo || ''} (${fl.depTime || '--:--'} ➔ ${fl.arrTime || '--:--'})`);
+                    out.push(`  航線：${fl.depLoc || ''} ➔ ${fl.arrLoc || ''}`);
+                    if (fl.pnrCode) out.push(`  訂位代號 (PNR)：${fl.pnrCode}`);
+                    if (fl.seat) out.push(`  座位：${fl.seat}`);
+                    if (fl.terminal) out.push(`  航廈：${fl.terminal}`);
+                    if (fl.notes) out.push(`  備註：${fl.notes}`);
+                });
+                out.push('');
+            }
+
+            // 住宿資訊
+            if (Array.isArray(plan.hotels) && plan.hotels.length > 0) {
+                out.push('══════════════════════');
+                out.push('🏨 住宿飯店資訊');
+                plan.hotels.forEach(h => {
+                    if (!h || !h.name) return;
+                    out.push(`• ${h.name}`);
+                    if (h.address) out.push(`  地址：${h.address}`);
+                    if (h.phone) out.push(`  電話：${h.phone}`);
+                    if (h.checkIn || h.checkOut) out.push(`  入住/退房：${h.checkIn || ''} ~ ${h.checkOut || ''}`);
+                    if (h.notes) out.push(`  備註：${h.notes}`);
+                });
+                out.push('');
+            }
+
+            // 每日行程安排
+            if (Array.isArray(plan.days) && plan.days.length > 0) {
+                out.push('══════════════════════');
+                out.push('🗓️ 每日詳細行程安排');
+                out.push('');
+                plan.days.forEach(day => {
+                    out.push(`【Day ${day.dayNum || 1}】${day.date || ''} - ${day.title || '行程活動'}`);
+                    if (day.breakfast) out.push(`🍳 早餐：${day.breakfast}`);
+                    if (day.lunch) out.push(`🍱 午餐：${day.lunch}`);
+                    if (day.dinner) out.push(`🍲 晚餐：${day.dinner}`);
+                    if (day.budget) out.push(`💰 當日預算：NT$ ${Number(day.budget).toLocaleString()}`);
+
+                    if (Array.isArray(day.events) && day.events.length > 0) {
+                        out.push('📍 當日行程：');
+                        day.events.forEach(ev => {
+                            if (!ev || !ev.title) return;
+                            let typeIcon = '•';
+                            if (ev.type === 'flight') typeIcon = '✈️';
+                            else if (ev.type === 'trans') typeIcon = '🚗';
+                            else if (ev.type === 'spot') typeIcon = '🏛️';
+                            else if (ev.type === 'food') typeIcon = '🍜';
+                            else if (ev.type === 'hotel') typeIcon = '🏨';
+
+                            out.push(`  ${typeIcon} [${ev.time || '全天'}] ${ev.title}`);
+                            if (ev.loc) out.push(`    地點：${ev.loc}`);
+                            if (ev.cost) out.push(`    預算：NT$ ${ev.cost}`);
+                            if (ev.notes) out.push(`    備忘：${ev.notes}`);
+                        });
+                    }
+                    out.push('');
+                });
+            }
+
+            // 搶票與預約提醒
+            if (Array.isArray(plan.spotsToBook) && plan.spotsToBook.length > 0) {
+                out.push('══════════════════════');
+                out.push('🎟️ 搶票與門票預約提醒');
+                plan.spotsToBook.forEach(sp => {
+                    if (!sp || !sp.name) return;
+                    out.push(`• ${sp.name}：${sp.bookDate || '需預約'}${sp.notes ? ` (${sp.notes})` : ''}`);
+                });
+                out.push('');
+            }
+
+            // 行李清單
+            if (Array.isArray(plan.packingList) && plan.packingList.length > 0) {
+                out.push('══════════════════════');
+                out.push('🧳 行李與必備清單');
+                plan.packingList.forEach(item => {
+                    if (!item || !item.item) return;
+                    const check = item.checked ? '[x]' : '[ ]';
+                    out.push(`${check} ${item.item}`);
+                });
+                out.push('');
+            }
+
+            out.push('══════════════════════');
+            out.push('💡 本隨身手帳由旅行手帳規劃工具產生，祝旅途愉快平安！');
+            return out.join('\n');
+        }
+
+        // 行動裝置一鍵分享至 iPhone 備忘錄
+        function shareToAppleNotes() {
+            try {
+                const plan = getCurrentPlan();
+                if (!plan) {
+                    showToast('error', '未找到行程資料');
+                    return;
+                }
+                const notesText = generateAppleNotesText(plan);
+                if (navigator.share) {
+                    navigator.share({
+                        title: `${plan.title || '旅行行程'} - 備忘錄`,
+                        text: notesText
+                    }).then(() => {
+                        showToast('success', '已開啟分享面板');
+                    }).catch(err => {
+                        if (err.name !== 'AbortError') {
+                            copyAppleNotesText();
+                        }
+                    });
+                } else {
+                    copyAppleNotesText();
+                }
+            } catch(e) {
+                copyAppleNotesText();
+            }
+        }
+
+        // 一鍵複製 iPhone 備忘錄全文
+        function copyAppleNotesText() {
+            try {
+                const plan = getCurrentPlan();
+                if (!plan) return;
+                const notesText = generateAppleNotesText(plan);
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(notesText).then(() => {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '已複製備忘錄格式文字！',
+                                html: `
+                                    <div style="text-align: left; font-size: 0.9rem; color: #334155; line-height: 1.6;">
+                                        已成功複製全文至剪貼簿！<br><br>
+                                        <strong>📱 iPhone 操作步驟：</strong><br>
+                                        1. 打開 iPhone 內建<strong>「備忘錄」App</strong>。<br>
+                                        2. 點選右下角<strong>「新增備忘錄」</strong>。<br>
+                                        3. 長按空白處並點選<strong>「貼上」</strong>即可！
+                                    </div>
+                                `,
+                                confirmButtonText: '太棒了',
+                                customClass: { popup: 'swal2-compact-popup' }
+                            });
+                        } else {
+                            showToast('success', '已複製備忘錄全文！');
+                        }
+                    }).catch(() => fallbackCopyNotes(notesText));
+                } else {
+                    fallbackCopyNotes(notesText);
+                }
+            } catch(err) {
+                showToast('error', '複製失敗', err.message);
+            }
+        }
+
+        function fallbackCopyNotes(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showToast('success', '已複製備忘錄全文至剪貼簿！');
+        }
+
+        // 下載 .txt 備忘錄文字檔
+        function downloadNotesTxtFile() {
+            try {
+                const plan = getCurrentPlan();
+                if (!plan) return;
+                const notesText = generateAppleNotesText(plan);
+                const blob = new Blob([notesText], { type: 'text/plain;charset=utf-8;' });
+                const cleanTitle = (plan.title || '行程').replace(/[/\\?%*:|"<>]/g, '_');
+                const fileName = `${cleanTitle}_隨身備忘錄.txt`;
+
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+                showToast('success', '已下載備忘錄文字檔！');
+            } catch(e) {
+                showToast('error', '下載失敗', e.message);
             }
         }
 
