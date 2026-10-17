@@ -5005,6 +5005,119 @@ const firebaseConfig = {
             updateCloudStatusUI('local', '☁️ 雲端同步 (未連線)');
         }
 
+        function startListeningCloudRoom() {
+            if (!firestoreDb) return;
+            if (cloudUnsubscribe) {
+                cloudUnsubscribe();
+                cloudUnsubscribe = null;
+            }
+
+            const roomId = getCloudRoomId();
+            updateCloudStatusUI('syncing', '🔄 連線雲端中...');
+
+            const docRef = firestoreDb.collection('travel_planners').doc(roomId);
+
+            cloudUnsubscribe = docRef.onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data && data.appState && data.appState.plans) {
+                        isReceivingCloudUpdate = true;
+
+                        // 智慧防護：若本機已有設定大交通費用或行程活動費用，但雲端推來的資料為 0，絕不讓雲端舊資料清空本機費用！
+                        Object.keys(data.appState.plans).forEach(pid => {
+                            const cPlan = data.appState.plans[pid];
+                            const lPlan = appState && appState.plans ? appState.plans[pid] : null;
+                            if (lPlan && cPlan) {
+                                if (lPlan.flights && cPlan.flights) {
+                                    const lCost = Number(lPlan.flights.cost || 0);
+                                    const cCost = Number(cPlan.flights.cost || 0);
+                                    const lOut = Number(lPlan.flights.outboundCost || 0);
+                                    const cOut = Number(cPlan.flights.outboundCost || 0);
+                                    const lIn = Number(lPlan.flights.inboundCost || 0);
+                                    const cIn = Number(cPlan.flights.inboundCost || 0);
+
+                                    if ((lCost > 0 || lOut > 0 || lIn > 0) && (cCost === 0 && cOut === 0 && cIn === 0)) {
+                                        cPlan.flights.cost = lPlan.flights.cost;
+                                        cPlan.flights.outboundCost = lPlan.flights.outboundCost;
+                                        cPlan.flights.inboundCost = lPlan.flights.inboundCost;
+                                        cPlan.flights.pricingType = lPlan.flights.pricingType;
+                                        cPlan.flights.costMode = lPlan.flights.costMode;
+                                        cPlan.flights.costCurr = lPlan.flights.costCurr;
+                                        cPlan.flights.actualCost = lPlan.flights.actualCost;
+                                        if (Array.isArray(lPlan.flights.legs) && Array.isArray(cPlan.flights.legs)) {
+                                            cPlan.flights.legs.forEach((cLeg, idx) => {
+                                                if (lPlan.flights.legs[idx] && Number(lPlan.flights.legs[idx].cost) > 0) {
+                                                    cLeg.cost = lPlan.flights.legs[idx].cost;
+                                                }
+                                            });
+                                        }
+                                    }
+                                }
+
+                                // 智慧保護每日行程中的航班活動費用
+                                if (Array.isArray(lPlan.days) && Array.isArray(cPlan.days)) {
+                                    cPlan.days.forEach(cDay => {
+                                        const lDay = lPlan.days.find(d => d.dayNum === cDay.dayNum);
+                                        if (lDay && Array.isArray(lDay.events) && Array.isArray(cDay.events)) {
+                                            cDay.events.forEach(cEv => {
+                                                if (cEv.type === 'flight' || cEv.flightLegIndex !== undefined) {
+                                                    const lEv = lDay.events.find(e => (e.flightLegIndex !== undefined && e.flightLegIndex === cEv.flightLegIndex) || (e.type === 'flight' && e.title === cEv.title));
+                                                    if (lEv && Number(lEv.cost) > 0 && (!cEv.cost || Number(cEv.cost) === 0)) {
+                                                        cEv.cost = Number(lEv.cost);
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            }
+                        });
+
+                        appState = data.appState;
+                        saveState(true); // 備份至本機 localStorage，但不重複推播雲端
+                        renderAll();
+                        isReceivingCloudUpdate = false;
+
+                        const timeStr = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        updateCloudStatusUI('connected', `🟢 雲端已即時同步 (${timeStr})`);
+                    }
+                } else {
+                    // 若雲端該房間尚無資料，自動將當前本機行程上傳初始化
+                    pushStateToCloud();
+                }
+            }, err => {
+                console.error("Firestore 監聽失敗", err);
+                updateCloudStatusUI('error', '⚠️ 雲端連線失敗 (檢查權限)');
+            });
+        }
+
+        function pushStateToCloud() {
+            if (!firestoreDb || isReceivingCloudUpdate) return;
+            const roomId = getCloudRoomId();
+            updateCloudStatusUI('syncing', '🔄 同步中...');
+
+            try {
+                // 透過 JSON 序列化徹底移除所有 undefined 屬性，防範 Firestore 拒絕寫入拋錯
+                const cleanAppState = JSON.parse(JSON.stringify(appState));
+
+                firestoreDb.collection('travel_planners').doc(roomId).set({
+                    appState: cleanAppState,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+                    device: navigator.userAgent
+                }, { merge: true }).then(() => {
+                    const timeStr = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    updateCloudStatusUI('connected', `🟢 雲端已即時同步 (${timeStr})`);
+                }).catch(err => {
+                    console.error("推播至雲端失敗", err);
+                    updateCloudStatusUI('error', '⚠️ 雲端儲存失敗');
+                });
+            } catch (err) {
+                console.error("準備雲端資料時失敗", err);
+                updateCloudStatusUI('error', '⚠️ 雲端儲存失敗');
+            }
+        }
+
+        
         function updateCloudStatusUI(status, labelText) {
             const btn = document.getElementById('cloudSyncStatusBtn');
             const dot = document.getElementById('cloudStatusDot');
@@ -6163,8 +6276,19 @@ const firebaseConfig = {
                 ev.notes = info.notes;
                 ev.type = 'flight';
                 ev.flightLegIndex = legIdx;
-                if (legCost > 0 || ev.cost === 0 || ev.cost === undefined) {
+                if (legCost > 0) {
                     ev.cost = legCost;
+                } else if (Number(ev.cost) > 0) {
+                    // 雙向反推保護：若大交通尚未填寫費用但活動已有費用，反推至大交通設定
+                    legCost = Number(ev.cost);
+                    legs[legIdx].cost = legCost;
+                    if (fl.pricingType === 'separate') {
+                        if (isOutbound) fl.outboundCost = legCost;
+                        else fl.inboundCost = legCost;
+                        fl.cost = (Number(fl.outboundCost) || 0) + (Number(fl.inboundCost) || 0);
+                    } else {
+                        fl.cost = legCost * 2;
+                    }
                 }
             } else {
                 // 尚未有航班活動，為使用者貼心建立
@@ -6183,6 +6307,11 @@ const firebaseConfig = {
             targetDay.events = sortDayEventsByTime(targetDay.events);
             saveState();
             renderTimelineView();
+            if (typeof renderSidebarFlights === 'function') renderSidebarFlights();
+            if (typeof renderTripSummary === 'function') renderTripSummary();
+            if (typeof renderBudgetWidget === 'function') renderBudgetWidget();
+            if (typeof renderBudgetView === 'function') renderBudgetView();
+            if (typeof renderActualExpensesView === 'function') renderActualExpensesView();
             showToast('success', `已成功將【${isOutbound ? '去程' : '回程'}航班】(${info.timeStr}${legCost > 0 ? `，費用 ${legCost}` : ''}) 同步連動至 Day ${targetDayNum} 行程活動！`);
         }
 
@@ -10711,12 +10840,16 @@ const firebaseConfig = {
                 setVal('fCategoryTag', fl.categoryTag || 'International');
                 setVal('fPnr', fl.pnr || (l1.pnr || ''));
 
-                // 填入交通/機票費用設定 (支援 legs 自身 fallback 與自動反推)
+                // 填入交通/機票費用設定 (支援 legs 自身票價 fallback 與智慧回填)
                 let initialOutCost = (fl.outboundCost !== undefined && fl.outboundCost !== null && fl.outboundCost !== '') ? fl.outboundCost : ((l1.cost !== undefined && l1.cost !== null) ? l1.cost : '');
                 let initialInCost = (fl.inboundCost !== undefined && fl.inboundCost !== null && fl.inboundCost !== '') ? fl.inboundCost : ((l2.cost !== undefined && l2.cost !== null) ? l2.cost : '');
                 let initialTotCost = (fl.cost !== undefined && fl.cost !== null && fl.cost !== '') ? fl.cost : '';
                 if ((initialTotCost === '' || Number(initialTotCost) === 0) && (Number(initialOutCost) > 0 || Number(initialInCost) > 0)) {
                     initialTotCost = (Number(initialOutCost) || 0) + (Number(initialInCost) || 0);
+                }
+                if (Number(initialTotCost) > 0 && (initialOutCost === '' || Number(initialOutCost) === 0) && (initialInCost === '' || Number(initialInCost) === 0)) {
+                    initialOutCost = Math.round(Number(initialTotCost) / 2);
+                    initialInCost = Number(initialTotCost) - initialOutCost;
                 }
 
                 setVal('fOutCost', initialOutCost);
@@ -10726,7 +10859,7 @@ const firebaseConfig = {
                 setVal('fCostCurr', fl.costCurr || 'LOCAL');
                 setVal('fActualCost', (fl.actualCost !== undefined && fl.actualCost !== null) ? fl.actualCost : '');
 
-                // 決定計價模式：若已設定則遵照；若無，若去回任一有填則 separate，否則預設 roundtrip
+                // 決定計價模式：若有指定則遵循指定；若無，若去回皆填寫則為 separate，否則預設為 roundtrip
                 let pricingType = fl.pricingType;
                 if (!pricingType) {
                     if (Number(initialOutCost) > 0 || Number(initialInCost) > 0) {
@@ -10829,9 +10962,17 @@ const firebaseConfig = {
                     inLeg.arrLoc2 = getVal('fInArrLoc2');
                 }
 
-                let outCostVal = parseFloat(document.getElementById('fOutCost')?.value) || 0;
-                let inCostVal = parseFloat(document.getElementById('fInCost')?.value) || 0;
-                let totCostVal = parseFloat(document.getElementById('fTotalCost')?.value) || 0;
+                // 安全數值解析器：支援千分位逗號、貨幣符號、空白等各種使用者複製貼上格式
+                const parseSafeNum = (val) => {
+                    if (val === undefined || val === null) return 0;
+                    const s = String(val).replace(/,/g, '').replace(/[^\d.-]/g, '').trim();
+                    const n = parseFloat(s);
+                    return (!isNaN(n) && n >= 0) ? n : 0;
+                };
+
+                let outCostVal = parseSafeNum(document.getElementById('fOutCost')?.value);
+                let inCostVal = parseSafeNum(document.getElementById('fInCost')?.value);
+                let totCostVal = parseSafeNum(document.getElementById('fTotalCost')?.value);
 
                 // 智慧雙向容錯防呆：絕不讓使用者輸入的費用被 0 覆蓋洗掉
                 if (pricingType === 'separate') {
@@ -10847,6 +10988,11 @@ const firebaseConfig = {
                     if (totCostVal === 0 && (outCostVal > 0 || inCostVal > 0)) {
                         totCostVal = outCostVal + inCostVal;
                     }
+                    // 若總票價大於 0 但去回皆未填，去回自動均分保存，確保所有欄位與 legs 均具備有效票價
+                    if (totCostVal > 0 && outCostVal === 0 && inCostVal === 0) {
+                        outCostVal = Math.round(totCostVal / 2);
+                        inCostVal = totCostVal - outCostVal;
+                    }
                 }
 
                 // Leg 物件必須完整保存自身費用
@@ -10854,7 +11000,8 @@ const firebaseConfig = {
                 inLeg.cost = (pricingType === 'separate') ? inCostVal : (totCostVal - Math.round(totCostVal / 2));
 
                 const rawActCost = document.getElementById('fActualCost')?.value;
-                const parsedActCost = (rawActCost !== '' && rawActCost !== undefined && !isNaN(parseFloat(rawActCost))) ? parseFloat(rawActCost) : null;
+                const actParsed = parseSafeNum(rawActCost);
+                const parsedActCost = (rawActCost !== '' && rawActCost !== undefined && actParsed > 0) ? actParsed : null;
 
                 plan.flights = {
                     transportType: transportType,
@@ -10894,11 +11041,21 @@ const firebaseConfig = {
                                 ev1.notes = outInfo.notes || ev1.notes;
                                 ev1.type = 'flight';
                                 ev1.flightLegIndex = 0;
-                                if (outLeg.cost > 0 || ev1.cost === 0 || ev1.cost === undefined) {
+                                if (outLeg.cost > 0) {
                                     ev1.cost = outLeg.cost;
                                 }
-                                day1.events = sortDayEventsByTime(day1.events);
+                            } else {
+                                day1.events.push({
+                                    time: outInfo.timeStr,
+                                    title: outInfo.title,
+                                    type: 'flight',
+                                    loc: outInfo.loc,
+                                    cost: outLeg.cost,
+                                    notes: outInfo.notes,
+                                    flightLegIndex: 0
+                                });
                             }
+                            day1.events = sortDayEventsByTime(day1.events);
                         }
 
                         const inInfo = getFlightLegDetails(inLeg);
@@ -10915,11 +11072,21 @@ const firebaseConfig = {
                                 evLast.notes = inInfo.notes || evLast.notes;
                                 evLast.type = 'flight';
                                 evLast.flightLegIndex = 1;
-                                if (inLeg.cost > 0 || evLast.cost === 0 || evLast.cost === undefined) {
+                                if (inLeg.cost > 0) {
                                     evLast.cost = inLeg.cost;
                                 }
-                                lastDay.events = sortDayEventsByTime(lastDay.events);
+                            } else {
+                                lastDay.events.push({
+                                    time: inInfo.timeStr,
+                                    title: inInfo.title,
+                                    type: 'flight',
+                                    loc: inInfo.loc,
+                                    cost: inLeg.cost,
+                                    notes: inInfo.notes,
+                                    flightLegIndex: 1
+                                });
                             }
+                            lastDay.events = sortDayEventsByTime(lastDay.events);
                         }
 
                         if (typeof renderTimelineView === 'function') {
@@ -11347,10 +11514,26 @@ const firebaseConfig = {
             const notesEl = document.getElementById('eventNotesStr');
             if (notesEl) notesEl.value = info.notes;
 
-            // 3. 更新時間選擇器顯示與即時影響分析
+            // 3. 同步票價費用 (自動推導航段金額或總額分攤，絕不讓活動票價留空為 0)
+            let legCost = Number(legs[idx].cost || 0);
+            const fl = plan.flights || {};
+            if (legCost === 0) {
+                if (fl.pricingType === 'separate') {
+                    legCost = (idx === 0) ? Number(fl.outboundCost || 0) : Number(fl.inboundCost || 0);
+                } else if (Number(fl.cost) > 0) {
+                    legCost = (idx === 0) ? Math.round(Number(fl.cost) / 2) : (Number(fl.cost) - Math.round(Number(fl.cost) / 2));
+                }
+            }
+            const costEl = document.getElementById('eventCostNum');
+            if (costEl && legCost > 0) {
+                costEl.value = legCost;
+                if (typeof updateEventCostTwdHint === 'function') updateEventCostTwdHint();
+            }
+
+            // 4. 更新時間選擇器顯示與即時影響分析
             handleTimeSelectorChange();
 
-            showToast('success', `已成功將交通航班時刻 (${info.startTime} - ${info.endTime}) 與航程資訊同步帶入！`);
+            showToast('success', `已成功將交通航班時刻 (${info.startTime} - ${info.endTime})${legCost > 0 ? ` 與票價費用 (${legCost})` : ''} 同步帶入！`);
         }
 
         function updateEventTransitConvertBox(show) {
