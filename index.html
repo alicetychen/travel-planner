@@ -4868,7 +4868,8 @@ const firebaseConfig = {
                         arrLoc: '北京首都 (PEK) T3',
                         duration: '3 hrs 25 mins (直飛)',
                         pnr: 'CI-PEK2026',
-                        categoryTag: 'International'
+                        categoryTag: 'International',
+                        cost: 7500
                     },
                     {
                         type: 'inbound',
@@ -4881,7 +4882,8 @@ const firebaseConfig = {
                         arrLoc: '台北桃園 (TPE) T2',
                         duration: '3 hrs 15 mins (直飛)',
                         pnr: 'CI-PEK2026',
-                        categoryTag: 'International'
+                        categoryTag: 'International',
+                        cost: 7500
                     }
                 ]
             },
@@ -5093,7 +5095,8 @@ const firebaseConfig = {
                         arrLoc2: '重慶江北 (CKG) T3',
                         duration: '8 hrs 10 mins (經香港轉機)',
                         pnr: 'EJ3HIM',
-                        categoryTag: 'International'
+                        categoryTag: 'International',
+                        cost: 6250
                     },
                     {
                         type: 'inbound',
@@ -5111,7 +5114,8 @@ const firebaseConfig = {
                         arrLoc2: '台北桃園 (TPE) T1',
                         duration: '10 hrs 30 mins (經香港轉機)',
                         pnr: 'CX8888',
-                        categoryTag: 'International'
+                        categoryTag: 'International',
+                        cost: 6250
                     }
                 ]
             },
@@ -6064,14 +6068,28 @@ const firebaseConfig = {
             const fl = plan?.flights || {};
             const transportType = fl.transportType || 'flight';
             const pricingType = fl.pricingType || (fl.cost > 0 && !fl.outboundCost && !fl.inboundCost ? 'roundtrip' : (fl.outboundCost || fl.inboundCost ? 'separate' : 'roundtrip'));
-            const cost = Number(fl.cost || 0);
-            const outCost = Number(fl.outboundCost || 0);
-            const inCost = Number(fl.inboundCost || 0);
+            let cost = Number(fl.cost || 0);
+            let outCost = Number(fl.outboundCost || 0);
+            let inCost = Number(fl.inboundCost || 0);
             
+            // 兼容容錯：若外層無 outboundCost/inboundCost，嘗試從 legs 自身 cost 獲取
+            const legs = fl.legs || [];
+            if (outCost === 0 && legs[0] && Number(legs[0].cost) > 0) {
+                outCost = Number(legs[0].cost);
+            }
+            if (inCost === 0 && legs[1] && Number(legs[1].cost) > 0) {
+                inCost = Number(legs[1].cost);
+            }
+
             // 在 roundtrip 模式下以 cost 為準（維持一筆）；separate 模式下以 outCost + inCost 為準
             let effectiveCost = 0;
             if (pricingType === 'separate') {
                 effectiveCost = (outCost + inCost > 0) ? (outCost + inCost) : cost;
+                // 若分開計價但僅有總額，自動均分以供分段明細展示
+                if (outCost === 0 && inCost === 0 && cost > 0) {
+                    outCost = Math.round(cost / 2);
+                    inCost = cost - outCost;
+                }
             } else {
                 effectiveCost = cost > 0 ? cost : (outCost + inCost);
             }
@@ -6206,13 +6224,21 @@ const firebaseConfig = {
             let totVal = parseFloat(totEl?.value) || 0;
 
             if (!isRoundtrip) {
-                // 分開計價模式：總金額由去程與回程自動加總
-                totVal = outVal + inVal;
-                if (totEl) totEl.value = totVal > 0 ? totVal : '';
+                // 分開計價模式：若去回程有填，總金額由去程與回程自動加總
+                if (outVal > 0 || inVal > 0) {
+                    totVal = outVal + inVal;
+                    if (totEl) totEl.value = totVal > 0 ? totVal : '';
+                } else if (totVal > 0) {
+                    // 容錯：若分開計價但去回皆未填，而總金額已有值，維持 totVal 絕不強制清空
+                }
             } else {
                 // 來回合併計價模式：維持以總金額為主 (若直接在總票價輸入)
                 if (isTotalInput) {
                     totVal = parseFloat(totEl?.value) || 0;
+                } else if (totVal === 0 && (outVal > 0 || inVal > 0)) {
+                    // 容錯：總金額為 0 但去回程有值，自動帶入
+                    totVal = outVal + inVal;
+                    if (totEl) totEl.value = totVal > 0 ? totVal : '';
                 }
             }
 
@@ -6742,11 +6768,22 @@ const firebaseConfig = {
         function syncFlightLegToDaySchedule(legIdx) {
             const plan = getCurrentPlan();
             if (!plan) return;
-            const legs = plan.flights?.legs || [];
+            const fl = plan.flights || {};
+            const legs = fl.legs || [];
             if (!legs[legIdx]) return;
 
             const info = getFlightLegDetails(legs[legIdx]);
             const isOutbound = (legIdx === 0 || legs[legIdx].type === 'outbound');
+
+            // 智慧計算該航段費用 (優先取 leg 自身 cost，若無則從 flights 模式推導)
+            let legCost = Number(legs[legIdx].cost || 0);
+            if (legCost === 0) {
+                if (fl.pricingType === 'separate') {
+                    legCost = isOutbound ? Number(fl.outboundCost || 0) : Number(fl.inboundCost || 0);
+                } else if (Number(fl.cost) > 0) {
+                    legCost = isOutbound ? Math.round(Number(fl.cost) / 2) : (Number(fl.cost) - Math.round(Number(fl.cost) / 2));
+                }
+            }
 
             // 目標天數：去程為 Day 1，回程為最後一天
             const targetDayNum = isOutbound ? 1 : (plan.days ? plan.days[plan.days.length - 1].dayNum : 1);
@@ -6767,7 +6804,7 @@ const firebaseConfig = {
             }
 
             if (eventIdx >= 0) {
-                // 已有航班活動，精準更新時間、標題、地點與備註
+                // 已有航班活動，精準更新時間、標題、地點與備註，並連動更新票價
                 const ev = targetDay.events[eventIdx];
                 ev.time = info.timeStr;
                 ev.title = info.title;
@@ -6775,6 +6812,9 @@ const firebaseConfig = {
                 ev.notes = info.notes;
                 ev.type = 'flight';
                 ev.flightLegIndex = legIdx;
+                if (legCost > 0 || ev.cost === 0 || ev.cost === undefined) {
+                    ev.cost = legCost;
+                }
             } else {
                 // 尚未有航班活動，為使用者貼心建立
                 targetDay.events.push({
@@ -6782,7 +6822,7 @@ const firebaseConfig = {
                     title: info.title,
                     type: 'flight',
                     loc: info.loc,
-                    cost: 0,
+                    cost: legCost,
                     notes: info.notes,
                     flightLegIndex: legIdx
                 });
@@ -6792,7 +6832,7 @@ const firebaseConfig = {
             targetDay.events = sortDayEventsByTime(targetDay.events);
             saveState();
             renderTimelineView();
-            showToast('success', `已成功將【${isOutbound ? '去程' : '回程'}航班】(${info.timeStr}) 同步連動至 Day ${targetDayNum} 行程活動！`);
+            showToast('success', `已成功將【${isOutbound ? '去程' : '回程'}航班】(${info.timeStr}${legCost > 0 ? `，費用 ${legCost}` : ''}) 同步連動至 Day ${targetDayNum} 行程活動！`);
         }
 
         // ==========================================
@@ -11148,6 +11188,8 @@ const firebaseConfig = {
             const sepBox = document.getElementById('pricingSeparateFields');
             const totLabel = document.getElementById('fTotalCostLabel');
             const totInput = document.getElementById('fTotalCost');
+            const outInput = document.getElementById('fOutCost');
+            const inInput = document.getElementById('fInCost');
 
             if (sepBox) {
                 sepBox.style.display = isRoundtrip ? 'none' : 'grid';
@@ -11159,8 +11201,23 @@ const firebaseConfig = {
                 totInput.readOnly = !isRoundtrip;
                 if (!isRoundtrip) {
                     totInput.style.backgroundColor = '#f1f5f9';
+                    // 若切換至分開計價，且去回皆未填但總額有值，自動均分填入去回
+                    const curTot = parseFloat(totInput.value) || 0;
+                    const curOut = parseFloat(outInput?.value) || 0;
+                    const curIn = parseFloat(inInput?.value) || 0;
+                    if (curTot > 0 && curOut === 0 && curIn === 0) {
+                        const half = Math.round(curTot / 2);
+                        if (outInput) outInput.value = half;
+                        if (inInput) inInput.value = curTot - half;
+                    }
                 } else {
                     totInput.style.backgroundColor = '';
+                    // 若切換至來回合併，且去回有值，總額自動帶入加總並開放自由編輯
+                    const curOut = parseFloat(outInput?.value) || 0;
+                    const curIn = parseFloat(inInput?.value) || 0;
+                    if (curOut > 0 || curIn > 0) {
+                        totInput.value = curOut + curIn;
+                    }
                 }
             }
             calcFlightModalCost();
@@ -11226,15 +11283,14 @@ const firebaseConfig = {
                 setVal('fPnr', 'EJ3HIM / CX8888');
 
                 // 帶入分開計價示範費用
-                const rSep = document.getElementById('fPricingSeparate');
-                if (rSep) rSep.checked = true;
-                toggleFlightPricingMode();
-
                 setVal('fOutCost', '6250');
                 setVal('fInCost', '6250');
                 setVal('fCostMode', 'single');
                 setVal('fCostCurr', 'TWD');
                 setVal('fActualCost', '12500');
+                const rSep = document.getElementById('fPricingSeparate');
+                if (rSep) rSep.checked = true;
+                toggleFlightPricingMode();
                 calcFlightModalCost();
 
                 showToast('info', '已帶入重慶轉機示範資料與分開計價費用！');
@@ -11287,14 +11343,13 @@ const firebaseConfig = {
                 setVal('fPnr', 'CI-PEK2026');
 
                 // 帶入來回合併計價示範費用
-                const rRound = document.getElementById('fPricingRoundtrip');
-                if (rRound) rRound.checked = true;
-                toggleFlightPricingMode();
-
                 setVal('fTotalCost', '15000');
                 setVal('fCostMode', 'single');
                 setVal('fCostCurr', 'TWD');
                 setVal('fActualCost', '14800');
+                const rRound = document.getElementById('fPricingRoundtrip');
+                if (rRound) rRound.checked = true;
+                toggleFlightPricingMode();
                 calcFlightModalCost(true);
 
                 showToast('info', '已帶入北京直飛示範資料與來回合併票價！');
@@ -11318,22 +11373,6 @@ const firebaseConfig = {
 
                 const transportType = fl.transportType || 'flight';
                 setTransportType(transportType);
-
-                const pricingType = fl.pricingType || (fl.cost > 0 && !fl.outboundCost && !fl.inboundCost ? 'roundtrip' : (fl.outboundCost || fl.inboundCost ? 'separate' : 'roundtrip'));
-                const rRound = document.getElementById('fPricingRoundtrip');
-                const rSep = document.getElementById('fPricingSeparate');
-                if (pricingType === 'separate') {
-                    if (rSep) rSep.checked = true;
-                } else {
-                    if (rRound) rRound.checked = true;
-                }
-                toggleFlightPricingMode();
-
-                const isTrans = fl.isTransfer === true || l1.isTransfer === true || !!l1.transferInfo || (l1.flightNo2 && l1.flightNo2.trim().length > 0);
-
-                const cb = document.getElementById('fIsTransferCheckbox');
-                if (cb) cb.checked = isTrans;
-                toggleFlightTransferFields();
 
                 // 安全給值小幫手：元素不存在時安全忽略，絕不拋出 TypeError
                 const setVal = (id, val) => {
@@ -11372,13 +11411,44 @@ const firebaseConfig = {
                 setVal('fCategoryTag', fl.categoryTag || 'International');
                 setVal('fPnr', fl.pnr || (l1.pnr || ''));
 
-                // 填入交通/機票費用設定
-                setVal('fOutCost', (fl.outboundCost !== undefined && fl.outboundCost !== null) ? fl.outboundCost : '');
-                setVal('fInCost', (fl.inboundCost !== undefined && fl.inboundCost !== null) ? fl.inboundCost : '');
-                setVal('fTotalCost', (fl.cost !== undefined && fl.cost !== null) ? fl.cost : '');
+                // 填入交通/機票費用設定 (支援 legs 自身票價 fallback 與智慧回填)
+                let initialOutCost = (fl.outboundCost !== undefined && fl.outboundCost !== null && fl.outboundCost !== '') ? fl.outboundCost : ((l1.cost !== undefined && l1.cost !== null) ? l1.cost : '');
+                let initialInCost = (fl.inboundCost !== undefined && fl.inboundCost !== null && fl.inboundCost !== '') ? fl.inboundCost : ((l2.cost !== undefined && l2.cost !== null) ? l2.cost : '');
+                let initialTotCost = (fl.cost !== undefined && fl.cost !== null && fl.cost !== '') ? fl.cost : '';
+                if ((initialTotCost === '' || Number(initialTotCost) === 0) && (Number(initialOutCost) > 0 || Number(initialInCost) > 0)) {
+                    initialTotCost = (Number(initialOutCost) || 0) + (Number(initialInCost) || 0);
+                }
+
+                setVal('fOutCost', initialOutCost);
+                setVal('fInCost', initialInCost);
+                setVal('fTotalCost', initialTotCost);
                 setVal('fCostMode', fl.costMode || 'single');
                 setVal('fCostCurr', fl.costCurr || 'LOCAL');
                 setVal('fActualCost', (fl.actualCost !== undefined && fl.actualCost !== null) ? fl.actualCost : '');
+
+                // 決定計價模式：若有指定則遵循指定；若無，若去回皆填寫則為 separate，否則預設為 roundtrip
+                let pricingType = fl.pricingType;
+                if (!pricingType) {
+                    if (Number(initialOutCost) > 0 || Number(initialInCost) > 0) {
+                        pricingType = 'separate';
+                    } else {
+                        pricingType = 'roundtrip';
+                    }
+                }
+                const rRound = document.getElementById('fPricingRoundtrip');
+                const rSep = document.getElementById('fPricingSeparate');
+                if (pricingType === 'separate') {
+                    if (rSep) rSep.checked = true;
+                } else {
+                    if (rRound) rRound.checked = true;
+                }
+                toggleFlightPricingMode();
+
+                // 轉乘設定
+                const isTrans = fl.isTransfer === true || l1.isTransfer === true || !!l1.transferInfo || (l1.flightNo2 && l1.flightNo2.trim().length > 0);
+                const cb = document.getElementById('fIsTransferCheckbox');
+                if (cb) cb.checked = isTrans;
+                toggleFlightTransferFields();
 
                 calcFlightModalCost();
                 openModal('editFlightModal');
@@ -11459,15 +11529,33 @@ const firebaseConfig = {
                     inLeg.arrLoc2 = getVal('fInArrLoc2');
                 }
 
-                const outCostVal = parseFloat(document.getElementById('fOutCost')?.value) || 0;
-                const inCostVal = parseFloat(document.getElementById('fInCost')?.value) || 0;
+                let outCostVal = parseFloat(document.getElementById('fOutCost')?.value) || 0;
+                let inCostVal = parseFloat(document.getElementById('fInCost')?.value) || 0;
                 let totCostVal = parseFloat(document.getElementById('fTotalCost')?.value) || 0;
 
+                // 智慧雙向容錯防呆：絕不讓使用者輸入的費用被 0 覆蓋洗掉
                 if (pricingType === 'separate') {
-                    totCostVal = outCostVal + inCostVal;
+                    if (outCostVal > 0 || inCostVal > 0) {
+                        totCostVal = outCostVal + inCostVal;
+                    } else if (totCostVal > 0) {
+                        // 使用者選了分開計價但只填了總額：自動均分，絕不清零！
+                        outCostVal = Math.round(totCostVal / 2);
+                        inCostVal = totCostVal - outCostVal;
+                    }
+                } else {
+                    // 來回合併計價模式：若總票價為 0 但去回有填，自動加總
+                    if (totCostVal === 0 && (outCostVal > 0 || inCostVal > 0)) {
+                        totCostVal = outCostVal + inCostVal;
+                    }
                 }
 
+                // Leg 物件必須完整保存自身費用
+                outLeg.cost = (pricingType === 'separate') ? outCostVal : Math.round(totCostVal / 2);
+                inLeg.cost = (pricingType === 'separate') ? inCostVal : (totCostVal - Math.round(totCostVal / 2));
+
                 const rawActCost = document.getElementById('fActualCost')?.value;
+                const parsedActCost = (rawActCost !== '' && rawActCost !== undefined && !isNaN(parseFloat(rawActCost))) ? parseFloat(rawActCost) : null;
+
                 plan.flights = {
                     transportType: transportType,
                     pricingType: pricingType,
@@ -11479,7 +11567,7 @@ const firebaseConfig = {
                     cost: totCostVal,
                     costMode: document.getElementById('fCostMode')?.value || 'single',
                     costCurr: document.getElementById('fCostCurr')?.value || 'LOCAL',
-                    actualCost: (rawActCost !== '' && rawActCost !== undefined && !isNaN(parseFloat(rawActCost))) ? parseFloat(rawActCost) : undefined,
+                    actualCost: parsedActCost,
                     legs: [outLeg, inLeg]
                 };
 
@@ -11506,6 +11594,9 @@ const firebaseConfig = {
                                 ev1.notes = outInfo.notes || ev1.notes;
                                 ev1.type = 'flight';
                                 ev1.flightLegIndex = 0;
+                                if (outLeg.cost > 0 || ev1.cost === 0 || ev1.cost === undefined) {
+                                    ev1.cost = outLeg.cost;
+                                }
                                 day1.events = sortDayEventsByTime(day1.events);
                             }
                         }
@@ -11524,6 +11615,9 @@ const firebaseConfig = {
                                 evLast.notes = inInfo.notes || evLast.notes;
                                 evLast.type = 'flight';
                                 evLast.flightLegIndex = 1;
+                                if (inLeg.cost > 0 || evLast.cost === 0 || evLast.cost === undefined) {
+                                    evLast.cost = inLeg.cost;
+                                }
                                 lastDay.events = sortDayEventsByTime(lastDay.events);
                             }
                         }
