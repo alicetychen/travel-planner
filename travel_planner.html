@@ -2990,7 +2990,13 @@
                         <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('transport')"><i class="fa-solid fa-plane"></i> 交通</a></li>
                         <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('hotel')"><i class="fa-solid fa-bed"></i> 住宿</a></li>
                         <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('timeline')"><i class="fa-solid fa-timeline"></i> 行程表</a></li>
-                        <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('spots')"><i class="fa-solid fa-location-dot"></i> 觀光景點</a></li>
+                        <li class="quick-nav-item">
+                            <a href="javascript:void(0)" onclick="quickNavTo('spots')"><i class="fa-solid fa-location-dot"></i> 觀光景點與資源</a>
+                            <span style="font-size:0.72rem; color:#94a3b8; margin-left:3px;">
+                                (<a href="javascript:void(0)" onclick="quickNavTo('spots')" style="color:#0284c7; text-decoration:none;">攻略</a>/ 
+                                 <a href="javascript:void(0)" onclick="quickNavTo('booking')" style="color:#ea580c; text-decoration:none;">搶票</a>)
+                            </span>
+                        </li>
                         <li class="quick-nav-item">
                             <a href="javascript:void(0)" onclick="quickNavTo('expenses')"><i class="fa-solid fa-coins"></i> 費用與記帳</a>
                             <span style="font-size:0.72rem; color:#94a3b8; margin-left:3px;">
@@ -2998,7 +3004,6 @@
                                  <a href="javascript:void(0)" onclick="quickNavTo('actual-expenses')" style="color:#16a34a; text-decoration:none;">實付</a>)
                             </span>
                         </li>
-                        <li class="quick-nav-item"><a href="javascript:void(0)" onclick="quickNavTo('booking')"><i class="fa-solid fa-book-bookmark"></i> 旅遊資源</a></li>
                     </ul>
                 </div>
             </div>
@@ -3084,15 +3089,17 @@
              ================================================ -->
         <section class="notion-main-col">
             
-            <!-- Notion Callout: 行前準備必備工具 (可勾選) -->
-            <div class="notion-callout">
-                <div class="notion-callout-icon">💡</div>
+            <!-- Notion Callout: 行前準備必備工具 (可勾選；無待辦提醒時自動縮到最小單行) -->
+            <div class="notion-callout" id="toolsCalloutBox">
+                <div class="notion-callout-icon" id="toolsCalloutIcon">💡</div>
                 <div class="notion-callout-content">
-                    <div style="font-weight: 700; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
-                        <span>行前必備工具與重要提醒 (點擊直接勾選確認狀態)</span>
-                        <button class="n-btn" style="padding: 2px 7px; font-size: 0.74rem;" onclick="openAddToolModal()">
-                            <i class="fa-solid fa-plus"></i> 新增提醒
-                        </button>
+                    <div id="toolsCalloutHeader" style="font-weight: 700; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                        <span id="toolsCalloutTitleText">行前必備工具與重要提醒 (點擊直接勾選確認狀態)</span>
+                        <div id="toolsCalloutHeaderActions" style="display: flex; align-items: center; gap: 6px;">
+                            <button class="n-btn" style="padding: 2px 7px; font-size: 0.74rem;" onclick="openAddToolModal()">
+                                <i class="fa-solid fa-plus"></i> 新增提醒
+                            </button>
+                        </div>
                     </div>
                     <div id="toolsCalloutList">
                         <!-- Populated dynamically -->
@@ -3106,11 +3113,8 @@
                     <button class="view-tab-btn active" id="tabBtn-timeline" onclick="switchView('timeline')">
                         <i class="fa-solid fa-timeline"></i> 行程時間軸
                     </button>
-                    <button class="view-tab-btn" id="tabBtn-booking" onclick="switchView('booking')">
-                        <i class="fa-regular fa-clock"></i> 搶票時程
-                    </button>
                     <button class="view-tab-btn" id="tabBtn-spots" onclick="switchView('spots')">
-                        <i class="fa-solid fa-landmark-dome"></i> 景點攻略
+                        <i class="fa-solid fa-landmark-dome"></i> 景點攻略與搶票
                     </button>
                     <button class="view-tab-btn" id="tabBtn-expenses" onclick="switchView('expenses')">
                         <i class="fa-solid fa-coins"></i> 費用與記帳
@@ -3124,8 +3128,7 @@
                         <select id="unifiedNavSelect" class="unified-nav-select" onchange="handleUnifiedNavSelect(this.value)">
                             <optgroup label="📋 主要功能視圖">
                                 <option value="timeline">📅 每日行程時間軸 (Timeline)</option>
-                                <option value="booking">🎫 搶票與時程總表 (Booking Schedule)</option>
-                                <option value="spots">🏯 核心景點速通攻略 (Spot Guides)</option>
+                                <option value="spots">🏛️ 景點攻略與搶票時程 (Spots & Booking)</option>
                                 <option value="budget">📊 費用規劃：預算統計分析 (Budget)</option>
                                 <option value="actual-expenses">🧾 費用核銷：實際花費記帳 (Actual Expenses)</option>
                             </optgroup>
@@ -3156,50 +3159,77 @@
                 </div>
             </div>
 
-            <!-- VIEW 2: BOOKING SCHEDULE -->
-            <div class="view-content-pane" id="view-booking">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <div style="font-size: 0.86rem; color: var(--notion-text-sub);">
-                        💡 掌握各景點、表演、包車預約開放時間，準時搶票不撲空！
+            <!-- VIEW 2 & 3 MERGED: 景點攻略與搶票時程整合中心 -->
+            <div class="view-content-pane" id="view-spots">
+                <!-- 次級分頁切換導覽列 (可同頁全覽或切換單一區塊) -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+                    <div class="expenses-subtabs-bar">
+                        <button type="button" class="expenses-subtab-btn active" id="spotsSubtabBtn-all" onclick="switchSpotsSubtab('all')">
+                            <i class="fa-solid fa-layer-group"></i> 📋 景點攻略＋搶票全覽
+                        </button>
+                        <button type="button" class="expenses-subtab-btn" id="spotsSubtabBtn-guides" onclick="switchSpotsSubtab('guides')">
+                            <i class="fa-solid fa-landmark-dome"></i> 🏛️ 景點速通攻略
+                        </button>
+                        <button type="button" class="expenses-subtab-btn" id="spotsSubtabBtn-booking" onclick="switchSpotsSubtab('booking')">
+                            <i class="fa-regular fa-clock"></i> 🎫 搶票與預約時程
+                        </button>
                     </div>
-                    <button class="n-btn" onclick="openAddBookingModal()">
-                        <i class="fa-solid fa-plus"></i> 新增預約項目
-                    </button>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <button class="n-btn" style="padding: 4px 10px; font-size: 0.78rem;" onclick="openAddBookingModal()">
+                            <i class="fa-solid fa-plus"></i> 新增搶票預約
+                        </button>
+                        <button class="n-btn n-btn-primary" style="padding: 4px 10px; font-size: 0.78rem;" onclick="openAddSpotGuideModal()">
+                            <i class="fa-solid fa-plus"></i> 新增景點攻略
+                        </button>
+                    </div>
                 </div>
-                <div class="notion-table-wrapper">
-                    <table class="notion-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 130px;">搶票 / 開放日期</th>
-                                <th style="width: 85px;">時間</th>
-                                <th>目標項目 (參觀日 / 體驗內容)</th>
-                                <th style="width: 170px;">預約平台 / 管道</th>
-                                <th style="width: 110px;">難易程度</th>
-                                <th style="width: 100px;">預約狀態</th>
-                                <th style="width: 100px; text-align: right;">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="bookingScheduleTbody">
-                            <!-- Populated dynamically -->
-                        </tbody>
-                    </table>
+
+                <!-- 區塊 A: 搶票與預約時程總表 -->
+                <div id="spotsSubpane-booking" style="margin-bottom: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 8px 12px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px;">
+                        <div style="font-size: 0.88rem; font-weight: 800; color: #92400e; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-regular fa-clock" style="color: #d97706;"></i>
+                            <span>🎫 搶票與預約時程總表</span>
+                            <span style="font-size: 0.76rem; font-weight: 500; color: #b45309; margin-left: 4px;">（掌握景點、演出、包車開放時間，準時搶票不撲空）</span>
+                        </div>
+                    </div>
+                    <div class="notion-table-wrapper">
+                        <table class="notion-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 130px;">搶票 / 開放日期</th>
+                                    <th style="width: 85px;">時間</th>
+                                    <th>目標項目 (參觀日 / 體驗內容)</th>
+                                    <th style="width: 170px;">預約平台 / 管道</th>
+                                    <th style="width: 110px;">難易程度</th>
+                                    <th style="width: 100px;">預約狀態</th>
+                                    <th style="width: 100px; text-align: right;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bookingScheduleTbody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 區塊 B: 核心景點速通攻略 -->
+                <div id="spotsSubpane-guides">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 8px 12px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px;">
+                        <div style="font-size: 0.88rem; font-weight: 800; color: #0369a1; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-landmark-dome" style="color: #0284c7;"></i>
+                            <span>🏛️ 核心景點速通攻略與防雷指南</span>
+                            <span style="font-size: 0.76rem; font-weight: 500; color: #0284c7; margin-left: 4px;">（彙整各景點路線秘技、排隊防雷與行程安排狀態）</span>
+                        </div>
+                    </div>
+                    <div id="spotGuidesContainer">
+                        <!-- Populated dynamically -->
+                    </div>
                 </div>
             </div>
 
-            <!-- VIEW 3: SPOT GUIDES -->
-            <div class="view-content-pane" id="view-spots">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <div style="font-size: 0.86rem; color: var(--notion-text-sub);">
-                        🏛️ 彙整四大核心景點與經典路線之速通秘技與排隊防雷指南。
-                    </div>
-                    <button class="n-btn" onclick="openAddSpotGuideModal()">
-                        <i class="fa-solid fa-plus"></i> 新增景點攻略
-                    </button>
-                </div>
-                <div id="spotGuidesContainer">
-                    <!-- Populated dynamically -->
-                </div>
-            </div>
+            <!-- 向下相容隱藏錨點 -->
+            <div id="view-booking" style="display:none;" aria-hidden="true"></div>
 
             <!-- VIEW 4: EXPENSES & BUDGET (費用與記帳統一整合視圖) -->
             <div class="view-content-pane" id="view-expenses">
@@ -7139,21 +7169,88 @@ const firebaseConfig = {
         function renderToolsCallout() {
             const plan = getCurrentPlan();
             const container = document.getElementById('toolsCalloutList');
+            const boxEl = document.getElementById('toolsCalloutBox');
+            const iconEl = document.getElementById('toolsCalloutIcon');
+            const headerEl = document.getElementById('toolsCalloutHeader');
+            const titleTextEl = document.getElementById('toolsCalloutTitleText');
+            const actionsEl = document.getElementById('toolsCalloutHeaderActions');
             if (!container || !plan) return;
 
-            if (!plan.tools || plan.tools.length === 0) {
-                container.innerHTML = `<div style="color:var(--notion-text-sub); font-size:0.82rem; padding: 6px 0;">(尚未新增行前必備清單，點擊右上角「+ 新增提醒」建立)</div>`;
+            const tools = Array.isArray(plan.tools) ? plan.tools : [];
+            const totalCount = tools.length;
+            const completedCount = tools.filter(t => t.checked).length;
+            const pendingCount = totalCount - completedCount;
+
+            // 當無待辦提醒（全部已完成或尚無提醒）且未展開「顯示已勾選」時，自動縮到最小單行模式！
+            if (pendingCount === 0 && !showCompletedTools) {
+                if (boxEl) {
+                    boxEl.style.padding = '5px 12px';
+                    boxEl.style.alignItems = 'center';
+                    boxEl.style.gap = '8px';
+                    boxEl.style.background = '#f8fafc';
+                }
+                if (iconEl) iconEl.style.fontSize = '0.95rem';
+                if (headerEl) {
+                    headerEl.style.marginBottom = '0';
+                    headerEl.style.fontSize = '0.8rem';
+                }
+                if (titleTextEl) {
+                    if (totalCount === 0) {
+                        titleTextEl.innerHTML = `行前必備提醒 <span style="font-weight:500; color:#94a3b8; font-size:0.75rem; margin-left:6px;">(目前無提醒事項)</span>`;
+                    } else {
+                        titleTextEl.innerHTML = `行前必備提醒 <span style="font-weight:600; color:#16a34a; font-size:0.75rem; margin-left:6px;"><i class="fa-solid fa-circle-check"></i> 無待辦提醒 (已完成並隱藏 ${completedCount} 項)</span>`;
+                    }
+                }
+                if (actionsEl) {
+                    actionsEl.innerHTML = `
+                        ${completedCount > 0 ? `
+                            <button type="button" class="n-btn" style="padding: 1px 7px; font-size: 0.72rem;" onclick="toggleShowCompletedTools()">
+                                <i class="fa-solid fa-eye"></i> 顯示已勾選 (${completedCount})
+                            </button>
+                        ` : ''}
+                        <button type="button" class="n-btn" style="padding: 1px 7px; font-size: 0.72rem;" onclick="openAddToolModal()">
+                            <i class="fa-solid fa-plus"></i> 新增提醒
+                        </button>
+                    `;
+                }
+                container.style.display = 'none';
+                container.innerHTML = '';
                 return;
             }
 
-            const totalCount = plan.tools.length;
-            const completedCount = plan.tools.filter(t => t.checked).length;
-            const pendingCount = totalCount - completedCount;
+            // 有待辦提醒或已展開查看已勾選項目：恢復標準展開模式
+            if (boxEl) {
+                boxEl.style.padding = '12px 16px';
+                boxEl.style.alignItems = 'flex-start';
+                boxEl.style.gap = '12px';
+                boxEl.style.background = '#f7f6f3';
+            }
+            if (iconEl) iconEl.style.fontSize = '1.2rem';
+            if (headerEl) {
+                headerEl.style.marginBottom = '6px';
+                headerEl.style.fontSize = '0.86rem';
+            }
+            if (titleTextEl) {
+                titleTextEl.innerText = '行前必備工具與重要提醒 (點擊直接勾選確認狀態)';
+            }
+            if (actionsEl) {
+                actionsEl.innerHTML = `
+                    ${completedCount > 0 ? `
+                        <button type="button" class="n-btn" style="padding: 2px 8px; font-size: 0.74rem;" onclick="toggleShowCompletedTools()">
+                            ${showCompletedTools ? '<i class="fa-solid fa-eye-slash"></i> 隱藏已勾選' : `<i class="fa-solid fa-eye"></i> 顯示已勾選 (${completedCount})`}
+                        </button>
+                    ` : ''}
+                    <button type="button" class="n-btn" style="padding: 2px 7px; font-size: 0.74rem;" onclick="openAddToolModal()">
+                        <i class="fa-solid fa-plus"></i> 新增提醒
+                    </button>
+                `;
+            }
+            container.style.display = 'block';
 
             // 生成清單 HTML (若未開啟查看已完成，則隱藏 checked: true 的項目)
-            const itemsHtml = plan.tools.map((item, idx) => {
+            const itemsHtml = tools.map((item, idx) => {
                 if (item.checked && !showCompletedTools) {
-                    return ''; // 隱藏已勾選項目
+                    return '';
                 }
                 return `
                     <div class="checklist-item ${item.checked ? 'checked' : ''}">
@@ -7173,33 +7270,7 @@ const firebaseConfig = {
                 `;
             }).join('');
 
-            // 全部都已勾選且處於隱藏模式時的友善提示
-            let emptyPendingNotice = '';
-            if (pendingCount === 0 && !showCompletedTools) {
-                emptyPendingNotice = `
-                    <div style="padding: 10px 14px; background: #f0fdf4; border-radius: 6px; border: 1px solid #bbf7d0; color: #166534; font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
-                        <i class="fa-solid fa-circle-check" style="color: #22c55e;"></i>
-                        <span>太棒了！所有行前提醒與必備清單皆已確認完成並隱藏。</span>
-                    </div>
-                `;
-            }
-
-            // 底部控制列：若有已完成項目，提供收合/查看按鈕與說明
-            let footerHtml = '';
-            if (completedCount > 0) {
-                footerHtml = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #e2e8f0; font-size: 0.78rem; color: #64748b;">
-                        <span>
-                            💡 已確認並隱藏 <strong>${completedCount}</strong> 項 (不印入隨身小冊) ｜ 待辦提醒 <strong>${pendingCount}</strong> 項
-                        </span>
-                        <button type="button" class="n-btn" style="padding: 2px 8px; font-size: 0.74rem;" onclick="toggleShowCompletedTools()">
-                            ${showCompletedTools ? '<i class="fa-solid fa-eye-slash"></i> 隱藏已勾選項目' : `<i class="fa-solid fa-eye"></i> 顯示已勾選 (${completedCount})`}
-                        </button>
-                    </div>
-                `;
-            }
-
-            container.innerHTML = (emptyPendingNotice || itemsHtml) + footerHtml;
+            container.innerHTML = itemsHtml;
         }
 
         function escapeHtml(text) {
@@ -7511,17 +7582,19 @@ const firebaseConfig = {
                 }, 60);
             } else if (target === 'spots') {
                 switchView('spots');
+                switchSpotsSubtab('all');
                 setTimeout(() => {
-                    const el = document.getElementById('view-spots');
+                    const el = document.getElementById('spotsSubpane-guides') || document.getElementById('view-spots');
                     if (el) {
                         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         highlightElement(el);
                     }
                 }, 60);
             } else if (target === 'booking') {
-                switchView('booking');
+                switchView('spots');
+                switchSpotsSubtab('all');
                 setTimeout(() => {
-                    const el = document.getElementById('view-booking');
+                    const el = document.getElementById('spotsSubpane-booking') || document.getElementById('view-spots');
                     if (el) {
                         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         highlightElement(el);
@@ -10727,23 +10800,48 @@ const firebaseConfig = {
         }
 
         // ==========================
-        // SWITCH VIEWS (支援統一費用模組，並向下相容 switchView('budget') 與 switchView('actual-expenses'))
+        // 景點攻略與搶票時程次級分頁切換 (Spots & Booking Sub-tabs)
+        // ==========================
+        let currentSpotsSubtab = 'all'; // 'all', 'guides', 'booking'
+
+        function switchSpotsSubtab(mode) {
+            currentSpotsSubtab = mode || 'all';
+            const paneBooking = document.getElementById('spotsSubpane-booking');
+            const paneGuides = document.getElementById('spotsSubpane-guides');
+            if (paneBooking) paneBooking.style.display = (currentSpotsSubtab === 'all' || currentSpotsSubtab === 'booking') ? 'block' : 'none';
+            if (paneGuides) paneGuides.style.display = (currentSpotsSubtab === 'all' || currentSpotsSubtab === 'guides') ? 'block' : 'none';
+
+            ['all', 'guides', 'booking'].forEach(k => {
+                const btn = document.getElementById('spotsSubtabBtn-' + k);
+                if (btn) btn.classList.toggle('active', k === currentSpotsSubtab);
+            });
+
+            renderBookingView();
+            renderSpotGuidesView();
+        }
+
+        // ==========================
+        // SWITCH VIEWS (支援統一景點搶票模組與統一費用模組)
         // ==========================
         function switchView(viewName) {
             // 向下相容：若傳入 budget 或 actual-expenses，自動切換至 expenses 視圖並選中相應子標籤
             let targetSubtab = null;
+            let targetSpotsSubtab = null;
             if (viewName === 'budget') {
                 targetSubtab = 'budget';
                 viewName = 'expenses';
             } else if (viewName === 'actual-expenses') {
                 targetSubtab = 'actual-expenses';
                 viewName = 'expenses';
+            } else if (viewName === 'booking') {
+                targetSpotsSubtab = 'booking';
+                viewName = 'spots';
             }
 
             appState.activeView = viewName;
 
-            // 4 大主標籤按鈕高亮狀態
-            const mainViewNames = ['timeline', 'booking', 'spots', 'expenses'];
+            // 3 大主標籤按鈕高亮狀態
+            const mainViewNames = ['timeline', 'spots', 'expenses'];
             document.querySelectorAll('.view-tab-btn').forEach((btn, idx) => {
                 if (idx < mainViewNames.length) {
                     btn.classList.toggle('active', mainViewNames[idx] === viewName);
@@ -10762,10 +10860,12 @@ const firebaseConfig = {
             // 執行目標視圖渲染
             if (viewName === 'timeline') {
                 renderTimelineView();
-            } else if (viewName === 'booking') {
-                renderBookingView();
             } else if (viewName === 'spots') {
-                renderSpotGuidesView();
+                if (targetSpotsSubtab) {
+                    switchSpotsSubtab(targetSpotsSubtab);
+                } else {
+                    switchSpotsSubtab(currentSpotsSubtab || 'all');
+                }
             } else if (viewName === 'expenses') {
                 if (targetSubtab) {
                     switchExpensesSubtab(targetSubtab);
