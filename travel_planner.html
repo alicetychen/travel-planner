@@ -3864,16 +3864,64 @@
                             <div id="eventCostTwdHint" style="font-size:0.75rem; color:#0284c7; margin-top:2px;"></div>
                         </div>
                     </div>
-                    <div class="form-row" style="background:#f8fafc; padding:8px 10px; border-radius:6px; border:1px solid #e2e8f0; margin-bottom:12px;">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label class="form-label" style="color:#0f766e;"><i class="fa-solid fa-receipt"></i> 實際花費 (實付單人金額，選填)</label>
-                            <input type="number" id="eventActualCostNum" class="form-input" min="0" step="any" placeholder="選填：實際支付金額">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0; display:flex; align-items:flex-end;">
-                            <label style="display:flex; align-items:center; gap:6px; font-size:0.82rem; font-weight:700; color:#15803d; cursor:pointer; padding-bottom:6px;">
-                                <input type="checkbox" id="eventIsPaid">
+                    <div style="background:#f0fdf4; padding:12px 14px; border-radius:8px; border:1px solid #bbf7d0; margin-bottom:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px; padding-bottom:8px; border-bottom:1px dashed #86efac;">
+                            <label class="form-label" style="color:#0f766e; font-size:0.86rem; font-weight:800; margin:0; display:flex; align-items:center; gap:6px;">
+                                <i class="fa-solid fa-receipt"></i> 實際開銷紀錄 (每日餐食 + 交通分開計算 ＆ 發票上傳)
+                            </label>
+                            <label style="display:flex; align-items:center; gap:6px; font-size:0.82rem; font-weight:700; color:#15803d; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="eventIsPaid" style="width:15px; height:15px; accent-color:#16a34a; cursor:pointer;">
                                 <span><i class="fa-solid fa-circle-check"></i> 此項目已付款 / 已結帳</span>
                             </label>
+                        </div>
+
+                        <!-- 餐食 / 交通 / 門票項目 分開計算列 -->
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(135px, 1fr)); gap:8px; margin-bottom:10px;">
+                            <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:6px 8px;">
+                                <label class="form-label" style="font-size:0.74rem; color:#b45309; margin-bottom:3px; display:flex; align-items:center; gap:4px;">
+                                    <i class="fa-solid fa-utensils"></i> 餐食實付 (單人)
+                                </label>
+                                <input type="number" id="eventActualMealCostNum" class="form-input" min="0" step="any" placeholder="0" style="padding:4px 8px; font-size:0.84rem; font-weight:700; color:#b45309; background:#ffffff;" oninput="syncEventSplitActualTotal()">
+                            </div>
+                            <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; padding:6px 8px;">
+                                <label class="form-label" style="font-size:0.74rem; color:#0369a1; margin-bottom:3px; display:flex; align-items:center; gap:4px;">
+                                    <i class="fa-solid fa-car-side"></i> 交通實付 (單人)
+                                </label>
+                                <input type="number" id="eventActualTransCostNum" class="form-input" min="0" step="any" placeholder="0" style="padding:4px 8px; font-size:0.84rem; font-weight:700; color:#0369a1; background:#ffffff;" oninput="syncEventSplitActualTotal()">
+                            </div>
+                            <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:6px 8px;">
+                                <label class="form-label" style="font-size:0.74rem; color:#334155; margin-bottom:3px; display:flex; align-items:center; gap:4px;">
+                                    <i class="fa-solid fa-ticket"></i> 門票/其他實付 (單人)
+                                </label>
+                                <input type="number" id="eventActualBaseCostNum" class="form-input" min="0" step="any" placeholder="0" style="padding:4px 8px; font-size:0.84rem; font-weight:700; color:#334155; background:#ffffff;" oninput="syncEventSplitActualTotal()">
+                            </div>
+                        </div>
+
+                        <!-- 實際花費單人總計與發票號碼 -->
+                        <div class="form-row" style="margin-bottom:10px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="color:#0f766e; font-size:0.78rem;">💰 該項實際花費單人總額 (自動加總或直接填寫)</label>
+                                <input type="number" id="eventActualCostNum" class="form-input" min="0" step="any" placeholder="選填：實際支付單人總金額" style="font-weight:800; color:#0f766e; background:#ffffff;" oninput="handleDirectEventActualCostInput()">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="color:#475569; font-size:0.78rem;"><i class="fa-solid fa-file-invoice"></i> 發票號碼 / 收據備註 (選填)</label>
+                                <input type="text" id="eventReceiptNoteStr" class="form-input" placeholder="例如：AB-12345678 / 微信支付 / 刷卡" style="background:#ffffff;">
+                            </div>
+                        </div>
+
+                        <!-- 上傳發票照片與縮圖預覽區 -->
+                        <div style="background:#ffffff; border:1px dashed #86efac; border-radius:6px; padding:8px 10px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                                <div style="font-size:0.78rem; color:#166534; font-weight:600; display:flex; align-items:center; gap:6px;">
+                                    <i class="fa-solid fa-camera-retro" style="color:#16a34a;"></i>
+                                    <span>發票 / 收據影像紀錄 <small style="color:#64748b; font-weight:normal;">(自動輕量壓縮、支援多張上傳與點擊放大)</small></span>
+                                </div>
+                                <label class="n-btn" style="background:#16a34a; color:#ffffff; border:none; padding:4px 10px; font-size:0.76rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin:0; border-radius:5px;">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> 上傳發票照片
+                                    <input type="file" id="eventReceiptFileInput" accept="image/*" multiple style="display:none;" onchange="handleModalEventReceiptUpload(event)">
+                                </label>
+                            </div>
+                            <div id="eventModalReceiptsPreview" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;"></div>
                         </div>
                     </div>
                     <div class="form-group">
@@ -3890,6 +3938,24 @@
             </form>
         </div>
     </div>
+
+    <!-- 3.2. 發票 / 收據大圖檢視與管理彈窗 (Receipt Lightbox Modal) -->
+    <div class="modal-backdrop" id="receiptPreviewModal" onclick="handleBackdropClick(event, 'receiptPreviewModal')" style="z-index: 9999;">
+        <div class="modal-dialog" style="max-width: 680px;" onclick="event.stopPropagation();">
+            <div class="modal-header">
+                <div class="modal-title" id="receiptPreviewModalTitle"><i class="fa-solid fa-file-invoice-dollar" style="color:#16a34a;"></i> 發票與收據紀錄檢視</div>
+                <button type="button" class="modal-close-btn" onclick="closeModal('receiptPreviewModal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" id="receiptPreviewModalBody" style="max-height:75vh; overflow-y:auto; text-align:center; background:#f8fafc; padding:16px;">
+                <!-- JS 動態載入發票大圖與清單 -->
+            </div>
+            <div class="modal-footer" style="justify-content:space-between;">
+                <span style="font-size:0.76rem; color:#64748b;"><i class="fa-solid fa-circle-info"></i> 發票圖片已自動壓縮最佳化並儲存於行程紀錄中</span>
+                <button type="button" class="n-btn n-btn-primary" onclick="closeModal('receiptPreviewModal')">關閉視窗</button>
+            </div>
+        </div>
+    </div>
+    <input type="file" id="quickReceiptUploadInput" accept="image/*" multiple style="display:none;" onchange="handleQuickReceiptFileSelected(event)">
 
     <!-- 3.5. 設定移動接駁時間與地圖路線規劃彈窗 -->
     <div class="modal-backdrop" id="transitSettingsModal" onclick="handleBackdropClick(event, 'transitSettingsModal')">
@@ -7716,9 +7782,15 @@ const firebaseConfig = {
                                     ${(ev.actualCost !== undefined && ev.actualCost !== null) ? `
                                         <span style="background:#f0fdf4; border:1px solid #bbf7d0; color:#15803d; padding:1px 6px; border-radius:4px; font-weight:700; font-size:0.72rem;" title="實付金額">
                                             <i class="fa-solid fa-receipt"></i> 實付: ${curr.symbol} ${Number(ev.actualCost).toLocaleString()}
+                                            ${(ev.actualMealCost > 0 || ev.actualTransCost > 0) ? `<span style="font-weight:normal; color:#0f766e;">(${[ev.actualMealCost > 0 ? `餐${curr.symbol}${ev.actualMealCost}` : '', ev.actualTransCost > 0 ? `交${curr.symbol}${ev.actualTransCost}` : '', ev.actualBaseCost > 0 ? `項${curr.symbol}${ev.actualBaseCost}` : ''].filter(Boolean).join('+')})</span>` : ''}
                                             ${ev.isPaid ? ' <i class="fa-solid fa-circle-check" style="color:#16a34a;" title="已結帳付款"></i>' : ''}
                                         </span>
                                     ` : (ev.isPaid ? `<span style="color:#16a34a; font-size:0.72rem; font-weight:700;"><i class="fa-solid fa-circle-check"></i> 已付款</span>` : '')}
+                                    ${(Array.isArray(ev.receipts) && ev.receipts.length > 0) ? `
+                                        <span onclick="event.stopPropagation(); openReceiptPreviewModal('event', ${activeDay.dayNum}, ${eIdx})" style="background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; padding:1px 6px; border-radius:4px; font-weight:700; font-size:0.72rem; cursor:pointer;" title="點擊檢視已上傳的發票/收據照片">
+                                            <i class="fa-solid fa-file-invoice"></i> 發票 (${ev.receipts.length})
+                                        </span>
+                                    ` : (ev.receiptNote ? `<span style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; padding:1px 6px; border-radius:4px; font-size:0.72rem;"><i class="fa-solid fa-file-invoice"></i> ${escapeHtml(ev.receiptNote)}</span>` : '')}
                                     ${ev.notes ? `<span style="color:#64748b;"><i class="fa-regular fa-note-sticky"></i> ${escapeHtml(ev.notes)}</span>` : ''}
                                 </div>
                             </div>
@@ -9032,9 +9104,36 @@ const firebaseConfig = {
             }
         }
 
-                // ==========================================
-        // VIEW 5: ACTUAL EXPENSES TRACKER (實際花費與行程記帳)
         // ==========================================
+        // VIEW 5: ACTUAL EXPENSES TRACKER (實際花費與行程記帳：支援每日餐食+交通分開計算 ＆ 發票上傳紀錄)
+        // ==========================================
+
+        // 計算單日額外日常交通預估 (扣除已在活動清單中的交通項目，避免重複計算)
+        function getDayExtraTransportEstSingle(d, curr, memberCount) {
+            let evTransEst = 0;
+            (d.events || []).forEach(ev => {
+                if (ev.type === 'trans' || ev.type === 'flight') {
+                    evTransEst += Number(ev.cost || 0);
+                }
+                if (ev.transit && Number(ev.transit.cost) > 0) {
+                    evTransEst += Number(ev.transit.cost);
+                }
+            });
+            if (d.firstTransit && Number(d.firstTransit.cost) > 0) {
+                evTransEst += Number(d.firstTransit.cost);
+            }
+
+            let metaTransPerson = 0;
+            if (Array.isArray(d.transports) && d.transports.length > 0) {
+                d.transports.forEach(t => {
+                    const c = calcCostItemBreakdown(t.cost, t.curr, t.mode, memberCount, curr, curr.rate);
+                    metaTransPerson += c.personLocal;
+                });
+            } else if (d.transportCost !== undefined && d.transportCost !== null) {
+                metaTransPerson = Number(d.transportCost) || 0;
+            }
+            return Math.max(0, metaTransPerson - evTransEst);
+        }
 
         function renderActualExpensesView() {
             const container = document.getElementById('actualExpensesContainer');
@@ -9047,7 +9146,7 @@ const firebaseConfig = {
             const flightStats = calcPlanFlightStats(plan);
             const hotelStats = calcPlanHotelStats(plan);
 
-            // 1. 逐項統計行程活動與每日餐費
+            // 1. 逐項統計行程活動、每日餐食與每日當地交通 (分開計算)
             let totalEstEventsLocal = 0;
             let totalActEventsLocal = 0;
             let totalPaidEventsLocal = 0;
@@ -9056,36 +9155,80 @@ const firebaseConfig = {
             let paidEventsCount = 0;
             let filledActualCount = 0;
 
-            let totalEstMealsLocal = 0;
-            let totalActMealsLocal = 0;
+            // 餐食與當地交通獨立累計 (全團當地幣)
+            let totalEstMealsGroupLocal = 0;
+            let totalActMealsGroupLocal = 0;
+            let totalMealReceiptsCount = 0;
+
+            let totalEstTransGroupLocal = 0;
+            let totalActTransGroupLocal = 0;
+            let totalTransReceiptsCount = 0;
+            let totalAllReceiptsCount = 0;
 
             days.forEach(d => {
-                // 餐飲預估與實付
+                // (A) 當日早午晚點心餐食預估與實付 (單人)
                 const bfEst = Number(d.breakfastCost || 0);
                 const lcEst = Number(d.lunchCost || 0);
                 const dnEst = Number(d.dinnerCost || 0);
                 const snEst = Number(d.snackCost || 0);
-                const dayMealEst = bfEst + lcEst + dnEst + snEst;
-                totalEstMealsLocal += (dayMealEst * m);
+                const dayMealBarEstSingle = bfEst + lcEst + dnEst + snEst;
 
-                const bfAct = (d.actualBreakfastCost !== undefined && d.actualBreakfastCost !== null) ? Number(d.actualBreakfastCost) : bfEst;
-                const lcAct = (d.actualLunchCost !== undefined && d.actualLunchCost !== null) ? Number(d.actualLunchCost) : lcEst;
-                const dnAct = (d.actualDinnerCost !== undefined && d.actualDinnerCost !== null) ? Number(d.actualDinnerCost) : dnEst;
-                const snAct = (d.actualSnackCost !== undefined && d.actualSnackCost !== null) ? Number(d.actualSnackCost) : snEst;
-                const dayMealAct = bfAct + lcAct + dnAct + snAct;
-                totalActMealsLocal += (dayMealAct * m);
+                const bfAct = (d.actualBreakfastCost !== undefined && d.actualBreakfastCost !== null && d.actualBreakfastCost !== '') ? Number(d.actualBreakfastCost) : bfEst;
+                const lcAct = (d.actualLunchCost !== undefined && d.actualLunchCost !== null && d.actualLunchCost !== '') ? Number(d.actualLunchCost) : lcEst;
+                const dnAct = (d.actualDinnerCost !== undefined && d.actualDinnerCost !== null && d.actualDinnerCost !== '') ? Number(d.actualDinnerCost) : dnEst;
+                const snAct = (d.actualSnackCost !== undefined && d.actualSnackCost !== null && d.actualSnackCost !== '') ? Number(d.actualSnackCost) : snEst;
+                const dayMealBarActSingle = bfAct + lcAct + dnAct + snAct;
 
-                // 活動項目
+                // (B) 當日日常交通 (獨立於行程活動外的打車/地鐵/包車預算與實付，單人)
+                const dayExtraTransEstSingle = getDayExtraTransportEstSingle(d, curr, m);
+                const hasDayExtraTransAct = (d.actualTransportCost !== undefined && d.actualTransportCost !== null && d.actualTransportCost !== '');
+                const dayExtraTransActSingle = hasDayExtraTransAct ? Number(d.actualTransportCost) : dayExtraTransEstSingle;
+
+                totalEstMealsGroupLocal += (dayMealBarEstSingle * m);
+                totalActMealsGroupLocal += (dayMealBarActSingle * m);
+
+                totalEstTransGroupLocal += (dayExtraTransEstSingle * m);
+                totalActTransGroupLocal += (dayExtraTransActSingle * m);
+
+                const dMealRecs = Array.isArray(d.mealReceipts) ? d.mealReceipts.length : 0;
+                const dTransRecs = Array.isArray(d.transReceipts) ? d.transReceipts.length : 0;
+                totalMealReceiptsCount += dMealRecs;
+                totalTransReceiptsCount += dTransRecs;
+                totalAllReceiptsCount += (dMealRecs + dTransRecs);
+
+                // (C) 活動項目內含之餐食、交通與門票拆解
                 (d.events || []).forEach(ev => {
                     totalEventsCount++;
                     const estSingle = Number(ev.cost || 0);
                     const estGroup = estSingle * m;
                     totalEstEventsLocal += estGroup;
 
-                    const hasAct = (ev.actualCost !== undefined && ev.actualCost !== null);
+                    const hasAct = (ev.actualCost !== undefined && ev.actualCost !== null && ev.actualCost !== '');
                     const actSingle = hasAct ? Number(ev.actualCost) : estSingle;
                     const actGroup = actSingle * m;
                     totalActEventsLocal += actGroup;
+
+                    // 分類統計至「餐食」與「當地交通」
+                    if (ev.type === 'food') {
+                        totalEstMealsGroupLocal += estGroup;
+                    } else if (ev.type === 'trans') {
+                        totalEstTransGroupLocal += estGroup;
+                    }
+
+                    const hasSplit = (ev.actualMealCost !== undefined || ev.actualTransCost !== undefined);
+                    if (hasSplit) {
+                        totalActMealsGroupLocal += (Number(ev.actualMealCost || 0) * m);
+                        totalActTransGroupLocal += (Number(ev.actualTransCost || 0) * m);
+                    } else if (ev.type === 'food') {
+                        totalActMealsGroupLocal += actGroup;
+                    } else if (ev.type === 'trans') {
+                        totalActTransGroupLocal += actGroup;
+                    }
+
+                    const evRecs = Array.isArray(ev.receipts) ? ev.receipts.length : 0;
+                    totalAllReceiptsCount += evRecs;
+                    if (ev.type === 'food' || Number(ev.actualMealCost || 0) > 0) totalMealReceiptsCount += evRecs;
+                    if (ev.type === 'trans' || Number(ev.actualTransCost || 0) > 0) totalTransReceiptsCount += evRecs;
 
                     if (hasAct) filledActualCount++;
                     if (ev.isPaid) {
@@ -9106,12 +9249,31 @@ const firebaseConfig = {
             const htEstGroup = hotelStats.totalGroupLocal;
             const htActGroup = hotelStats.hasActual ? hotelStats.totalActualGroupLocal : htEstGroup;
 
+            // 計算所有每日餐食吧 + 每日額外交通吧的總和 (避免與 totalEstEventsLocal 重複計算)
+            let totalDayBarsEstGroupLocal = 0;
+            let totalDayBarsActGroupLocal = 0;
+            days.forEach(d => {
+                const bfEst = Number(d.breakfastCost || 0);
+                const lcEst = Number(d.lunchCost || 0);
+                const dnEst = Number(d.dinnerCost || 0);
+                const snEst = Number(d.snackCost || 0);
+                const bfAct = (d.actualBreakfastCost !== undefined && d.actualBreakfastCost !== null && d.actualBreakfastCost !== '') ? Number(d.actualBreakfastCost) : bfEst;
+                const lcAct = (d.actualLunchCost !== undefined && d.actualLunchCost !== null && d.actualLunchCost !== '') ? Number(d.actualLunchCost) : lcEst;
+                const dnAct = (d.actualDinnerCost !== undefined && d.actualDinnerCost !== null && d.actualDinnerCost !== '') ? Number(d.actualDinnerCost) : dnEst;
+                const snAct = (d.actualSnackCost !== undefined && d.actualSnackCost !== null && d.actualSnackCost !== '') ? Number(d.actualSnackCost) : snEst;
+                const extraTransEst = getDayExtraTransportEstSingle(d, curr, m);
+                const extraTransAct = (d.actualTransportCost !== undefined && d.actualTransportCost !== null && d.actualTransportCost !== '') ? Number(d.actualTransportCost) : extraTransEst;
+
+                totalDayBarsEstGroupLocal += ((bfEst + lcEst + dnEst + snEst + extraTransEst) * m);
+                totalDayBarsActGroupLocal += ((bfAct + lcAct + dnAct + snAct + extraTransAct) * m);
+            });
+
             // 全程旅行總估算 vs 總實付（全團）
-            const grandEstGroupLocal = flEstGroup + htEstGroup + totalEstMealsLocal + totalEstEventsLocal;
+            const grandEstGroupLocal = flEstGroup + htEstGroup + totalDayBarsEstGroupLocal + totalEstEventsLocal;
             const grandEstGroupTwd = Math.round(grandEstGroupLocal * curr.rate);
             const grandEstPersonTwd = Math.round(grandEstGroupTwd / m);
 
-            const grandActGroupLocal = flActGroup + htActGroup + totalActMealsLocal + totalActEventsLocal;
+            const grandActGroupLocal = flActGroup + htActGroup + totalDayBarsActGroupLocal + totalActEventsLocal;
             const grandActGroupTwd = Math.round(grandActGroupLocal * curr.rate);
             const grandActPersonTwd = Math.round(grandActGroupTwd / m);
 
@@ -9127,28 +9289,74 @@ const firebaseConfig = {
             const grandPaidGroupTwd = Math.round(grandPaidGroupLocal * curr.rate);
             const paidPct = (grandActGroupLocal > 0) ? Math.min(100, Math.round((grandPaidGroupLocal / grandActGroupLocal) * 100)) : 0;
 
-            // 構建逐日行程活動記帳表 HTML
+            // 構建逐日行程活動記帳表 HTML (含當日餐食與當日交通分開計算面板 + 發票上傳)
             let daysHtml = days.map(d => {
                 const bfEst = Number(d.breakfastCost || 0);
                 const lcEst = Number(d.lunchCost || 0);
                 const dnEst = Number(d.dinnerCost || 0);
                 const snEst = Number(d.snackCost || 0);
-                const dayMealEst = bfEst + lcEst + dnEst + snEst;
+                const dayMealBarEstSingle = bfEst + lcEst + dnEst + snEst;
 
-                const bfAct = (d.actualBreakfastCost !== undefined && d.actualBreakfastCost !== null) ? Number(d.actualBreakfastCost) : bfEst;
-                const lcAct = (d.actualLunchCost !== undefined && d.actualLunchCost !== null) ? Number(d.actualLunchCost) : lcEst;
-                const dnAct = (d.actualDinnerCost !== undefined && d.actualDinnerCost !== null) ? Number(d.actualDinnerCost) : dnEst;
-                const snAct = (d.actualSnackCost !== undefined && d.actualSnackCost !== null) ? Number(d.actualSnackCost) : snEst;
-                const dayMealAct = bfAct + lcAct + dnAct + snAct;
+                const hasBfAct = (d.actualBreakfastCost !== undefined && d.actualBreakfastCost !== null && d.actualBreakfastCost !== '');
+                const hasLcAct = (d.actualLunchCost !== undefined && d.actualLunchCost !== null && d.actualLunchCost !== '');
+                const hasDnAct = (d.actualDinnerCost !== undefined && d.actualDinnerCost !== null && d.actualDinnerCost !== '');
+                const hasSnAct = (d.actualSnackCost !== undefined && d.actualSnackCost !== null && d.actualSnackCost !== '');
 
-                let dayEstSum = dayMealEst * m;
-                let dayActSum = dayMealAct * m;
+                const bfAct = hasBfAct ? Number(d.actualBreakfastCost) : bfEst;
+                const lcAct = hasLcAct ? Number(d.actualLunchCost) : lcEst;
+                const dnAct = hasDnAct ? Number(d.actualDinnerCost) : dnEst;
+                const snAct = hasSnAct ? Number(d.actualSnackCost) : snEst;
+                const dayMealBarActSingle = bfAct + lcAct + dnAct + snAct;
+
+                // 當日額外日常交通 (打車/地鐵/包車)
+                const dayExtraTransEstSingle = getDayExtraTransportEstSingle(d, curr, m);
+                const hasExtraTransAct = (d.actualTransportCost !== undefined && d.actualTransportCost !== null && d.actualTransportCost !== '');
+                const dayExtraTransActSingle = hasExtraTransAct ? Number(d.actualTransportCost) : dayExtraTransEstSingle;
+
+                // 統計活動內含的餐食與交通實付 (供每日分開小計展示)
+                let evMealEstSingle = 0;
+                let evMealActSingle = 0;
+                let evTransEstSingle = 0;
+                let evTransActSingle = 0;
 
                 const events = d.events || [];
+                events.forEach(ev => {
+                    const estS = Number(ev.cost || 0);
+                    const hasA = (ev.actualCost !== undefined && ev.actualCost !== null && ev.actualCost !== '');
+                    const actS = hasA ? Number(ev.actualCost) : estS;
+
+                    if (ev.type === 'food') evMealEstSingle += estS;
+                    if (ev.type === 'trans') evTransEstSingle += estS;
+
+                    const hasSplit = (ev.actualMealCost !== undefined || ev.actualTransCost !== undefined);
+                    if (hasSplit) {
+                        evMealActSingle += Number(ev.actualMealCost || 0);
+                        evTransActSingle += Number(ev.actualTransCost || 0);
+                    } else if (ev.type === 'food') {
+                        evMealActSingle += actS;
+                    } else if (ev.type === 'trans') {
+                        evTransActSingle += actS;
+                    }
+                });
+
+                // 當日餐食總計 (早午晚點心 + 活動內餐食)
+                const totalDayMealEstSingle = dayMealBarEstSingle + evMealEstSingle;
+                const totalDayMealActSingle = dayMealBarActSingle + evMealActSingle;
+
+                // 當日交通總計 (日常交通 + 活動內交通)
+                const totalDayTransEstSingle = dayExtraTransEstSingle + evTransEstSingle;
+                const totalDayTransActSingle = dayExtraTransActSingle + evTransActSingle;
+
+                let dayEstSum = (dayMealBarEstSingle + dayExtraTransEstSingle) * m;
+                let dayActSum = (dayMealBarActSingle + dayExtraTransActSingle) * m;
+
+                const dayMealReceipts = Array.isArray(d.mealReceipts) ? d.mealReceipts : [];
+                const dayTransReceipts = Array.isArray(d.transReceipts) ? d.transReceipts : [];
+
                 const rowsHtml = events.map((ev, eIdx) => {
                     const estSingle = Number(ev.cost || 0);
                     const estGroup = estSingle * m;
-                    const hasAct = (ev.actualCost !== undefined && ev.actualCost !== null);
+                    const hasAct = (ev.actualCost !== undefined && ev.actualCost !== null && ev.actualCost !== '');
                     const actSingle = hasAct ? Number(ev.actualCost) : estSingle;
                     const actGroup = actSingle * m;
 
@@ -9158,6 +9366,19 @@ const firebaseConfig = {
                     const diffItem = estSingle - actSingle;
                     const isItemSaved = diffItem >= 0;
                     const catInfo = getEventCategoryInfo(ev.type);
+                    const evReceipts = Array.isArray(ev.receipts) ? ev.receipts : [];
+
+                    // 分拆標籤顯示 (餐食 / 交通 / 門票)
+                    const splitPills = [];
+                    if (Number(ev.actualMealCost || 0) > 0) {
+                        splitPills.push(`<span style="background:#fffbeb; border:1px solid #fde68a; color:#b45309; padding:1px 5px; border-radius:4px; font-size:0.68rem; font-weight:700;">🍽️ 餐食 ${curr.symbol}${Number(ev.actualMealCost).toLocaleString()}</span>`);
+                    }
+                    if (Number(ev.actualTransCost || 0) > 0) {
+                        splitPills.push(`<span style="background:#f0f9ff; border:1px solid #bae6fd; color:#0369a1; padding:1px 5px; border-radius:4px; font-size:0.68rem; font-weight:700;">🚕 交通 ${curr.symbol}${Number(ev.actualTransCost).toLocaleString()}</span>`);
+                    }
+                    if (Number(ev.actualBaseCost || 0) > 0 && (Number(ev.actualMealCost || 0) > 0 || Number(ev.actualTransCost || 0) > 0)) {
+                        splitPills.push(`<span style="background:#f8fafc; border:1px solid #cbd5e1; color:#475569; padding:1px 5px; border-radius:4px; font-size:0.68rem; font-weight:700;">🎫 項目 ${curr.symbol}${Number(ev.actualBaseCost).toLocaleString()}</span>`);
+                    }
 
                     return `
                         <tr style="border-bottom:1px solid #f1f5f9; transition:background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#ffffff'">
@@ -9172,6 +9393,7 @@ const firebaseConfig = {
                                     <strong style="color:#1e293b; font-size:0.88rem;">${escapeHtml(ev.title)}</strong>
                                     ${ev.loc ? `<span style="font-size:0.74rem; color:#64748b;"><i class="fa-solid fa-location-dot" style="color:#ea580c;"></i> ${escapeHtml(ev.loc)}</span>` : ''}
                                 </div>
+                                ${splitPills.length > 0 ? `<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:4px;">${splitPills.join('')}</div>` : ''}
                                 ${ev.notes ? `<div style="font-size:0.74rem; color:#94a3b8; margin-top:2px;"><i class="fa-regular fa-note-sticky"></i> ${escapeHtml(ev.notes)}</div>` : ''}
                             </td>
                             <td style="padding:10px 12px; text-align:right; white-space:nowrap;">
@@ -9186,11 +9408,11 @@ const firebaseConfig = {
                                 <div style="display:flex; align-items:center; justify-content:flex-end; gap:4px;">
                                     <span style="font-size:0.8rem; color:#0f766e; font-weight:700;">${curr.symbol}</span>
                                     <input type="number" min="0" step="any" class="form-input" 
-                                           style="width:90px; padding:3px 6px; font-size:0.84rem; text-align:right; font-weight:700; color:#0f766e; border-color:${hasAct ? '#0f766e' : '#cbd5e1'}; background:${hasAct ? '#f0fdf4' : '#fff'};" 
+                                           style="width:85px; padding:3px 6px; font-size:0.84rem; text-align:right; font-weight:700; color:#0f766e; border-color:${hasAct ? '#0f766e' : '#cbd5e1'}; background:${hasAct ? '#f0fdf4' : '#fff'};" 
                                            value="${hasAct ? ev.actualCost : ''}" 
                                            placeholder="${estSingle}" 
                                            onchange="updateEventActualCost(${d.dayNum}, ${eIdx}, this.value)"
-                                           title="輸入實際單人花費 (按 Enter 或點離開即自動儲存)">
+                                           title="輸入實際單人花費 (點選右側編輯按鈕可分拆餐食+交通金額)">
                                     <button class="n-btn" style="padding:2px 6px; font-size:0.68rem;" onclick="copyEventEstimatedToActual(${d.dayNum}, ${eIdx})" title="一鍵將預估金額填入實付">
                                         ⚡同預估
                                     </button>
@@ -9209,6 +9431,22 @@ const firebaseConfig = {
                                 `}
                             </td>
                             <td style="padding:10px 12px; text-align:center; white-space:nowrap;">
+                                <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+                                    <div style="display:flex; align-items:center; gap:4px;">
+                                        ${evReceipts.length > 0 ? `
+                                            <button type="button" class="n-btn" style="padding:2px 7px; font-size:0.72rem; background:#eff6ff; color:#1d4ed8; border-color:#93c5fd; font-weight:700; display:inline-flex; align-items:center; gap:4px;" onclick="openReceiptPreviewModal('event', ${d.dayNum}, ${eIdx})" title="點擊檢視或管理已上傳的發票照片">
+                                                <img src="${evReceipts[0].dataUrl}" style="width:16px; height:16px; object-fit:cover; border-radius:2px;">
+                                                <span>發票 (${evReceipts.length})</span>
+                                            </button>
+                                        ` : ''}
+                                        <button type="button" class="n-btn" style="padding:2px 7px; font-size:0.72rem; color:#0f766e; border-color:#99f6e4; background:#f0fdfa;" onclick="triggerQuickReceiptUpload('event', ${d.dayNum}, ${eIdx})" title="上傳此項目的發票或收據照片">
+                                            <i class="fa-solid fa-camera"></i> ${evReceipts.length > 0 ? '+' : '上傳發票'}
+                                        </button>
+                                    </div>
+                                    ${ev.receiptNote ? `<span style="font-size:0.68rem; color:#64748b; max-width:110px; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(ev.receiptNote)}"><i class="fa-solid fa-file-invoice"></i> ${escapeHtml(ev.receiptNote)}</span>` : ''}
+                                </div>
+                            </td>
+                            <td style="padding:10px 12px; text-align:center; white-space:nowrap;">
                                 <label style="display:inline-flex; align-items:center; gap:4px; cursor:pointer; font-size:0.76rem; font-weight:600; color:${ev.isPaid ? '#15803d' : '#64748b'};">
                                     <input type="checkbox" style="width:15px; height:15px; accent-color:#16a34a; cursor:pointer;" ${ev.isPaid ? 'checked' : ''} onchange="toggleEventPaid(${d.dayNum}, ${eIdx}, this.checked)">
                                     ${ev.isPaid ? '<span style="color:#16a34a;"><i class="fa-solid fa-circle-check"></i> 已付</span>' : '待付'}
@@ -9216,7 +9454,7 @@ const firebaseConfig = {
                             </td>
                             <td style="padding:10px 12px; text-align:right; white-space:nowrap;">
                                 <div style="display:flex; justify-content:flex-end; gap:4px;">
-                                    <button class="n-btn" style="padding:2px 6px; font-size:0.72rem;" onclick="openEditEventModal(${d.dayNum}, ${eIdx})" title="編輯項目詳情">
+                                    <button class="n-btn" style="padding:2px 6px; font-size:0.72rem;" onclick="openEditEventModal(${d.dayNum}, ${eIdx})" title="編輯項目詳情、餐食/交通拆帳與發票">
                                         <i class="fa-solid fa-pen"></i>
                                     </button>
                                     <button class="n-btn n-btn-danger" style="padding:2px 6px; font-size:0.72rem;" onclick="deleteEventItem(${d.dayNum}, ${eIdx})" title="刪除此項目">
@@ -9235,14 +9473,20 @@ const firebaseConfig = {
                     <div class="actual-day-section" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:18px; box-shadow:0 1px 3px rgba(0,0,0,0.03); overflow:hidden;">
                         <!-- 天數標題橫條 -->
                         <div style="background:#f8fafc; padding:12px 16px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                            <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                                 <span style="background:#0284c7; color:#ffffff; font-weight:800; font-size:0.78rem; padding:2px 8px; border-radius:4px;">Day ${d.dayNum}</span>
                                 <strong style="font-size:0.96rem; color:#0f172a;">${escapeHtml(d.title)}</strong>
                                 <span style="font-size:0.78rem; color:#64748b;">(${d.date || ''})</span>
+                                <span style="background:#fffbeb; border:1px solid #fde68a; color:#b45309; font-size:0.72rem; font-weight:700; padding:1px 7px; border-radius:999px;">
+                                    🍽️ 餐食實付: ${curr.symbol}${totalDayMealActSingle.toLocaleString()}/人
+                                </span>
+                                <span style="background:#f0f9ff; border:1px solid #bae6fd; color:#0369a1; font-size:0.72rem; font-weight:700; padding:1px 7px; border-radius:999px;">
+                                    🚕 交通實付: ${curr.symbol}${totalDayTransActSingle.toLocaleString()}/人
+                                </span>
                             </div>
-                            <div style="display:flex; align-items:center; gap:12px; font-size:0.82rem;">
-                                <span>當日預估：<strong style="color:#475569;">${curr.symbol} ${dayEstSum.toLocaleString()}</strong></span>
-                                <span>當日實付：<strong style="color:#0f766e;">${curr.symbol} ${dayActSum.toLocaleString()}</strong></span>
+                            <div style="display:flex; align-items:center; gap:12px; font-size:0.82rem; flex-wrap:wrap;">
+                                <span>全團當日預估：<strong style="color:#475569;">${curr.symbol} ${dayEstSum.toLocaleString()}</strong></span>
+                                <span>全團當日實付：<strong style="color:#0f766e;">${curr.symbol} ${dayActSum.toLocaleString()}</strong> <small style="color:#64748b;">(≈NT$${Math.round(dayActSum * curr.rate).toLocaleString()})</small></span>
                                 <span style="font-weight:700; color:${isDaySaved ? '#15803d' : '#b91c1c'}; background:${isDaySaved ? '#dcfce7' : '#fee2e2'}; padding:1px 7px; border-radius:4px; font-size:0.74rem;">
                                     ${isDaySaved ? `🎉 結餘 ${curr.symbol} ${dayDiff.toLocaleString()}` : `⚠️ 超支 ${curr.symbol} ${Math.abs(dayDiff).toLocaleString()}`}
                                 </span>
@@ -9252,19 +9496,118 @@ const firebaseConfig = {
                             </div>
                         </div>
 
-                        <!-- 當日餐飲快速對帳列 -->
-                        <div style="background:#fffbeb; border-bottom:1px solid #fef3c7; padding:8px 16px; font-size:0.78rem; color:#92400e; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-                            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                                <span><i class="fa-solid fa-utensils"></i> <strong>當日餐飲花費：</strong></span>
-                                <span>早: <strong>${curr.symbol}${bfAct}</strong></span>
-                                <span>午: <strong>${curr.symbol}${lcAct}</strong></span>
-                                <span>晚: <strong>${curr.symbol}${dnAct}</strong></span>
-                                ${snAct > 0 ? `<span>點心: <strong>${curr.symbol}${snAct}</strong></span>` : ''}
-                                <span style="color:#b45309;">(全團餐飲合算 ≈ NT$ ${Math.round(dayMealAct * m * curr.rate).toLocaleString()})</span>
+                        <!-- 每日餐食 + 每日交通 分開計算與發票上傳雙面板 -->
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); border-bottom:1px solid #e2e8f0;">
+                            <!-- 左側面板 1：🍽️ 當日餐食實際開銷紀錄 -->
+                            <div style="background:#fffbeb; padding:10px 14px; border-right:1px solid #fef3c7; display:flex; flex-direction:column; gap:8px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                                    <div style="font-size:0.82rem; font-weight:800; color:#92400e; display:flex; align-items:center; gap:6px;">
+                                        <i class="fa-solid fa-utensils" style="color:#d97706;"></i>
+                                        <span>當日餐食開銷 (單人實付)</span>
+                                        <span style="font-size:0.72rem; font-weight:600; color:#b45309; background:#fef3c7; padding:1px 6px; border-radius:4px;">
+                                            預估 ${curr.symbol}${totalDayMealEstSingle.toLocaleString()} ➔ 實付 ${curr.symbol}${totalDayMealActSingle.toLocaleString()} (全團 ≈ NT$${Math.round(totalDayMealActSingle * m * curr.rate).toLocaleString()})
+                                        </span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:4px;">
+                                        ${dayMealReceipts.length > 0 ? `
+                                            <button type="button" class="n-btn" style="padding:2px 7px; font-size:0.7rem; background:#ffffff; color:#b45309; border-color:#fcd34d; font-weight:700; display:inline-flex; align-items:center; gap:4px;" onclick="openReceiptPreviewModal('day-meal', ${d.dayNum})">
+                                                <img src="${dayMealReceipts[0].dataUrl}" style="width:14px; height:14px; object-fit:cover; border-radius:2px;">
+                                                <span>餐食發票 (${dayMealReceipts.length})</span>
+                                            </button>
+                                        ` : ''}
+                                        <button type="button" class="n-btn" style="padding:2px 7px; font-size:0.7rem; background:#d97706; color:#ffffff; border:none; font-weight:700;" onclick="triggerQuickReceiptUpload('day-meal', ${d.dayNum})" title="上傳當日早午晚餐或點心的發票/收據照片">
+                                            <i class="fa-solid fa-camera"></i> 上傳餐食發票
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 早 / 午 / 晚 / 點心 實付直接輸入列 -->
+                                <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;">
+                                    <div style="background:#ffffff; border:1px solid #fde68a; border-radius:5px; padding:4px 6px;">
+                                        <div style="font-size:0.68rem; color:#92400e; display:flex; justify-content:space-between;">
+                                            <span>🍳 早餐</span>
+                                            <span style="color:#94a3b8;">估${bfEst}</span>
+                                        </div>
+                                        <input type="number" min="0" step="any" class="form-input" style="width:100%; padding:2px 4px; font-size:0.8rem; font-weight:700; color:#b45309; border:none; border-bottom:1px solid #fde68a; border-radius:0; text-align:right;" value="${hasBfAct ? d.actualBreakfastCost : ''}" placeholder="${bfEst}" onchange="updateDayMealActualCost(${d.dayNum}, 'breakfast', this.value)" title="輸入當日早餐單人實付金額">
+                                    </div>
+                                    <div style="background:#ffffff; border:1px solid #fde68a; border-radius:5px; padding:4px 6px;">
+                                        <div style="font-size:0.68rem; color:#92400e; display:flex; justify-content:space-between;">
+                                            <span>🍱 午餐</span>
+                                            <span style="color:#94a3b8;">估${lcEst}</span>
+                                        </div>
+                                        <input type="number" min="0" step="any" class="form-input" style="width:100%; padding:2px 4px; font-size:0.8rem; font-weight:700; color:#b45309; border:none; border-bottom:1px solid #fde68a; border-radius:0; text-align:right;" value="${hasLcAct ? d.actualLunchCost : ''}" placeholder="${lcEst}" onchange="updateDayMealActualCost(${d.dayNum}, 'lunch', this.value)" title="輸入當日午餐單人實付金額">
+                                    </div>
+                                    <div style="background:#ffffff; border:1px solid #fde68a; border-radius:5px; padding:4px 6px;">
+                                        <div style="font-size:0.68rem; color:#92400e; display:flex; justify-content:space-between;">
+                                            <span>🍲 晚餐</span>
+                                            <span style="color:#94a3b8;">估${dnEst}</span>
+                                        </div>
+                                        <input type="number" min="0" step="any" class="form-input" style="width:100%; padding:2px 4px; font-size:0.8rem; font-weight:700; color:#b45309; border:none; border-bottom:1px solid #fde68a; border-radius:0; text-align:right;" value="${hasDnAct ? d.actualDinnerCost : ''}" placeholder="${dnEst}" onchange="updateDayMealActualCost(${d.dayNum}, 'dinner', this.value)" title="輸入當日晚餐單人實付金額">
+                                    </div>
+                                    <div style="background:#ffffff; border:1px solid #fde68a; border-radius:5px; padding:4px 6px;">
+                                        <div style="font-size:0.68rem; color:#92400e; display:flex; justify-content:space-between;">
+                                            <span>🧋 點心</span>
+                                            <span style="color:#94a3b8;">估${snEst}</span>
+                                        </div>
+                                        <input type="number" min="0" step="any" class="form-input" style="width:100%; padding:2px 4px; font-size:0.8rem; font-weight:700; color:#b45309; border:none; border-bottom:1px solid #fde68a; border-radius:0; text-align:right;" value="${hasSnAct ? d.actualSnackCost : ''}" placeholder="${snEst}" onchange="updateDayMealActualCost(${d.dayNum}, 'snack', this.value)" title="輸入當日點心飲料單人實付金額">
+                                    </div>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:0.72rem; color:#92400e;">
+                                    <input type="text" class="form-input" style="flex:1; padding:2px 8px; font-size:0.72rem; background:#ffffff; border-color:#fde68a;" value="${escapeHtml(d.mealReceiptNote || '')}" placeholder="✏️ 餐食發票號碼或餐廳備註 (按 Enter 儲存)..." onchange="updateDayReceiptNote(${d.dayNum}, 'meal', this.value)">
+                                    ${evMealActSingle > 0 ? `<span style="white-space:nowrap;">(含行程餐飲實付 ${curr.symbol}${evMealActSingle.toLocaleString()})</span>` : ''}
+                                </div>
                             </div>
-                            <button class="n-btn" style="padding:1px 7px; font-size:0.72rem; background:#ffffff;" onclick="openEditDayMetaModal(${d.dayNum})" title="修改當日餐食與自訂雜支花費">
-                                <i class="fa-solid fa-pen-to-square"></i> 調整餐食
-                            </button>
+
+                            <!-- 右側面板 2：🚕 當日交通實際開銷紀錄 -->
+                            <div style="background:#f0f9ff; padding:10px 14px; display:flex; flex-direction:column; gap:8px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                                    <div style="font-size:0.82rem; font-weight:800; color:#0369a1; display:flex; align-items:center; gap:6px;">
+                                        <i class="fa-solid fa-taxi" style="color:#0284c7;"></i>
+                                        <span>當日交通開銷 (單人實付)</span>
+                                        <span style="font-size:0.72rem; font-weight:600; color:#0369a1; background:#e0f2fe; padding:1px 6px; border-radius:4px;">
+                                            預估 ${curr.symbol}${totalDayTransEstSingle.toLocaleString()} ➔ 實付 ${curr.symbol}${totalDayTransActSingle.toLocaleString()} (全團 ≈ NT$${Math.round(totalDayTransActSingle * m * curr.rate).toLocaleString()})
+                                        </span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:4px;">
+                                        ${dayTransReceipts.length > 0 ? `
+                                            <button type="button" class="n-btn" style="padding:2px 7px; font-size:0.7rem; background:#ffffff; color:#0369a1; border-color:#7dd3fc; font-weight:700; display:inline-flex; align-items:center; gap:4px;" onclick="openReceiptPreviewModal('day-trans', ${d.dayNum})">
+                                                <img src="${dayTransReceipts[0].dataUrl}" style="width:14px; height:14px; object-fit:cover; border-radius:2px;">
+                                                <span>交通發票 (${dayTransReceipts.length})</span>
+                                            </button>
+                                        ` : ''}
+                                        <button type="button" class="n-btn" style="padding:2px 7px; font-size:0.7rem; background:#0284c7; color:#ffffff; border:none; font-weight:700;" onclick="triggerQuickReceiptUpload('day-trans', ${d.dayNum})" title="上傳當日計程車、地鐵、包車或車票收據照片">
+                                            <i class="fa-solid fa-camera"></i> 上傳交通發票
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 當日市區交通/打車實付 vs 行程內交通移動實付 -->
+                                <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:8px;">
+                                    <div style="background:#ffffff; border:1px solid #bae6fd; border-radius:5px; padding:4px 8px; display:flex; justify-content:space-between; align-items:center; gap:6px;">
+                                        <div>
+                                            <div style="font-size:0.7rem; font-weight:700; color:#0369a1;">🚕 當日打車/地鐵/包車 (單人)</div>
+                                            <div style="font-size:0.66rem; color:#64748b;">${d.transportNote ? escapeHtml(d.transportNote) : `日常交通預估: ${curr.symbol}${dayExtraTransEstSingle}`}</div>
+                                        </div>
+                                        <div style="display:flex; align-items:center; gap:3px;">
+                                            <span style="font-size:0.76rem; font-weight:700; color:#0284c7;">${curr.symbol}</span>
+                                            <input type="number" min="0" step="any" class="form-input" style="width:75px; padding:2px 5px; font-size:0.82rem; font-weight:700; color:#0369a1; text-align:right; border-color:#bae6fd;" value="${hasExtraTransAct ? d.actualTransportCost : ''}" placeholder="${dayExtraTransEstSingle}" onchange="updateDayTransportActualCost(${d.dayNum}, this.value)" title="輸入當日市區交通/打車/地鐵單人實付金額">
+                                        </div>
+                                    </div>
+                                    <div style="background:#ffffff; border:1px solid #bae6fd; border-radius:5px; padding:4px 8px; display:flex; flex-direction:column; justify-content:center;">
+                                        <div style="font-size:0.68rem; color:#64748b;">🚇 行程活動內交通實付小計</div>
+                                        <div style="font-size:0.82rem; font-weight:800; color:#0369a1; margin-top:1px;">
+                                            ${curr.symbol} ${evTransActSingle.toLocaleString()} <span style="font-size:0.68rem; font-weight:normal; color:#64748b;">/人 (預估 ${curr.symbol}${evTransEstSingle.toLocaleString()})</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:0.72rem; color:#0369a1;">
+                                    <input type="text" class="form-input" style="flex:1; padding:2px 8px; font-size:0.72rem; background:#ffffff; border-color:#bae6fd;" value="${escapeHtml(d.transReceiptNote || '')}" placeholder="✏️ 交通發票號碼或叫車備註 (如：滴滴打車/高鐵票號)..." onchange="updateDayReceiptNote(${d.dayNum}, 'trans', this.value)">
+                                    <button type="button" class="n-btn" style="padding:1px 7px; font-size:0.68rem; background:#ffffff; white-space:nowrap;" onclick="openEditDayMetaModal(${d.dayNum}, 'transport')" title="開啟當日多趟交通預算設定">
+                                        <i class="fa-solid fa-Sliders"></i> 交通明細
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- 活動明細表格 -->
@@ -9273,18 +9616,19 @@ const firebaseConfig = {
                                 <thead>
                                     <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0; font-size:0.74rem; color:#64748b; text-transform:uppercase;">
                                         <th style="padding:8px 12px; width:70px;">時間</th>
-                                        <th style="padding:8px 12px;">行程項目 / 地點</th>
-                                        <th style="padding:8px 12px; text-align:right; width:130px;">預估費用 (單人)</th>
-                                        <th style="padding:8px 12px; text-align:right; width:200px;">實際花費 (單人)</th>
-                                        <th style="padding:8px 12px; text-align:center; width:100px;">差額對比</th>
-                                        <th style="padding:8px 12px; text-align:center; width:80px;">狀態</th>
-                                        <th style="padding:8px 12px; text-align:right; width:70px;">操作</th>
+                                        <th style="padding:8px 12px;">行程項目 / 地點 (支援餐食+交通分拆)</th>
+                                        <th style="padding:8px 12px; text-align:right; width:125px;">預估費用 (單人)</th>
+                                        <th style="padding:8px 12px; text-align:right; width:190px;">實際花費 (單人)</th>
+                                        <th style="padding:8px 12px; text-align:center; width:95px;">差額對比</th>
+                                        <th style="padding:8px 12px; text-align:center; width:130px;">🧾 發票紀錄</th>
+                                        <th style="padding:8px 12px; text-align:center; width:75px;">狀態</th>
+                                        <th style="padding:8px 12px; text-align:right; width:68px;">操作</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${rowsHtml.length > 0 ? rowsHtml : `
                                         <tr>
-                                            <td colspan="7" style="text-align:center; padding:20px; color:#94a3b8; font-size:0.84rem;">
+                                            <td colspan="8" style="text-align:center; padding:20px; color:#94a3b8; font-size:0.84rem;">
                                                 本日尚無活動花費項目，點選右上角「+ 新增花費」即可記錄！
                                             </td>
                                         </tr>
@@ -9296,6 +9640,17 @@ const firebaseConfig = {
                 `;
             }).join('');
 
+            // 餐食與當地交通的全程匯總數據 (折合台幣與單人)
+            const totalEstMealsTwd = Math.round(totalEstMealsGroupLocal * curr.rate);
+            const totalActMealsTwd = Math.round(totalActMealsGroupLocal * curr.rate);
+            const mealDiffTwd = totalEstMealsTwd - totalActMealsTwd;
+            const isMealSaved = mealDiffTwd >= 0;
+
+            const totalEstTransTwd = Math.round(totalEstTransGroupLocal * curr.rate);
+            const totalActTransTwd = Math.round(totalActTransGroupLocal * curr.rate);
+            const transDiffTwd = totalEstTransTwd - totalActTransTwd;
+            const isTransSaved = transDiffTwd >= 0;
+
             // 渲染整個視圖
             container.innerHTML = `
                 <div style="padding:6px 0;">
@@ -9303,10 +9658,10 @@ const firebaseConfig = {
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
                         <div>
                             <h2 style="font-size:1.24rem; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
-                                <span>🧾</span> 實際費用與行程核銷中心 (Actual Expenses Tracker)
+                                <span>🧾</span> 實際費用與行程核銷中心 (每日餐食+交通分開計算 ＆ 發票紀錄)
                             </h2>
                             <div style="font-size:0.82rem; color:#64748b; margin-top:3px;">
-                                追蹤全程交通、住宿、餐飲與行程各項目的實付開銷，即時對比預估預算、計算超支結餘與付款狀態。
+                                追蹤全程大交通、住宿、<strong>每日餐食</strong>與<strong>每日當地交通</strong>的實付開銷，並支援隨時拍照上傳發票收據留存。
                             </div>
                         </div>
                         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
@@ -9323,11 +9678,12 @@ const firebaseConfig = {
                     </div>
 
                     <!-- 核心 KPI 四大統計看板 -->
-                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-bottom:18px;">
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-bottom:14px;">
                         <!-- 看板 1: 全程實付總額 -->
                         <div style="background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border:1px solid #bbf7d0; border-radius:10px; padding:14px 16px;">
-                            <div style="font-size:0.78rem; font-weight:700; color:#15803d; text-transform:uppercase; display:flex; align-items:center; gap:6px;">
-                                <i class="fa-solid fa-receipt"></i> 全程實際花費總額
+                            <div style="font-size:0.78rem; font-weight:700; color:#15803d; text-transform:uppercase; display:flex; align-items:center; justify-content:space-between;">
+                                <span><i class="fa-solid fa-receipt"></i> 全程實際花費總額</span>
+                                <span style="font-size:0.72rem; background:#ffffff; padding:1px 6px; border-radius:999px; color:#166534;">🧾 發票 ${totalAllReceiptsCount} 張</span>
                             </div>
                             <div style="font-size:1.45rem; font-weight:800; color:#166534; margin:6px 0 2px;">
                                 NT$ ${grandActGroupTwd.toLocaleString()}
@@ -9375,6 +9731,49 @@ const firebaseConfig = {
                             <div style="font-size:0.76rem; color:#78716c; display:flex; justify-content:space-between;">
                                 <span>已付: <strong>NT$ ${grandPaidGroupTwd.toLocaleString()}</strong></span>
                                 <span>未付: <strong>NT$ ${Math.max(0, grandActGroupTwd - grandPaidGroupTwd).toLocaleString()}</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 🍽️ 每日餐食實付總計 vs 🚕 每日當地交通實付總計 (分開計算專屬看板) -->
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:12px; margin-bottom:14px;">
+                        <!-- 餐食專屬統計卡 -->
+                        <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <div>
+                                <div style="font-size:0.8rem; font-weight:800; color:#92400e; display:flex; align-items:center; gap:6px;">
+                                    <i class="fa-solid fa-utensils" style="color:#d97706;"></i> 全程每日餐食開銷總計 (早/午/晚/點心/聚餐)
+                                </div>
+                                <div style="font-size:1.22rem; font-weight:800; color:#b45309; margin-top:4px;">
+                                    全團實付 ${curr.symbol} ${totalActMealsGroupLocal.toLocaleString()} <span style="font-size:0.85rem;">(≈ NT$ ${totalActMealsTwd.toLocaleString()})</span>
+                                </div>
+                                <div style="font-size:0.75rem; color:#92400e; margin-top:2px;">
+                                    每人餐食實付 <strong>${curr.symbol} ${Math.round(totalActMealsGroupLocal / m).toLocaleString()}</strong> (預估全團 ${curr.symbol} ${totalEstMealsGroupLocal.toLocaleString()}) ｜ 已存餐食發票 <strong>${totalMealReceiptsCount}</strong> 張
+                                </div>
+                            </div>
+                            <div style="text-align:right;">
+                                <span style="display:inline-block; padding:3px 8px; border-radius:6px; font-size:0.76rem; font-weight:700; background:${isMealSaved ? '#dcfce7' : '#fee2e2'}; color:${isMealSaved ? '#15803d' : '#b91c1c'};">
+                                    ${isMealSaved ? `🎉 餐食省 NT$ ${mealDiffTwd.toLocaleString()}` : `⚠️ 餐食超支 NT$ ${Math.abs(mealDiffTwd).toLocaleString()}`}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 當地交通專屬統計卡 -->
+                        <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:10px; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <div>
+                                <div style="font-size:0.8rem; font-weight:800; color:#0369a1; display:flex; align-items:center; gap:6px;">
+                                    <i class="fa-solid fa-taxi" style="color:#0284c7;"></i> 全程每日當地交通總計 (打車/地鐵/包車/接駁)
+                                </div>
+                                <div style="font-size:1.22rem; font-weight:800; color:#0284c7; margin-top:4px;">
+                                    全團實付 ${curr.symbol} ${totalActTransGroupLocal.toLocaleString()} <span style="font-size:0.85rem;">(≈ NT$ ${totalActTransTwd.toLocaleString()})</span>
+                                </div>
+                                <div style="font-size:0.75rem; color:#0369a1; margin-top:2px;">
+                                    每人交通實付 <strong>${curr.symbol} ${Math.round(totalActTransGroupLocal / m).toLocaleString()}</strong> (預估全團 ${curr.symbol} ${totalEstTransGroupLocal.toLocaleString()}) ｜ 已存交通發票 <strong>${totalTransReceiptsCount}</strong> 張
+                                </div>
+                            </div>
+                            <div style="text-align:right;">
+                                <span style="display:inline-block; padding:3px 8px; border-radius:6px; font-size:0.76rem; font-weight:700; background:${isTransSaved ? '#dcfce7' : '#fee2e2'}; color:${isTransSaved ? '#15803d' : '#b91c1c'};">
+                                    ${isTransSaved ? `🎉 交通省 NT$ ${transDiffTwd.toLocaleString()}` : `⚠️ 交通超支 NT$ ${Math.abs(transDiffTwd).toLocaleString()}`}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -9477,18 +9876,91 @@ const firebaseConfig = {
 
                     <!-- 逐日行程活動實付記帳明細 -->
                     <div style="margin-top:10px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
                             <h3 style="font-size:1.05rem; font-weight:800; color:#1e293b; margin:0;">
-                                📅 逐日行程項目實付記帳明細
+                                📅 逐日餐食 + 交通分開計算 ＆ 活動發票核銷明細
                             </h3>
                             <span style="font-size:0.78rem; color:#64748b;">
-                                已核銷 <strong>${filledActualCount}</strong> / <strong>${totalEventsCount}</strong> 筆活動項目 ｜ 已付款 <strong>${paidEventsCount}</strong> 筆
+                                已核銷 <strong>${filledActualCount}</strong> / <strong>${totalEventsCount}</strong> 筆活動項目 ｜ 已付款 <strong>${paidEventsCount}</strong> 筆 ｜ 發票紀錄 <strong>${totalAllReceiptsCount}</strong> 張
                             </span>
                         </div>
                         ${daysHtml}
                     </div>
                 </div>
             `;
+        }
+
+        // 快速更新當日餐食實際費用 (早/午/晚/點心)
+        function updateDayMealActualCost(dayNum, mealType, val) {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
+            if (!day) return;
+
+            const trimmed = String(val).trim();
+            const fieldMap = {
+                breakfast: 'actualBreakfastCost',
+                lunch: 'actualLunchCost',
+                dinner: 'actualDinnerCost',
+                snack: 'actualSnackCost'
+            };
+            const labelMap = {
+                breakfast: '早餐',
+                lunch: '午餐',
+                dinner: '晚餐',
+                snack: '點心飲料'
+            };
+            const prop = fieldMap[mealType];
+            if (!prop) return;
+
+            if (trimmed === '') {
+                delete day[prop];
+            } else {
+                day[prop] = Math.max(0, parseFloat(trimmed) || 0);
+            }
+
+            saveState();
+            renderActualExpensesView();
+            renderTimelineView();
+            renderBudgetWidget();
+            showToast('success', `已更新 Day ${dayNum} ${labelMap[mealType]}實付金額！`);
+        }
+
+        // 快速更新當日日常交通實際費用 (打車/地鐵/包車)
+        function updateDayTransportActualCost(dayNum, val) {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
+            if (!day) return;
+
+            const trimmed = String(val).trim();
+            if (trimmed === '') {
+                delete day.actualTransportCost;
+            } else {
+                day.actualTransportCost = Math.max(0, parseFloat(trimmed) || 0);
+            }
+
+            saveState();
+            renderActualExpensesView();
+            renderTimelineView();
+            renderBudgetWidget();
+            showToast('success', `已更新 Day ${dayNum} 當日交通實付金額！`);
+        }
+
+        // 快速更新當日餐食或交通發票備註
+        function updateDayReceiptNote(dayNum, cat, val) {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
+            if (!day) return;
+
+            if (cat === 'meal') {
+                day.mealReceiptNote = String(val || '').trim();
+            } else if (cat === 'trans') {
+                day.transReceiptNote = String(val || '').trim();
+            }
+            saveState();
+            showToast('success', `已儲存 Day ${dayNum} ${cat === 'meal' ? '餐食' : '交通'}發票備註！`);
         }
 
         // 快速更新活動實際費用
@@ -9498,18 +9970,32 @@ const firebaseConfig = {
             const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
             if (!day || !day.events || !day.events[eventIdx]) return;
 
+            const ev = day.events[eventIdx];
             const trimmed = String(val).trim();
             if (trimmed === '') {
-                delete day.events[eventIdx].actualCost;
+                delete ev.actualCost;
+                delete ev.actualMealCost;
+                delete ev.actualTransCost;
+                delete ev.actualBaseCost;
             } else {
-                day.events[eventIdx].actualCost = parseFloat(trimmed) || 0;
+                const numVal = Math.max(0, parseFloat(trimmed) || 0);
+                ev.actualCost = numVal;
+                if (ev.type === 'food') {
+                    ev.actualMealCost = numVal;
+                    delete ev.actualTransCost;
+                    delete ev.actualBaseCost;
+                } else if (ev.type === 'trans') {
+                    ev.actualTransCost = numVal;
+                    delete ev.actualMealCost;
+                    delete ev.actualBaseCost;
+                }
             }
 
             saveState();
             renderActualExpensesView();
             renderTimelineView();
             renderBudgetWidget();
-            showToast('success', `已更新「${day.events[eventIdx].title}」之實付金額！`);
+            showToast('success', `已更新「${ev.title}」之實付金額！`);
         }
 
         // 快速切換活動付款狀態
@@ -9581,7 +10067,7 @@ const firebaseConfig = {
             showToast('success', `已將全部 ${count} 筆活動項目標記為已付款！`);
         }
 
-        // 複製實際費用對帳清單文字
+        // 複製實際費用對帳清單文字 (包含餐食與交通分開小計)
         function copyActualExpensesSummaryText() {
             const plan = getCurrentPlan();
             if (!plan) return;
@@ -9596,15 +10082,25 @@ const firebaseConfig = {
             const pricingNote = flightStats.pricingType === 'separate' ? ` (去程 NT$ ${flightStats.outBreakdown.groupTwd.toLocaleString()} + 回程 NT$ ${flightStats.inBreakdown.groupTwd.toLocaleString()})` : ' (來回合併一筆)';
             txt += `${transName}：預估 NT$ ${flightStats.groupTwd.toLocaleString()} ｜ 實付 NT$ ${(flightStats.hasActual ? flightStats.actualGroupTwd : flightStats.groupTwd).toLocaleString()}${pricingNote}\n`;
             txt += `🏨 住宿飯店房費：預估 NT$ ${hotelStats.totalGroupTwd.toLocaleString()} ｜ 實付 NT$ ${(hotelStats.hasActual ? hotelStats.totalActualGroupTwd : hotelStats.totalGroupTwd).toLocaleString()}\n`;
-            txt += `\n───────── 每日行程實付明細 ─────────\n`;
+            txt += `\n───────── 每日餐食+交通與行程實付明細 ─────────\n`;
 
             (plan.days || []).forEach(d => {
+                const bfAct = (d.actualBreakfastCost !== undefined && d.actualBreakfastCost !== null && d.actualBreakfastCost !== '') ? Number(d.actualBreakfastCost) : Number(d.breakfastCost || 0);
+                const lcAct = (d.actualLunchCost !== undefined && d.actualLunchCost !== null && d.actualLunchCost !== '') ? Number(d.actualLunchCost) : Number(d.lunchCost || 0);
+                const dnAct = (d.actualDinnerCost !== undefined && d.actualDinnerCost !== null && d.actualDinnerCost !== '') ? Number(d.actualDinnerCost) : Number(d.dinnerCost || 0);
+                const snAct = (d.actualSnackCost !== undefined && d.actualSnackCost !== null && d.actualSnackCost !== '') ? Number(d.actualSnackCost) : Number(d.snackCost || 0);
+                const extraTransEst = getDayExtraTransportEstSingle(d, curr, m);
+                const extraTransAct = (d.actualTransportCost !== undefined && d.actualTransportCost !== null && d.actualTransportCost !== '') ? Number(d.actualTransportCost) : extraTransEst;
+
                 txt += `\n[Day ${d.dayNum} ‧ ${d.title} (${d.date || ''})]\n`;
+                txt += `  🍽️ 當日餐食 (單人)：早 ${curr.symbol}${bfAct} / 午 ${curr.symbol}${lcAct} / 晚 ${curr.symbol}${dnAct}${snAct > 0 ? ` / 點心 ${curr.symbol}${snAct}` : ''}${d.mealReceiptNote ? ` [發票:${d.mealReceiptNote}]` : ''}\n`;
+                txt += `  🚕 當日日常交通 (單人)：實付 ${curr.symbol}${extraTransAct}${d.transReceiptNote ? ` [發票:${d.transReceiptNote}]` : ''}\n`;
                 (d.events || []).forEach(ev => {
                     const est = Number(ev.cost || 0);
-                    const act = (ev.actualCost !== undefined && ev.actualCost !== null) ? Number(ev.actualCost) : est;
+                    const act = (ev.actualCost !== undefined && ev.actualCost !== null && ev.actualCost !== '') ? Number(ev.actualCost) : est;
                     const paid = ev.isPaid ? '已付' : '未付';
-                    txt += `  • [${ev.time || '全天'}] ${ev.title}：實付 ${curr.symbol}${act} (預估 ${curr.symbol}${est}) [${paid}]\n`;
+                    const recCount = Array.isArray(ev.receipts) ? ev.receipts.length : 0;
+                    txt += `  • [${ev.time || '全天'}] ${ev.title}：實付 ${curr.symbol}${act} (預估 ${curr.symbol}${est}) [${paid}]${recCount > 0 ? ` (🧾發票x${recCount})` : ''}${ev.receiptNote ? ` [${ev.receiptNote}]` : ''}\n`;
                 });
             });
 
@@ -9616,6 +10112,359 @@ const firebaseConfig = {
                 });
             } else {
                 showToast('info', '請手動複製文字');
+            }
+        }
+
+        // ==========================================
+        // 發票 / 收據影像壓縮上傳與燈箱檢視模組 (Receipt Upload & Preview)
+        // ==========================================
+        let currentModalEventReceipts = [];
+        let quickReceiptUploadContext = null; // { targetType: 'event'|'day-meal'|'day-trans', dayNum, eventIdx }
+
+        // 使用 HTML5 Canvas 將發票圖片自動等比例壓縮為輕量 JPEG Base64
+        function compressReceiptImage(file, maxDim = 850, quality = 0.65) {
+            return new Promise((resolve, reject) => {
+                if (!file || !file.type.startsWith('image/')) {
+                    return reject(new Error('請選擇有效的圖片檔案'));
+                }
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const img = new Image();
+                    img.onload = function() {
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > maxDim || h > maxDim) {
+                            if (w > h) {
+                                h = Math.round((h * maxDim) / w);
+                                w = maxDim;
+                            } else {
+                                w = Math.round((w * maxDim) / h);
+                                h = maxDim;
+                            }
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, w, h);
+                        ctx.drawImage(img, 0, 0, w, h);
+                        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        const now = new Date();
+                        const timeStr = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                        resolve({
+                            id: 'rec_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                            name: file.name || '發票照片',
+                            dataUrl: dataUrl,
+                            time: timeStr,
+                            note: ''
+                        });
+                    };
+                    img.onerror = () => reject(new Error('圖片載入失敗'));
+                    img.src = evt.target.result;
+                };
+                reader.onerror = () => reject(new Error('讀取檔案失敗'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 在編輯行程項目彈窗 (addEventModal) 中同步「餐食 + 交通 + 門票/其他」三項實付總額
+        function syncEventSplitActualTotal() {
+            const mealStr = document.getElementById('eventActualMealCostNum')?.value ?? '';
+            const transStr = document.getElementById('eventActualTransCostNum')?.value ?? '';
+            const baseStr = document.getElementById('eventActualBaseCostNum')?.value ?? '';
+            const totalInput = document.getElementById('eventActualCostNum');
+            if (!totalInput) return;
+
+            if (mealStr === '' && transStr === '' && baseStr === '') {
+                totalInput.value = '';
+                return;
+            }
+            const mealVal = Math.max(0, parseFloat(mealStr) || 0);
+            const transVal = Math.max(0, parseFloat(transStr) || 0);
+            const baseVal = Math.max(0, parseFloat(baseStr) || 0);
+            const sum = +(mealVal + transVal + baseVal).toFixed(2);
+            totalInput.value = sum;
+        }
+
+        // 當使用者直接修改 addEventModal 的「實際花費單人總額」時，智慧連動分項欄位
+        function handleDirectEventActualCostInput() {
+            const totalStr = document.getElementById('eventActualCostNum')?.value ?? '';
+            const mealInput = document.getElementById('eventActualMealCostNum');
+            const transInput = document.getElementById('eventActualTransCostNum');
+            const baseInput = document.getElementById('eventActualBaseCostNum');
+            if (!mealInput || !transInput || !baseInput) return;
+
+            if (totalStr === '') {
+                mealInput.value = '';
+                transInput.value = '';
+                baseInput.value = '';
+                return;
+            }
+            const totalVal = Math.max(0, parseFloat(totalStr) || 0);
+            const evType = document.getElementById('eventTypeSelect')?.value || 'spot';
+            const mealVal = parseFloat(mealInput.value) || 0;
+            const transVal = parseFloat(transInput.value) || 0;
+
+            if (evType === 'food' && transVal === 0 && (parseFloat(baseInput.value) || 0) === 0) {
+                mealInput.value = totalVal;
+            } else if (evType === 'trans' && mealVal === 0 && (parseFloat(baseInput.value) || 0) === 0) {
+                transInput.value = totalVal;
+            } else {
+                const remain = Math.max(0, +(totalVal - mealVal - transVal).toFixed(2));
+                baseInput.value = remain;
+            }
+        }
+
+        // 渲染 addEventModal 內的已上傳發票縮圖列表
+        function renderModalEventReceiptsPreview() {
+            const box = document.getElementById('eventModalReceiptsPreview');
+            if (!box) return;
+            if (!Array.isArray(currentModalEventReceipts) || currentModalEventReceipts.length === 0) {
+                box.innerHTML = `<span style="font-size:0.74rem; color:#94a3b8;">尚未上傳發票照片（可點選右上角按鈕選擇手機或電腦照片）</span>`;
+                return;
+            }
+            box.innerHTML = currentModalEventReceipts.map((r, idx) => `
+                <div style="position:relative; width:68px; height:68px; border-radius:6px; border:1px solid #86efac; overflow:hidden; background:#f8fafc; box-shadow:0 1px 2px rgba(0,0,0,0.06);">
+                    <img src="${r.dataUrl}" style="width:100%; height:100%; object-fit:cover; cursor:pointer;" onclick="previewSingleReceiptImageInSwal(${idx})" title="點擊放大檢視：${escapeHtml(r.name || '發票')}">
+                    <button type="button" onclick="removeModalEventReceipt(${idx})" style="position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; background:rgba(220,38,38,0.88); color:#fff; border:none; font-size:0.65rem; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;" title="移除此張發票">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function removeModalEventReceipt(idx) {
+            if (!Array.isArray(currentModalEventReceipts)) return;
+            currentModalEventReceipts.splice(idx, 1);
+            renderModalEventReceiptsPreview();
+        }
+
+        function previewSingleReceiptImageInSwal(idx) {
+            if (!Array.isArray(currentModalEventReceipts) || !currentModalEventReceipts[idx]) return;
+            const rec = currentModalEventReceipts[idx];
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: rec.name || '發票影像預覽',
+                    imageUrl: rec.dataUrl,
+                    imageAlt: '發票影像',
+                    confirmButtonText: '關閉',
+                    confirmButtonColor: '#0f766e',
+                    width: 560
+                });
+            }
+        }
+
+        async function handleModalEventReceiptUpload(e) {
+            const files = e.target?.files;
+            if (!files || files.length === 0) return;
+            try {
+                for (let i = 0; i < files.length; i++) {
+                    const item = await compressReceiptImage(files[i]);
+                    currentModalEventReceipts.push(item);
+                }
+                renderModalEventReceiptsPreview();
+                showToast('success', `已成功壓縮並載入 ${files.length} 張發票照片！`);
+            } catch (err) {
+                showToast('error', err.message || '上傳發票失敗');
+            } finally {
+                e.target.value = '';
+            }
+        }
+
+        // 在實際費用核銷中心一鍵觸發上傳發票
+        function triggerQuickReceiptUpload(targetType, dayNum, eventIdx = -1) {
+            quickReceiptUploadContext = { targetType, dayNum: Number(dayNum), eventIdx: Number(eventIdx) };
+            const input = document.getElementById('quickReceiptUploadInput');
+            if (input) {
+                input.value = '';
+                input.click();
+            }
+        }
+
+        async function handleQuickReceiptFileSelected(e) {
+            const files = e.target?.files;
+            if (!files || files.length === 0 || !quickReceiptUploadContext) return;
+
+            const { targetType, dayNum, eventIdx } = quickReceiptUploadContext;
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === dayNum);
+            if (!day) return;
+
+            try {
+                const uploaded = [];
+                for (let i = 0; i < files.length; i++) {
+                    const item = await compressReceiptImage(files[i]);
+                    uploaded.push(item);
+                }
+
+                if (targetType === 'day-meal') {
+                    if (!Array.isArray(day.mealReceipts)) day.mealReceipts = [];
+                    day.mealReceipts.push(...uploaded);
+                } else if (targetType === 'day-trans') {
+                    if (!Array.isArray(day.transReceipts)) day.transReceipts = [];
+                    day.transReceipts.push(...uploaded);
+                } else if (targetType === 'event' && day.events && day.events[eventIdx]) {
+                    const ev = day.events[eventIdx];
+                    if (!Array.isArray(ev.receipts)) ev.receipts = [];
+                    ev.receipts.push(...uploaded);
+                }
+
+                saveState();
+                renderActualExpensesView();
+                renderTimelineView();
+                showToast('success', `已成功上傳 ${uploaded.length} 張發票紀錄！`);
+
+                // 若發票檢視燈箱正開啟中，同步刷新燈箱內容
+                const previewModal = document.getElementById('receiptPreviewModal');
+                if (previewModal && previewModal.classList.contains('active')) {
+                    openReceiptPreviewModal(targetType, dayNum, eventIdx);
+                }
+            } catch (err) {
+                showToast('error', err.message || '發票圖片處理失敗');
+            } finally {
+                e.target.value = '';
+            }
+        }
+
+        // 開啟發票大圖檢視與管理燈箱 (receiptPreviewModal)
+        function openReceiptPreviewModal(targetType, dayNum, eventIdx = -1) {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
+            if (!day) return;
+
+            let title = '';
+            let receipts = [];
+            let noteVal = '';
+
+            if (targetType === 'day-meal') {
+                title = `Day ${day.dayNum} ‧ 🍽️ 當日餐食發票紀錄`;
+                if (!Array.isArray(day.mealReceipts)) day.mealReceipts = [];
+                receipts = day.mealReceipts;
+                noteVal = day.mealReceiptNote || '';
+            } else if (targetType === 'day-trans') {
+                title = `Day ${day.dayNum} ‧ 🚕 當日交通發票紀錄`;
+                if (!Array.isArray(day.transReceipts)) day.transReceipts = [];
+                receipts = day.transReceipts;
+                noteVal = day.transReceiptNote || '';
+            } else if (targetType === 'event' && day.events && day.events[eventIdx]) {
+                const ev = day.events[eventIdx];
+                title = `Day ${day.dayNum} ‧ 🧾「${ev.title}」發票紀錄`;
+                if (!Array.isArray(ev.receipts)) ev.receipts = [];
+                receipts = ev.receipts;
+                noteVal = ev.receiptNote || '';
+            } else {
+                return;
+            }
+
+            const titleEl = document.getElementById('receiptPreviewModalTitle');
+            if (titleEl) {
+                titleEl.innerHTML = `<i class="fa-solid fa-file-invoice-dollar" style="color:#16a34a;"></i> ${escapeHtml(title)} (${receipts.length} 張)`;
+            }
+
+            const bodyEl = document.getElementById('receiptPreviewModalBody');
+            if (bodyEl) {
+                const cardsHtml = receipts.map((r, rIdx) => `
+                    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:14px; box-shadow:0 2px 6px rgba(0,0,0,0.04); text-align:left;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+                            <span style="font-size:0.8rem; font-weight:700; color:#1e293b;">
+                                <i class="fa-solid fa-receipt" style="color:#16a34a;"></i> 發票 #${rIdx + 1} ‧ ${escapeHtml(r.name || '收據照片')}
+                                <small style="color:#94a3b8; font-weight:normal; margin-left:6px;">(${escapeHtml(r.time || '')})</small>
+                            </span>
+                            <div style="display:flex; gap:6px;">
+                                <a href="${r.dataUrl}" download="${escapeHtml(r.name || `receipt_${rIdx + 1}.jpg`)}" class="n-btn" style="padding:2px 8px; font-size:0.74rem; text-decoration:none;">
+                                    <i class="fa-solid fa-download"></i> 下載圖片
+                                </a>
+                                <button type="button" class="n-btn n-btn-danger" style="padding:2px 8px; font-size:0.74rem;" onclick="deleteStoredReceipt('${targetType}', ${day.dayNum}, ${eventIdx}, ${rIdx})">
+                                    <i class="fa-regular fa-trash-can"></i> 刪除
+                                </button>
+                            </div>
+                        </div>
+                        <div style="text-align:center; background:#f1f5f9; border-radius:8px; padding:8px; margin-bottom:8px;">
+                            <img src="${r.dataUrl}" style="max-width:100%; max-height:420px; border-radius:6px; object-fit:contain;">
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:0.76rem; color:#475569; white-space:nowrap;">📝 單張發票備註：</span>
+                            <input type="text" class="form-input" style="flex:1; padding:4px 8px; font-size:0.78rem;" value="${escapeHtml(r.note || '')}" placeholder="選填：輸入此張發票金額、品項或發票號碼..." onchange="updateSingleReceiptCaption('${targetType}', ${day.dayNum}, ${eventIdx}, ${rIdx}, this.value)">
+                        </div>
+                    </div>
+                `).join('');
+
+                bodyEl.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; padding:10px 12px; margin-bottom:14px; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:200px; display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:0.8rem; font-weight:700; color:#0f766e; white-space:nowrap;"><i class="fa-solid fa-file-invoice"></i> 發票總備註：</span>
+                            <input type="text" class="form-input" style="flex:1; padding:4px 8px; font-size:0.8rem;" value="${escapeHtml(noteVal)}" placeholder="輸入發票號碼或付款方式..." onchange="updateTargetReceiptNoteFromModal('${targetType}', ${day.dayNum}, ${eventIdx}, this.value)">
+                        </div>
+                        <button type="button" class="n-btn n-btn-primary" style="font-size:0.78rem; padding:5px 12px;" onclick="triggerQuickReceiptUpload('${targetType}', ${day.dayNum}, ${eventIdx})">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> 新增上傳發票照片
+                        </button>
+                    </div>
+                    ${cardsHtml || `<div style="padding:32px 16px; color:#94a3b8; font-size:0.88rem;">目前尚無發票照片，點擊上方「新增上傳發票照片」即可拍照或選取收據上傳！</div>`}
+                `;
+            }
+
+            openModal('receiptPreviewModal');
+        }
+
+        function updateTargetReceiptNoteFromModal(targetType, dayNum, eventIdx, val) {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
+            if (!day) return;
+
+            const trimmed = String(val || '').trim();
+            if (targetType === 'day-meal') {
+                day.mealReceiptNote = trimmed;
+            } else if (targetType === 'day-trans') {
+                day.transReceiptNote = trimmed;
+            } else if (targetType === 'event' && day.events && day.events[eventIdx]) {
+                day.events[eventIdx].receiptNote = trimmed;
+            }
+            saveState();
+            renderActualExpensesView();
+            renderTimelineView();
+            showToast('success', '已儲存發票總備註！');
+        }
+
+        function updateSingleReceiptCaption(targetType, dayNum, eventIdx, rIdx, val) {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
+            if (!day) return;
+
+            let list = null;
+            if (targetType === 'day-meal') list = day.mealReceipts;
+            else if (targetType === 'day-trans') list = day.transReceipts;
+            else if (targetType === 'event' && day.events && day.events[eventIdx]) list = day.events[eventIdx].receipts;
+
+            if (Array.isArray(list) && list[rIdx]) {
+                list[rIdx].note = String(val || '').trim();
+                saveState();
+                showToast('success', '已更新單張發票備註！');
+            }
+        }
+
+        function deleteStoredReceipt(targetType, dayNum, eventIdx, rIdx) {
+            const plan = getCurrentPlan();
+            if (!plan) return;
+            const day = (plan.days || []).find(d => d.dayNum === Number(dayNum));
+            if (!day) return;
+
+            let list = null;
+            if (targetType === 'day-meal') list = day.mealReceipts;
+            else if (targetType === 'day-trans') list = day.transReceipts;
+            else if (targetType === 'event' && day.events && day.events[eventIdx]) list = day.events[eventIdx].receipts;
+
+            if (Array.isArray(list) && list[rIdx]) {
+                list.splice(rIdx, 1);
+                saveState();
+                renderActualExpensesView();
+                renderTimelineView();
+                openReceiptPreviewModal(targetType, dayNum, eventIdx);
+                showToast('info', '已刪除該張發票照片');
             }
         }
 
@@ -13941,14 +14790,25 @@ const firebaseConfig = {
             if (locInput) locInput.value = '';
             const costInput = document.getElementById('eventCostNum');
             if (costInput) costInput.value = '';
+            const actMealInput = document.getElementById('eventActualMealCostNum');
+            if (actMealInput) actMealInput.value = '';
+            const actTransInput = document.getElementById('eventActualTransCostNum');
+            if (actTransInput) actTransInput.value = '';
+            const actBaseInput = document.getElementById('eventActualBaseCostNum');
+            if (actBaseInput) actBaseInput.value = '';
             const actCostInput = document.getElementById('eventActualCostNum');
             if (actCostInput) actCostInput.value = '';
+            const recNoteInput = document.getElementById('eventReceiptNoteStr');
+            if (recNoteInput) recNoteInput.value = '';
             const isPaidInput = document.getElementById('eventIsPaid');
             if (isPaidInput) isPaidInput.checked = false;
             const notesInput = document.getElementById('eventNotesStr');
             if (notesInput) notesInput.value = '';
             const typeSelect = document.getElementById('eventTypeSelect');
             if (typeSelect) typeSelect.value = 'spot';
+
+            currentModalEventReceipts = [];
+            renderModalEventReceiptsPreview();
 
             setTimeSelectorValue('');
             updateEventFlightLinkBox();
@@ -13993,14 +14853,38 @@ const firebaseConfig = {
             if (locInput) locInput.value = ev.loc || '';
             const costInput = document.getElementById('eventCostNum');
             if (costInput) costInput.value = (ev.cost !== undefined && ev.cost !== null) ? ev.cost : '';
+
+            const actMealInput = document.getElementById('eventActualMealCostNum');
+            const actTransInput = document.getElementById('eventActualTransCostNum');
+            const actBaseInput = document.getElementById('eventActualBaseCostNum');
+            const hasSplit = (ev.actualMealCost !== undefined || ev.actualTransCost !== undefined || ev.actualBaseCost !== undefined);
+            if (hasSplit) {
+                if (actMealInput) actMealInput.value = (ev.actualMealCost !== undefined && ev.actualMealCost !== null) ? ev.actualMealCost : '';
+                if (actTransInput) actTransInput.value = (ev.actualTransCost !== undefined && ev.actualTransCost !== null) ? ev.actualTransCost : '';
+                if (actBaseInput) actBaseInput.value = (ev.actualBaseCost !== undefined && ev.actualBaseCost !== null) ? ev.actualBaseCost : '';
+            } else if (ev.actualCost !== undefined && ev.actualCost !== null && ev.actualCost !== '') {
+                if (actMealInput) actMealInput.value = (ev.type === 'food') ? ev.actualCost : '';
+                if (actTransInput) actTransInput.value = (ev.type === 'trans') ? ev.actualCost : '';
+                if (actBaseInput) actBaseInput.value = (ev.type !== 'food' && ev.type !== 'trans') ? ev.actualCost : '';
+            } else {
+                if (actMealInput) actMealInput.value = '';
+                if (actTransInput) actTransInput.value = '';
+                if (actBaseInput) actBaseInput.value = '';
+            }
+
             const actCostInput = document.getElementById('eventActualCostNum');
             if (actCostInput) actCostInput.value = (ev.actualCost !== undefined && ev.actualCost !== null) ? ev.actualCost : '';
+            const recNoteInput = document.getElementById('eventReceiptNoteStr');
+            if (recNoteInput) recNoteInput.value = ev.receiptNote || '';
             const isPaidInput = document.getElementById('eventIsPaid');
             if (isPaidInput) isPaidInput.checked = !!ev.isPaid;
             const notesInput = document.getElementById('eventNotesStr');
             if (notesInput) notesInput.value = ev.notes || '';
             const typeSelect = document.getElementById('eventTypeSelect');
             if (typeSelect) typeSelect.value = ev.type || 'spot';
+
+            currentModalEventReceipts = Array.isArray(ev.receipts) ? JSON.parse(JSON.stringify(ev.receipts)) : [];
+            renderModalEventReceiptsPreview();
 
             setTimeSelectorValue(ev.time || '');
 
@@ -14083,7 +14967,11 @@ const firebaseConfig = {
                 }
 
                 const costNum = parseFloat(document.getElementById('eventCostNum')?.value) || 0;
+                const rawActMealVal = document.getElementById('eventActualMealCostNum')?.value ?? '';
+                const rawActTransVal = document.getElementById('eventActualTransCostNum')?.value ?? '';
+                const rawActBaseVal = document.getElementById('eventActualBaseCostNum')?.value ?? '';
                 const rawActVal = document.getElementById('eventActualCostNum')?.value;
+                const receiptNoteVal = document.getElementById('eventReceiptNoteStr')?.value.trim() || '';
                 const isPaidVal = document.getElementById('eventIsPaid')?.checked ?? false;
                 const locVal = document.getElementById('eventLocStr')?.value.trim() || '';
                 const notesVal = document.getElementById('eventNotesStr')?.value.trim() || '';
@@ -14109,8 +14997,25 @@ const firebaseConfig = {
                     cost: costNum,
                     notes: notesVal
                 };
+                if (rawActMealVal !== '') {
+                    eventObj.actualMealCost = Math.max(0, parseFloat(rawActMealVal) || 0);
+                }
+                if (rawActTransVal !== '') {
+                    eventObj.actualTransCost = Math.max(0, parseFloat(rawActTransVal) || 0);
+                }
+                if (rawActBaseVal !== '') {
+                    eventObj.actualBaseCost = Math.max(0, parseFloat(rawActBaseVal) || 0);
+                }
                 if (rawActVal !== '' && rawActVal !== undefined) {
-                    eventObj.actualCost = parseFloat(rawActVal) || 0;
+                    eventObj.actualCost = Math.max(0, parseFloat(rawActVal) || 0);
+                } else if (rawActMealVal !== '' || rawActTransVal !== '' || rawActBaseVal !== '') {
+                    eventObj.actualCost = +(Number(eventObj.actualMealCost || 0) + Number(eventObj.actualTransCost || 0) + Number(eventObj.actualBaseCost || 0)).toFixed(2);
+                }
+                if (receiptNoteVal) {
+                    eventObj.receiptNote = receiptNoteVal;
+                }
+                if (Array.isArray(currentModalEventReceipts) && currentModalEventReceipts.length > 0) {
+                    eventObj.receipts = JSON.parse(JSON.stringify(currentModalEventReceipts));
                 }
                 if (isPaidVal) {
                     eventObj.isPaid = true;
