@@ -4253,60 +4253,84 @@
 
                     <div style="background:#fafaf9; border:1px solid var(--notion-border); border-radius:6px; padding:12px; margin-bottom:14px;">
                         <!-- 早餐 -->
-                        <div style="display:grid; grid-template-columns:1fr 165px; gap:10px; align-items:center; margin-bottom:10px;">
+                        <div style="display:grid; grid-template-columns:1fr 240px; gap:10px; align-items:center; margin-bottom:10px;">
                             <div>
                                 <label class="form-label" style="font-size:0.78rem; margin-bottom:3px;">🍳 早餐安排</label>
                                 <input type="text" id="editMetaBreakfast" class="form-input" placeholder="例如：飯店早餐 / 家中輕食">
                             </div>
                             <div>
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; margin-bottom:3px;">
                                     <label class="form-label" id="editMetaBreakfastCostLabel" style="font-size:0.78rem; margin-bottom:0;">早餐預算</label>
-                                    <select id="editMetaBreakfastCurr" class="cost-curr-select" onchange="updateModalMealPreview()"></select>
+                                    <div style="display:flex; gap:4px;">
+                                        <select id="editMetaBreakfastMode" class="cost-mode-select" style="font-size:0.72rem; padding:1px 4px; border:1px solid #fde68a; border-radius:4px; background:#fffbeb; color:#92400e; font-weight:700; cursor:pointer;" onchange="updateModalMealPreview()">
+                                            <option value="single">👤 單人價</option>
+                                            <option value="total">👥 全團總計</option>
+                                        </select>
+                                        <select id="editMetaBreakfastCurr" class="cost-curr-select" onchange="updateModalMealPreview()"></select>
+                                    </div>
                                 </div>
                                 <input type="number" id="editMetaBreakfastCost" class="form-input" min="0" step="10" placeholder="0" oninput="updateModalMealPreview()">
                             </div>
                         </div>
 
                         <!-- 午餐 -->
-                        <div style="display:grid; grid-template-columns:1fr 165px; gap:10px; align-items:center; margin-bottom:10px;">
+                        <div style="display:grid; grid-template-columns:1fr 240px; gap:10px; align-items:center; margin-bottom:10px;">
                             <div>
                                 <label class="form-label" style="font-size:0.78rem; margin-bottom:3px;">🍱 午餐安排</label>
                                 <input type="text" id="editMetaLunch" class="form-input" placeholder="例如：特色道地美食 / 特色小吃">
                             </div>
                             <div>
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; margin-bottom:3px;">
                                     <label class="form-label" id="editMetaLunchCostLabel" style="font-size:0.78rem; margin-bottom:0;">午餐預算</label>
-                                    <select id="editMetaLunchCurr" class="cost-curr-select" onchange="updateModalMealPreview()"></select>
+                                    <div style="display:flex; gap:4px;">
+                                        <select id="editMetaLunchMode" class="cost-mode-select" style="font-size:0.72rem; padding:1px 4px; border:1px solid #fde68a; border-radius:4px; background:#fffbeb; color:#92400e; font-weight:700; cursor:pointer;" onchange="updateModalMealPreview()">
+                                            <option value="single">👤 單人價</option>
+                                            <option value="total">👥 全團總計</option>
+                                        </select>
+                                        <select id="editMetaLunchCurr" class="cost-curr-select" onchange="updateModalMealPreview()"></select>
+                                    </div>
                                 </div>
                                 <input type="number" id="editMetaLunchCost" class="form-input" min="0" step="10" placeholder="0" oninput="updateModalMealPreview()">
                             </div>
                         </div>
 
                         <!-- 晚餐 -->
-                        <div style="display:grid; grid-template-columns:1fr 165px; gap:10px; align-items:center; margin-bottom:10px;">
+                        <div style="display:grid; grid-template-columns:1fr 240px; gap:10px; align-items:center; margin-bottom:10px;">
                             <div>
                                 <label class="form-label" style="font-size:0.78rem; margin-bottom:3px;">🍲 晚餐安排</label>
                                 <input type="text" id="editMetaDinner" class="form-input" placeholder="例如：景觀火鍋 / 特色餐廳">
                             </div>
                             <div>
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; margin-bottom:3px;">
                                     <label class="form-label" id="editMetaDinnerCostLabel" style="font-size:0.78rem; margin-bottom:0;">晚餐預算</label>
-                                    <select id="editMetaDinnerCurr" class="cost-curr-select" onchange="updateModalMealPreview()"></select>
+                                    <div style="display:flex; gap:4px;">
+                                        <select id="editMetaDinnerMode" class="cost-mode-select" style="font-size:0.72rem; padding:1px 4px; border:1px solid #fde68a; border-radius:4px; background:#fffbeb; color:#92400e; font-weight:700; cursor:pointer;" onchange="updateModalMealPreview()">
+                                            <option value="single">👤 單人價</option>
+                                            <option value="total">👥 全團總計</option>
+                                        </select>
+                                        <select id="editMetaDinnerCurr" class="cost-curr-select" onchange="updateModalMealPreview()"></select>
+                                    </div>
                                 </div>
                                 <input type="number" id="editMetaDinnerCost" class="form-input" min="0" step="10" placeholder="0" oninput="updateModalMealPreview()">
                             </div>
                         </div>
 
                         <!-- 點心和飲料 -->
-                        <div style="display:grid; grid-template-columns:1fr 165px; gap:10px; align-items:center; padding-top:10px; border-top:1px dashed #e2e8f0;">
+                        <div style="display:grid; grid-template-columns:1fr 240px; gap:10px; align-items:center; padding-top:10px; border-top:1px dashed #e2e8f0;">
                             <div>
                                 <label class="form-label" style="font-size:0.78rem; margin-bottom:3px;">🧋 點心與飲料安排</label>
                                 <input type="text" id="editMetaSnack" class="form-input" placeholder="例如：手搖飲、茶顏悅色、咖啡、在地甜點下午茶">
                             </div>
                             <div>
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; margin-bottom:3px;">
                                     <label class="form-label" id="editMetaSnackCostLabel" style="font-size:0.78rem; margin-bottom:0;">點心飲料預算</label>
-                                    <select id="editMetaSnackCurr" class="cost-curr-select" onchange="updateModalMealPreview()"></select>
+                                    <div style="display:flex; gap:4px;">
+                                        <select id="editMetaSnackMode" class="cost-mode-select" style="font-size:0.72rem; padding:1px 4px; border:1px solid #fde68a; border-radius:4px; background:#fffbeb; color:#92400e; font-weight:700; cursor:pointer;" onchange="updateModalMealPreview()">
+                                            <option value="single">👤 單人價</option>
+                                            <option value="total">👥 全團總計</option>
+                                        </select>
+                                        <select id="editMetaSnackCurr" class="cost-curr-select" onchange="updateModalMealPreview()"></select>
+                                    </div>
                                 </div>
                                 <input type="number" id="editMetaSnackCost" class="form-input" min="0" step="10" placeholder="0" oninput="updateModalMealPreview()">
                             </div>
@@ -7221,27 +7245,28 @@ const firebaseConfig = {
                 }).join('');
             }
 
-            function getItemLocalAndTwd(costVal, currType) {
+            const memberCountForMeals = Math.max(1, parseInt(plan.memberCount || 1));
+            function getItemLocalAndTwd(costVal, currType, modeType = 'single') {
                 const val = Math.max(0, Number(costVal) || 0);
-                if (val === 0) return { local: 0, twd: 0, display: `${curr.symbol} 0` };
+                if (val === 0) return { local: 0, twd: 0, groupLocal: 0, groupTwd: 0, display: `${curr.symbol} 0` };
+                const brk = calcCostItemBreakdown(val, currType || 'LOCAL', modeType || 'single', memberCountForMeals, curr, curr.rate);
+                const modeBadge = (modeType === 'total' && memberCountForMeals > 1) ? ` · 全團${curr.symbol}${brk.groupLocal.toLocaleString()}` : '';
                 if (currType === 'TWD') {
-                    const twd = val;
-                    const local = (curr.code === 'TWD') ? val : Math.round(val / curr.rate);
-                    return { local, twd, display: `NT$ ${val.toLocaleString()} <span style="font-size:0.68rem; opacity:0.85;">(≈${curr.symbol}${local.toLocaleString()})</span>` };
+                    return { local: brk.personLocal, twd: brk.personTwd, groupLocal: brk.groupLocal, groupTwd: brk.groupTwd, display: `NT$ ${brk.personTwd.toLocaleString()} <span style="font-size:0.68rem; opacity:0.85;">(≈${curr.symbol}${brk.personLocal.toLocaleString()}${modeBadge})</span>` };
                 } else {
-                    const local = val;
-                    const twd = Math.round(val * curr.rate);
-                    return { local, twd, display: `${curr.symbol} ${val.toLocaleString()} <span style="font-size:0.68rem; opacity:0.85;">(≈NT$${twd.toLocaleString()})</span>` };
+                    return { local: brk.personLocal, twd: brk.personTwd, groupLocal: brk.groupLocal, groupTwd: brk.groupTwd, display: `${curr.symbol} ${brk.personLocal.toLocaleString()} <span style="font-size:0.68rem; opacity:0.85;">(≈NT$${brk.personTwd.toLocaleString()}${modeBadge})</span>` };
                 }
             }
 
-            const cBf = getItemLocalAndTwd(activeDay.breakfastCost, activeDay.breakfastCurr);
-            const cLc = getItemLocalAndTwd(activeDay.lunchCost, activeDay.lunchCurr);
-            const cDn = getItemLocalAndTwd(activeDay.dinnerCost, activeDay.dinnerCurr);
-            const cSnack = getItemLocalAndTwd(activeDay.snackCost, activeDay.snackCurr);
+            const cBf = getItemLocalAndTwd(activeDay.breakfastCost, activeDay.breakfastCurr, activeDay.breakfastMode);
+            const cLc = getItemLocalAndTwd(activeDay.lunchCost, activeDay.lunchCurr, activeDay.lunchMode);
+            const cDn = getItemLocalAndTwd(activeDay.dinnerCost, activeDay.dinnerCurr, activeDay.dinnerMode);
+            const cSnack = getItemLocalAndTwd(activeDay.snackCost, activeDay.snackCurr, activeDay.snackMode);
 
             const dayMealsLocal = cBf.local + cLc.local + cDn.local + cSnack.local;
             const dayMealsTwd = cBf.twd + cLc.twd + cDn.twd + cSnack.twd;
+            const dayMealsGroupLocal = cBf.groupLocal + cLc.groupLocal + cDn.groupLocal + cSnack.groupLocal;
+            const dayMealsGroupTwd = cBf.groupTwd + cLc.groupTwd + cDn.groupTwd + cSnack.groupTwd;
 
             let evTransTotal = 0;
             let evSpotTotal = 0;
@@ -7338,8 +7363,8 @@ const firebaseConfig = {
             activeDay.budget = dayGrandLocal;
             activeDay.budgetTwd = dayGrandTwd;
 
-            const groupGrandLocal = (dayMealsLocal + dayOtherLocal) * memberCount + transGroupLocal + spotGroupLocal + dayExtraGroupLocal;
-            const groupGrandTwd = (dayMealsTwd + dayOtherTwd) * memberCount + transGroupTwd + spotGroupTwd + dayExtraGroupTwd;
+            const groupGrandLocal = dayMealsGroupLocal + dayOtherLocal * memberCount + transGroupLocal + spotGroupLocal + dayExtraGroupLocal;
+            const groupGrandTwd = dayMealsGroupTwd + dayOtherTwd * memberCount + transGroupTwd + spotGroupTwd + dayExtraGroupTwd;
 
             const transDisplay = (memberCount > 1 && transGroupLocal !== transPersonLocal * memberCount)
                 ? `${curr.symbol} ${transPersonLocal.toLocaleString()} <span style="font-size:0.68rem; opacity:0.85;">(全團${curr.symbol}${transGroupLocal.toLocaleString()})</span>`
@@ -7873,22 +7898,35 @@ const firebaseConfig = {
                 }
             }
 
+            let groupBfTotal = 0, groupLcTotal = 0, groupDnTotal = 0, groupSnackTotal = 0;
+            let twdGroupBfTotal = 0, twdGroupLcTotal = 0, twdGroupDnTotal = 0, twdGroupSnackTotal = 0;
+
             days.forEach(d => {
-                // 餐飲各項目分開加總 (單人)
-                const cBf = getItemLocalAndTwd(d.breakfastCost, d.breakfastCurr);
-                const cLc = getItemLocalAndTwd(d.lunchCost, d.lunchCurr);
-                const cDn = getItemLocalAndTwd(d.dinnerCost, d.dinnerCurr);
-                const cSnack = getItemLocalAndTwd(d.snackCost, d.snackCurr);
+                // 餐飲各項目分開加總 (支援單人價與全團總計模式)
+                const cBf = calcCostItemBreakdown(d.breakfastCost, d.breakfastCurr || 'LOCAL', d.breakfastMode || 'single', memberCount, curr, curr.rate);
+                const cLc = calcCostItemBreakdown(d.lunchCost, d.lunchCurr || 'LOCAL', d.lunchMode || 'single', memberCount, curr, curr.rate);
+                const cDn = calcCostItemBreakdown(d.dinnerCost, d.dinnerCurr || 'LOCAL', d.dinnerMode || 'single', memberCount, curr, curr.rate);
+                const cSnack = calcCostItemBreakdown(d.snackCost, d.snackCurr || 'LOCAL', d.snackMode || 'single', memberCount, curr, curr.rate);
 
-                bfTotal += cBf.local;
-                lcTotal += cLc.local;
-                dnTotal += cDn.local;
-                snackTotal += cSnack.local;
+                bfTotal += cBf.personLocal;
+                lcTotal += cLc.personLocal;
+                dnTotal += cDn.personLocal;
+                snackTotal += cSnack.personLocal;
 
-                twdBfTotal += cBf.twd;
-                twdLcTotal += cLc.twd;
-                twdDnTotal += cDn.twd;
-                twdSnackTotal += cSnack.twd;
+                groupBfTotal += cBf.groupLocal;
+                groupLcTotal += cLc.groupLocal;
+                groupDnTotal += cDn.groupLocal;
+                groupSnackTotal += cSnack.groupLocal;
+
+                twdBfTotal += cBf.personTwd;
+                twdLcTotal += cLc.personTwd;
+                twdDnTotal += cDn.personTwd;
+                twdSnackTotal += cSnack.personTwd;
+
+                twdGroupBfTotal += cBf.groupTwd;
+                twdGroupLcTotal += cLc.groupTwd;
+                twdGroupDnTotal += cDn.groupTwd;
+                twdGroupSnackTotal += cSnack.groupTwd;
 
                 // 交通與景點分開加總 (優先採用使用者自訂的 d.transportCost / d.spotCost，若未填則由 events 加總)
                 let evTrans = 0;
@@ -7993,12 +8031,12 @@ const firebaseConfig = {
                 otherTotal += evOther;
                 twdOtherTotal += Math.round(evOther * curr.rate);
 
-                // 當日單人總額 (以當地幣別與台幣分別加總，含點心飲料與自訂項目)
-                const dayLocal = cBf.local + cLc.local + cDn.local + cSnack.local + dTransPerson + dSpotPerson + dExtraPerson + evOther;
-                const dayTwd = cBf.twd + cLc.twd + cDn.twd + cSnack.twd + dTransPersonTwd + dSpotPersonTwd + dExtraPersonTwd + Math.round(evOther * curr.rate);
+                // 當日單人與全團總額 (以當地幣別與台幣分別加總，含點心飲料與自訂項目)
+                const dayLocal = cBf.personLocal + cLc.personLocal + cDn.personLocal + cSnack.personLocal + dTransPerson + dSpotPerson + dExtraPerson + evOther;
+                const dayTwd = cBf.personTwd + cLc.personTwd + cDn.personTwd + cSnack.personTwd + dTransPersonTwd + dSpotPersonTwd + dExtraPersonTwd + Math.round(evOther * curr.rate);
 
-                const dayGroupLocal = (cBf.local + cLc.local + cDn.local + cSnack.local + evOther) * memberCount + dTransGroup + dSpotGroup + dExtraGroup;
-                const dayGroupTwd = (cBf.twd + cLc.twd + cDn.twd + cSnack.twd + Math.round(evOther * curr.rate)) * memberCount + dTransGroupTwd + dSpotGroupTwd + dExtraGroupTwd;
+                const dayGroupLocal = cBf.groupLocal + cLc.groupLocal + cDn.groupLocal + cSnack.groupLocal + evOther * memberCount + dTransGroup + dSpotGroup + dExtraGroup;
+                const dayGroupTwd = cBf.groupTwd + cLc.groupTwd + cDn.groupTwd + cSnack.groupTwd + Math.round(evOther * curr.rate) * memberCount + dTransGroupTwd + dSpotGroupTwd + dExtraGroupTwd;
 
                 totalBudget += dayLocal;
                 twdTotalBudget += dayTwd;
@@ -8024,7 +8062,8 @@ const firebaseConfig = {
             const twdMaxBudget = Math.round(maxBudget * curr.rate);
             const twdGroupMaxBudget = twdMaxBudget * memberCount;
 
-            const twdGroupMealsTotal = twdMealsTotal * memberCount;
+            const groupMealsTotal = groupBfTotal + groupLcTotal + groupDnTotal + groupSnackTotal;
+            const twdGroupMealsTotal = twdGroupBfTotal + twdGroupLcTotal + twdGroupDnTotal + twdGroupSnackTotal;
 
             // 大交通（機票）與住宿（飯店）統計整合
             const flightStats = calcPlanFlightStats(plan);
@@ -8051,10 +8090,10 @@ const firebaseConfig = {
                 twdAvgBudget, twdGroupAvgBudget,
                 maxDay, maxBudget, groupMaxBudget,
                 twdMaxBudget, twdGroupMaxBudget,
-                bfTotal, groupBfTotal: bfTotal * memberCount,
-                lcTotal, groupLcTotal: lcTotal * memberCount,
-                dnTotal, groupDnTotal: dnTotal * memberCount,
-                mealsTotal, groupMealsTotal: mealsTotal * memberCount,
+                bfTotal, groupBfTotal,
+                lcTotal, groupLcTotal,
+                dnTotal, groupDnTotal,
+                mealsTotal, groupMealsTotal,
                 transTotal, groupTransTotal,
                 spotTotal, groupSpotTotal,
                 extraTotal, groupExtraTotal,
@@ -8218,10 +8257,14 @@ const firebaseConfig = {
                 const groupDayCost = d.budgetGroup || (dayCost * stats.memberCount);
                 const groupDayTwd = d.budgetGroupTwd || Math.round(groupDayCost * curr.rate);
 
-                const bf = Number(d.breakfastCost || 0);
-                const lc = Number(d.lunchCost || 0);
-                const dn = Number(d.dinnerCost || 0);
-                const snack = Number(d.snackCost || 0);
+                const cBfBrk = calcCostItemBreakdown(d.breakfastCost, d.breakfastCurr || 'LOCAL', d.breakfastMode || 'single', stats.memberCount, curr, curr.rate);
+                const cLcBrk = calcCostItemBreakdown(d.lunchCost, d.lunchCurr || 'LOCAL', d.lunchMode || 'single', stats.memberCount, curr, curr.rate);
+                const cDnBrk = calcCostItemBreakdown(d.dinnerCost, d.dinnerCurr || 'LOCAL', d.dinnerMode || 'single', stats.memberCount, curr, curr.rate);
+                const cSnBrk = calcCostItemBreakdown(d.snackCost, d.snackCurr || 'LOCAL', d.snackMode || 'single', stats.memberCount, curr, curr.rate);
+                const bf = cBfBrk.personLocal;
+                const lc = cLcBrk.personLocal;
+                const dn = cDnBrk.personLocal;
+                const snack = cSnBrk.personLocal;
                 const mealsSum = bf + lc + dn + snack;
 
                 let evTrans = 0;
@@ -8590,10 +8633,10 @@ const firebaseConfig = {
                 }
             }
 
-            const cBf = getCostLocalAndTwd(d.breakfastCost, d.breakfastCurr || 'LOCAL');
-            const cLc = getCostLocalAndTwd(d.lunchCost, d.lunchCurr || 'LOCAL');
-            const cDn = getCostLocalAndTwd(d.dinnerCost, d.dinnerCurr || 'LOCAL');
-            const cSnack = getCostLocalAndTwd(d.snackCost, d.snackCurr || 'LOCAL');
+            const cBf = calcCostItemBreakdown(Number(d.breakfastCost) || 0, d.breakfastCurr || 'LOCAL', d.breakfastMode || 'single', memberCount, curr, currentRate);
+            const cLc = calcCostItemBreakdown(Number(d.lunchCost) || 0, d.lunchCurr || 'LOCAL', d.lunchMode || 'single', memberCount, curr, currentRate);
+            const cDn = calcCostItemBreakdown(Number(d.dinnerCost) || 0, d.dinnerCurr || 'LOCAL', d.dinnerMode || 'single', memberCount, curr, currentRate);
+            const cSnack = calcCostItemBreakdown(Number(d.snackCost) || 0, d.snackCurr || 'LOCAL', d.snackMode || 'single', memberCount, curr, currentRate);
 
             let transPersonTotalLocal = 0, transPersonTotalTwd = 0, transGroupTotalLocal = 0, transGroupTotalTwd = 0;
             (d.transports || []).forEach(t => {
@@ -8628,10 +8671,10 @@ const firebaseConfig = {
                 extraGroupTotalTwd += c.groupTwd;
             });
 
-            d.budget = cBf.local + cLc.local + cDn.local + cSnack.local + transPersonTotalLocal + spotPersonTotalLocal + extraPersonTotalLocal;
-            d.budgetTwd = cBf.twd + cLc.twd + cDn.twd + cSnack.twd + transPersonTotalTwd + spotPersonTotalTwd + extraPersonTotalTwd;
-            d.budgetGroup = (cBf.local + cLc.local + cDn.local + cSnack.local) * memberCount + transGroupTotalLocal + spotGroupTotalLocal + extraGroupTotalLocal;
-            d.budgetGroupTwd = (cBf.twd + cLc.twd + cDn.twd + cSnack.twd) * memberCount + transGroupTotalTwd + spotGroupTotalTwd + extraGroupTotalTwd;
+            d.budget = cBf.personLocal + cLc.personLocal + cDn.personLocal + cSnack.personLocal + transPersonTotalLocal + spotPersonTotalLocal + extraPersonTotalLocal;
+            d.budgetTwd = cBf.personTwd + cLc.personTwd + cDn.personTwd + cSnack.personTwd + transPersonTotalTwd + spotPersonTotalTwd + extraPersonTotalTwd;
+            d.budgetGroup = cBf.groupLocal + cLc.groupLocal + cDn.groupLocal + cSnack.groupLocal + transGroupTotalLocal + spotGroupTotalLocal + extraGroupTotalLocal;
+            d.budgetGroupTwd = cBf.groupTwd + cLc.groupTwd + cDn.groupTwd + cSnack.groupTwd + transGroupTotalTwd + spotGroupTotalTwd + extraGroupTotalTwd;
         }
 
         function renderActualExpensesView() {
@@ -8667,10 +8710,10 @@ const firebaseConfig = {
             let totalAllReceiptsCount = 0;
 
             const MEAL_SLOTS = [
-                { key: 'breakfast', icon: '🍳', label: '早餐', titleProp: 'breakfast', costProp: 'breakfastCost', currProp: 'breakfastCurr', actProp: 'actualBreakfastCost', paidProp: 'breakfastPaid', recProp: 'breakfastReceipts', noteProp: 'breakfastReceiptNote' },
-                { key: 'lunch', icon: '🍱', label: '午餐', titleProp: 'lunch', costProp: 'lunchCost', currProp: 'lunchCurr', actProp: 'actualLunchCost', paidProp: 'lunchPaid', recProp: 'lunchReceipts', noteProp: 'lunchReceiptNote' },
-                { key: 'dinner', icon: '🍲', label: '晚餐', titleProp: 'dinner', costProp: 'dinnerCost', currProp: 'dinnerCurr', actProp: 'actualDinnerCost', paidProp: 'dinnerPaid', recProp: 'dinnerReceipts', noteProp: 'dinnerReceiptNote' },
-                { key: 'snack', icon: '🧋', label: '點心飲料', titleProp: 'snack', costProp: 'snackCost', currProp: 'snackCurr', actProp: 'actualSnackCost', paidProp: 'snackPaid', recProp: 'snackReceipts', noteProp: 'snackReceiptNote' }
+                { key: 'breakfast', icon: '🍳', label: '早餐', titleProp: 'breakfast', costProp: 'breakfastCost', currProp: 'breakfastCurr', modeProp: 'breakfastMode', actProp: 'actualBreakfastCost', paidProp: 'breakfastPaid', recProp: 'breakfastReceipts', noteProp: 'breakfastReceiptNote' },
+                { key: 'lunch', icon: '🍱', label: '午餐', titleProp: 'lunch', costProp: 'lunchCost', currProp: 'lunchCurr', modeProp: 'lunchMode', actProp: 'actualLunchCost', paidProp: 'lunchPaid', recProp: 'lunchReceipts', noteProp: 'lunchReceiptNote' },
+                { key: 'dinner', icon: '🍲', label: '晚餐', titleProp: 'dinner', costProp: 'dinnerCost', currProp: 'dinnerCurr', modeProp: 'dinnerMode', actProp: 'actualDinnerCost', paidProp: 'dinnerPaid', recProp: 'dinnerReceipts', noteProp: 'dinnerReceiptNote' },
+                { key: 'snack', icon: '🧋', label: '點心飲料', titleProp: 'snack', costProp: 'snackCost', currProp: 'snackCurr', modeProp: 'snackMode', actProp: 'actualSnackCost', paidProp: 'snackPaid', recProp: 'snackReceipts', noteProp: 'snackReceiptNote' }
             ];
 
             // 渲染單一分類項目列 (交通 / 景點 / 其他項目共用)
@@ -8801,11 +8844,12 @@ const firebaseConfig = {
                 const mealRowsHtml = MEAL_SLOTS.map((slot, sIdx) => {
                     const estVal = Number(d[slot.costProp] || 0);
                     const mCurr = d[slot.currProp] || 'LOCAL';
-                    const estBrk = calcCostItemBreakdown(estVal, mCurr, 'single', m, curr, curr.rate);
+                    const mMode = d[slot.modeProp] === 'total' ? 'total' : 'single';
+                    const estBrk = calcCostItemBreakdown(estVal, mCurr, mMode, m, curr, curr.rate);
 
                     const hasAct = (d[slot.actProp] !== undefined && d[slot.actProp] !== null && d[slot.actProp] !== '');
                     const actRaw = hasAct ? Number(d[slot.actProp]) : estVal;
-                    const actBrk = calcCostItemBreakdown(actRaw, mCurr, 'single', m, curr, curr.rate);
+                    const actBrk = calcCostItemBreakdown(actRaw, mCurr, mMode, m, curr, curr.rate);
 
                     dayMealEstGroupLocal += estBrk.groupLocal;
                     dayMealActGroupLocal += actBrk.groupLocal;
@@ -8843,9 +8887,12 @@ const firebaseConfig = {
                                 </div>
                             </td>
                             <td style="padding:8px 8px; width:175px; white-space:nowrap;">
-                                <div style="display:flex; align-items:center; gap:4px;">
-                                    <span style="font-size:0.72rem; color:#92400e; background:#fffbeb; border:1px solid #fde68a; padding:2px 6px; border-radius:4px;">👤 單人餐標</span>
-                                    <select class="form-input" style="padding:3px 6px; font-size:0.75rem; width:78px;" onchange="updateActualDayMealField(${d.dayNum}, '${slot.key}', 'curr', this.value)">
+                                <div style="display:flex; gap:4px;">
+                                    <select class="form-input" style="padding:3px 6px; font-size:0.75rem; width:92px;" onchange="updateActualDayMealField(${d.dayNum}, '${slot.key}', 'mode', this.value)">
+                                        <option value="single" ${mMode === 'single' ? 'selected' : ''}>👤 單人價</option>
+                                        <option value="total" ${mMode === 'total' ? 'selected' : ''}>👥 全團總計</option>
+                                    </select>
+                                    <select class="form-input" style="padding:3px 6px; font-size:0.75rem; width:74px;" onchange="updateActualDayMealField(${d.dayNum}, '${slot.key}', 'curr', this.value)">
                                         <option value="LOCAL" ${mCurr === 'LOCAL' ? 'selected' : ''}>${curr.symbol} ${curr.code}</option>
                                         <option value="TWD" ${mCurr === 'TWD' ? 'selected' : ''}>NT$ 台幣</option>
                                     </select>
@@ -9373,16 +9420,18 @@ const firebaseConfig = {
             if (!day) return;
 
             const map = {
-                breakfast: { title: 'breakfast', cost: 'breakfastCost', curr: 'breakfastCurr', actualCost: 'actualBreakfastCost', isPaid: 'breakfastPaid', label: '早餐' },
-                lunch: { title: 'lunch', cost: 'lunchCost', curr: 'lunchCurr', actualCost: 'actualLunchCost', isPaid: 'lunchPaid', label: '午餐' },
-                dinner: { title: 'dinner', cost: 'dinnerCost', curr: 'dinnerCurr', actualCost: 'actualDinnerCost', isPaid: 'dinnerPaid', label: '晚餐' },
-                snack: { title: 'snack', cost: 'snackCost', curr: 'snackCurr', actualCost: 'actualSnackCost', isPaid: 'snackPaid', label: '點心飲料' }
+                breakfast: { title: 'breakfast', cost: 'breakfastCost', curr: 'breakfastCurr', mode: 'breakfastMode', actualCost: 'actualBreakfastCost', isPaid: 'breakfastPaid', label: '早餐' },
+                lunch: { title: 'lunch', cost: 'lunchCost', curr: 'lunchCurr', mode: 'lunchMode', actualCost: 'actualLunchCost', isPaid: 'lunchPaid', label: '午餐' },
+                dinner: { title: 'dinner', cost: 'dinnerCost', curr: 'dinnerCurr', mode: 'dinnerMode', actualCost: 'actualDinnerCost', isPaid: 'dinnerPaid', label: '晚餐' },
+                snack: { title: 'snack', cost: 'snackCost', curr: 'snackCurr', mode: 'snackMode', actualCost: 'actualSnackCost', isPaid: 'snackPaid', label: '點心飲料' }
             };
             const cfg = map[mealKey];
             if (!cfg) return;
 
             if (field === 'title') {
                 day[cfg.title] = String(val || '').trim();
+            } else if (field === 'mode') {
+                day[cfg.mode] = val === 'total' ? 'total' : 'single';
             } else if (field === 'curr') {
                 day[cfg.curr] = val || 'LOCAL';
             } else if (field === 'cost') {
@@ -15066,6 +15115,10 @@ const firebaseConfig = {
             document.getElementById('editMetaLunchCost').value = Number(day.lunchCost || 0);
             document.getElementById('editMetaDinnerCost').value = Number(day.dinnerCost || 0);
             document.getElementById('editMetaSnackCost').value = Number(day.snackCost || 0);
+            if (document.getElementById('editMetaBreakfastMode')) document.getElementById('editMetaBreakfastMode').value = day.breakfastMode === 'total' ? 'total' : 'single';
+            if (document.getElementById('editMetaLunchMode')) document.getElementById('editMetaLunchMode').value = day.lunchMode === 'total' ? 'total' : 'single';
+            if (document.getElementById('editMetaDinnerMode')) document.getElementById('editMetaDinnerMode').value = day.dinnerMode === 'total' ? 'total' : 'single';
+            if (document.getElementById('editMetaSnackMode')) document.getElementById('editMetaSnackMode').value = day.snackMode === 'total' ? 'total' : 'single';
 
             // 4. 初始化交通多筆清單 (向下相容既有 transportCost 與 transportNote)
             let initialTransports = [];
@@ -15225,36 +15278,35 @@ const firebaseConfig = {
             const rateInput = document.getElementById('editMetaPlanExchangeRate');
             const currentRate = Math.max(0.0001, parseFloat(rateInput?.value) || plan.exchangeRate || 1.0);
 
-            // 單項幣別計算小工具
-            function parseItem(costInputId, currSelectId) {
+            const memberCount = Math.max(1, Number(plan.memberCount) || 1);
+
+            // 單項幣別與計費模式計算小工具
+            function parseItem(costInputId, currSelectId, modeSelectId) {
                 const val = Math.max(0, Number(document.getElementById(costInputId)?.value) || 0);
                 const currType = document.getElementById(currSelectId)?.value || 'LOCAL';
-                if (val === 0) return { val: 0, currType, local: 0, twd: 0, display: `${currSymbol} 0` };
+                const modeType = document.getElementById(modeSelectId)?.value === 'total' ? 'total' : 'single';
+                if (val === 0) return { val: 0, currType, modeType, local: 0, twd: 0, groupLocal: 0, groupTwd: 0, display: `${currSymbol} 0` };
                 
-                let local = 0;
-                let twd = 0;
+                const brk = calcCostItemBreakdown(val, currType, modeType, memberCount, { code: currCode }, currentRate);
+                const modeHint = (modeType === 'total' && memberCount > 1) ? ` · 全團${currSymbol}${brk.groupLocal.toLocaleString()}` : '';
                 let display = '';
                 if (currType === 'TWD') {
-                    twd = val;
-                    local = (currCode === 'TWD') ? val : Math.round(val / currentRate);
-                    display = `NT$ ${val.toLocaleString()} <span style="font-size:0.72rem; color:#64748b;">(≈${currSymbol}${local.toLocaleString()})</span>`;
+                    display = `NT$ ${brk.personTwd.toLocaleString()} <span style="font-size:0.72rem; color:#64748b;">(≈${currSymbol}${brk.personLocal.toLocaleString()}${modeHint})</span>`;
                 } else {
-                    local = val;
-                    twd = Math.round(val * currentRate);
-                    display = `${currSymbol} ${val.toLocaleString()} <span style="font-size:0.72rem; color:#64748b;">(≈NT$${twd.toLocaleString()})</span>`;
+                    display = `${currSymbol} ${brk.personLocal.toLocaleString()} <span style="font-size:0.72rem; color:#64748b;">(≈NT$${brk.personTwd.toLocaleString()}${modeHint})</span>`;
                 }
-                return { val, currType, local, twd, display };
+                return { val, currType, modeType, local: brk.personLocal, twd: brk.personTwd, groupLocal: brk.groupLocal, groupTwd: brk.groupTwd, display };
             }
 
-            const bf = parseItem('editMetaBreakfastCost', 'editMetaBreakfastCurr');
-            const lc = parseItem('editMetaLunchCost', 'editMetaLunchCurr');
-            const dn = parseItem('editMetaDinnerCost', 'editMetaDinnerCurr');
-            const snack = parseItem('editMetaSnackCost', 'editMetaSnackCurr');
+            const bf = parseItem('editMetaBreakfastCost', 'editMetaBreakfastCurr', 'editMetaBreakfastMode');
+            const lc = parseItem('editMetaLunchCost', 'editMetaLunchCurr', 'editMetaLunchMode');
+            const dn = parseItem('editMetaDinnerCost', 'editMetaDinnerCurr', 'editMetaDinnerMode');
+            const snack = parseItem('editMetaSnackCost', 'editMetaSnackCurr', 'editMetaSnackMode');
 
             const mealsLocal = bf.local + lc.local + dn.local + snack.local;
             const mealsTwd = bf.twd + lc.twd + dn.twd + snack.twd;
-
-            const memberCount = Math.max(1, Number(plan.memberCount) || 1);
+            const mealsGroupLocal = bf.groupLocal + lc.groupLocal + dn.groupLocal + snack.groupLocal;
+            const mealsGroupTwd = bf.groupTwd + lc.groupTwd + dn.groupTwd + snack.groupTwd;
 
             // 計算多筆交通項目 (支援單人 vs 總計整包)
             const transRows = document.querySelectorAll('#modalTransportList .transport-cost-row');
@@ -15365,8 +15417,8 @@ const firebaseConfig = {
             }
             const grandTotalLocal = mealsLocal + transPersonTotalLocal + spotPersonTotalLocal + extraPersonTotalLocal + otherSumLocal;
             const grandTotalTwd = mealsTwd + transPersonTotalTwd + spotPersonTotalTwd + extraPersonTotalTwd + otherSumTwd;
-            const grandTotalGroupLocal = (mealsLocal + otherSumLocal) * memberCount + transGroupTotalLocal + spotGroupTotalLocal + extraGroupTotalLocal;
-            const grandTotalGroupTwd = (mealsTwd + otherSumTwd) * memberCount + transGroupTotalTwd + spotGroupTotalTwd + extraGroupTotalTwd;
+            const grandTotalGroupLocal = mealsGroupLocal + otherSumLocal * memberCount + transGroupTotalLocal + spotGroupTotalLocal + extraGroupTotalLocal;
+            const grandTotalGroupTwd = mealsGroupTwd + otherSumTwd * memberCount + transGroupTotalTwd + spotGroupTotalTwd + extraGroupTotalTwd;
 
             const breakdownEl = document.getElementById('modalDayCostBreakdownPreview');
             if (breakdownEl) {
@@ -15474,18 +15526,22 @@ const firebaseConfig = {
                 day.dinner = getVal('editMetaDinner', day.dinner || '');
                 day.snack = getVal('editMetaSnack', day.snack || '');
 
-                // 3. 儲存餐飲費用數值與個別幣別
+                // 3. 儲存餐飲費用數值、計費模式與個別幣別
                 day.breakfastCost = getNum('editMetaBreakfastCost', 0);
                 day.breakfastCurr = getVal('editMetaBreakfastCurr', 'LOCAL');
+                day.breakfastMode = getVal('editMetaBreakfastMode', day.breakfastMode || 'single') === 'total' ? 'total' : 'single';
 
                 day.lunchCost = getNum('editMetaLunchCost', 0);
                 day.lunchCurr = getVal('editMetaLunchCurr', 'LOCAL');
+                day.lunchMode = getVal('editMetaLunchMode', day.lunchMode || 'single') === 'total' ? 'total' : 'single';
 
                 day.dinnerCost = getNum('editMetaDinnerCost', 0);
                 day.dinnerCurr = getVal('editMetaDinnerCurr', 'LOCAL');
+                day.dinnerMode = getVal('editMetaDinnerMode', day.dinnerMode || 'single') === 'total' ? 'total' : 'single';
 
                 day.snackCost = getNum('editMetaSnackCost', 0);
                 day.snackCurr = getVal('editMetaSnackCurr', 'LOCAL');
+                day.snackMode = getVal('editMetaSnackMode', day.snackMode || 'single') === 'total' ? 'total' : 'single';
 
                 // 4. 計算折合輔助函數
                 function getCostLocalAndTwd(val, currType) {
@@ -15587,11 +15643,11 @@ const firebaseConfig = {
                 });
                 day.extraCosts = extraCosts;
 
-                // 8. 計算當日早中晚與其他花費總額
-                const cBf = getCostLocalAndTwd(day.breakfastCost, day.breakfastCurr);
-                const cLc = getCostLocalAndTwd(day.lunchCost, day.lunchCurr);
-                const cDn = getCostLocalAndTwd(day.dinnerCost, day.dinnerCurr);
-                const cSnack = getCostLocalAndTwd(day.snackCost, day.snackCurr);
+                // 8. 計算當日早中晚與其他花費總額 (支援單人價與全團總計模式)
+                const cBf = calcCostItemBreakdown(day.breakfastCost, day.breakfastCurr, day.breakfastMode, memberCount, curr, currentRate);
+                const cLc = calcCostItemBreakdown(day.lunchCost, day.lunchCurr, day.lunchMode, memberCount, curr, currentRate);
+                const cDn = calcCostItemBreakdown(day.dinnerCost, day.dinnerCurr, day.dinnerMode, memberCount, curr, currentRate);
+                const cSnack = calcCostItemBreakdown(day.snackCost, day.snackCurr, day.snackMode, memberCount, curr, currentRate);
 
                 let otherSumLocal = 0;
                 let otherSumTwd = 0;
@@ -15603,11 +15659,11 @@ const firebaseConfig = {
                     }
                 });
 
-                day.budget = cBf.local + cLc.local + cDn.local + cSnack.local + transPersonTotalLocal + spotPersonTotalLocal + extraPersonTotalLocal + otherSumLocal;
-                day.budgetTwd = cBf.twd + cLc.twd + cDn.twd + cSnack.twd + transPersonTotalTwd + spotPersonTotalTwd + extraPersonTotalTwd + otherSumTwd;
+                day.budget = cBf.personLocal + cLc.personLocal + cDn.personLocal + cSnack.personLocal + transPersonTotalLocal + spotPersonTotalLocal + extraPersonTotalLocal + otherSumLocal;
+                day.budgetTwd = cBf.personTwd + cLc.personTwd + cDn.personTwd + cSnack.personTwd + transPersonTotalTwd + spotPersonTotalTwd + extraPersonTotalTwd + otherSumTwd;
 
-                day.budgetGroup = (cBf.local + cLc.local + cDn.local + cSnack.local + otherSumLocal) * memberCount + transGroupTotalLocal + spotGroupTotalLocal + extraGroupTotalLocal;
-                day.budgetGroupTwd = (cBf.twd + cLc.twd + cDn.twd + cSnack.twd + otherSumTwd) * memberCount + transGroupTotalTwd + spotGroupTotalTwd + extraGroupTotalTwd;
+                day.budgetGroup = cBf.groupLocal + cLc.groupLocal + cDn.groupLocal + cSnack.groupLocal + otherSumLocal * memberCount + transGroupTotalLocal + spotGroupTotalLocal + extraGroupTotalLocal;
+                day.budgetGroupTwd = cBf.groupTwd + cLc.groupTwd + cDn.groupTwd + cSnack.groupTwd + otherSumTwd * memberCount + transGroupTotalTwd + spotGroupTotalTwd + extraGroupTotalTwd;
 
                 // 9. 資料持久化與安全刷新 UI
                 try {
